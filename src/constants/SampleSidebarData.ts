@@ -15,7 +15,7 @@ export const sidebarData = {
   user: {
     name: "Hiếu",
     email: "hieu@techleet.me",
-    avatar: "/avatars/shadcn.jpg",
+    avatar: "/images/sample-avatar.png",
   },
   teams: [
     {
@@ -56,23 +56,9 @@ export const sidebarData = {
       ],
     },
     {
-      title: "Nhân sự",
-      url: "#",
+      title: "Danh sách nhân viên",
+      url: "/employees",
       icon: Bot,
-      items: [
-        {
-          title: "Hồ sơ nhân viên",
-          url: "#",
-        },
-        {
-          title: "Chấm công",
-          url: "#",
-        },
-        {
-          title: "Lương & Bảo hiểm",
-          url: "#",
-        },
-      ],
     },
     {
       title: "Báo cáo",
@@ -104,7 +90,7 @@ export const sidebarData = {
       items: [
         {
           title: "Cấu hình chung",
-          url: "#",
+          url: "/settings/general",
         },
         {
           title: "Phân quyền",
@@ -122,20 +108,5 @@ export const sidebarData = {
     },
   ],
   projects: [
-    {
-      name: "Quản lý nhân sự",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Tuyển dụng thực tập",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Đào tạo nội bộ",
-      url: "#",
-      icon: Map,
-    },
   ],
 };
