@@ -37,7 +37,7 @@ const departmentFormSchema = z.object({
   departmentCode: z.string().min(1, "Department code is required").min(2, "Department code must be at least 2 characters"),
   description: z.string().optional(),
   parentDepartmentId: z.string().optional(),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 })
 
 type DepartmentFormData = z.infer<typeof departmentFormSchema>
@@ -45,7 +45,7 @@ type DepartmentFormData = z.infer<typeof departmentFormSchema>
 interface AddDepartmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: DepartmentFormData) => Promise<void>
+  onSubmit: (data: { departmentName: string; departmentCode: string; isActive: boolean; description?: string; parentDepartmentId?: number }) => Promise<void>
   departments: Department[]
 }
 

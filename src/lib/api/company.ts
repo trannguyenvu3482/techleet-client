@@ -41,7 +41,7 @@ export interface UpdateDepartmentRequest {
   isActive?: boolean;
 }
 
-export interface GetDepartmentsParams {
+export interface GetDepartmentsParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   keyword?: string;
@@ -98,7 +98,7 @@ export interface UpdatePositionRequest {
   isActive?: boolean;
 }
 
-export interface GetPositionsParams {
+export interface GetPositionsParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   keyword?: string;
@@ -158,7 +158,7 @@ export interface UpdateHeadquarterRequest {
   isActive?: boolean;
 }
 
-export interface GetHeadquartersParams {
+export interface GetHeadquartersParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   keyword?: string;
@@ -204,7 +204,7 @@ export interface UpdateCompanySettingRequest {
   isActive?: boolean;
 }
 
-export interface GetCompanySettingsParams {
+export interface GetCompanySettingsParams extends Record<string, unknown> {
   category?: string;
   isActive?: boolean;
   keyword?: string;

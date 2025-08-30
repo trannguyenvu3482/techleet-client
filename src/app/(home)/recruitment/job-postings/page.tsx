@@ -14,7 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { JobPostingClient } from "@/components/recruitment/job-posting-client"
+// import { JobPostingClient } from "@/components/recruitment/job-management-client"
 import { useRequireAuth } from "@/hooks/use-auth"
 
 export default function JobPostingsPage() {
@@ -53,7 +53,7 @@ export default function JobPostingsPage() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <JobPostingClient />
+          {/* <JobPostingClient /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>

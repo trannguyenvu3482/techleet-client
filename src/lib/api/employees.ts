@@ -3,7 +3,7 @@ import { EmployeeFormData } from "@/components/employees/add-employee-modal"
 import { api } from "./client"
 import { PaginatedResponse } from '@/types/api'
 
-export interface GetEmployeesParams {
+export interface GetEmployeesParams extends Record<string, unknown> {
   page?: number
   limit?: number
   keyword?: string

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -17,38 +17,60 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 const headquarterFormSchema = z.object({
-  headquarterName: z.string().min(1, "Headquarter name is required").min(2, "Headquarter name must be at least 2 characters"),
-  address: z.string().min(1, "Address is required").min(5, "Address must be at least 5 characters"),
-  city: z.string().min(1, "City is required").min(2, "City must be at least 2 characters"),
+  headquarterName: z
+    .string()
+    .min(1, "Headquarter name is required")
+    .min(2, "Headquarter name must be at least 2 characters"),
+  address: z
+    .string()
+    .min(1, "Address is required")
+    .min(5, "Address must be at least 5 characters"),
+  city: z
+    .string()
+    .min(1, "City is required")
+    .min(2, "City must be at least 2 characters"),
   state: z.string().optional(),
   postalCode: z.string().optional(),
-  country: z.string().min(1, "Country is required").min(2, "Country must be at least 2 characters"),
+  country: z
+    .string()
+    .min(1, "Country is required")
+    .min(2, "Country must be at least 2 characters"),
   phoneNumber: z.string().optional(),
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
-  isActive: z.boolean().default(true),
-})
+  isActive: z.boolean(),
+});
 
-type HeadquarterFormData = z.infer<typeof headquarterFormSchema>
+type HeadquarterFormData = z.infer<typeof headquarterFormSchema>;
 
 interface AddHeadquarterModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: HeadquarterFormData) => Promise<void>
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: {
+    headquarterName: string;
+    address: string;
+    city: string;
+    country: string;
+    isActive: boolean;
+    state?: string;
+    postalCode?: string;
+    phoneNumber?: string;
+    email?: string;
+  }) => Promise<void>;
 }
 
-export function AddHeadquarterModal({ 
-  open, 
-  onOpenChange, 
-  onSubmit 
+export function AddHeadquarterModal({
+  open,
+  onOpenChange,
+  onSubmit,
 }: AddHeadquarterModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<HeadquarterFormData>({
     resolver: zodResolver(headquarterFormSchema),
@@ -63,10 +85,10 @@ export function AddHeadquarterModal({
       email: "",
       isActive: true,
     },
-  })
+  });
 
   const handleSubmit = async (data: HeadquarterFormData) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const submitData = {
         ...data,
@@ -75,22 +97,22 @@ export function AddHeadquarterModal({
         postalCode: data.postalCode || undefined,
         phoneNumber: data.phoneNumber || undefined,
         email: data.email || undefined,
-      }
-      await onSubmit(submitData)
-      form.reset()
+      };
+      await onSubmit(submitData);
+      form.reset();
     } catch (error) {
-      console.error('Failed to submit headquarter:', error)
+      console.error("Failed to submit headquarter:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      form.reset()
+      form.reset();
     }
-    onOpenChange(newOpen)
-  }
+    onOpenChange(newOpen);
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -103,7 +125,10 @@ export function AddHeadquarterModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="headquarterName"
@@ -125,7 +150,10 @@ export function AddHeadquarterModal({
                 <FormItem>
                   <FormLabel>Address *</FormLabel>
                   <FormControl>
-                    <Input placeholder="123 Nguyen Hue Street, District 1" {...field} />
+                    <Input
+                      placeholder="123 Nguyen Hue Street, District 1"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,5 +267,5 @@ export function AddHeadquarterModal({
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -17,49 +17,54 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { type Department } from "@/lib/api/company"
-import { type CreatePositionDto } from "@/types/company"
+} from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { CreatePositionRequest, type Department } from "@/lib/api/company";
 
 const positionFormSchema = z.object({
-  positionName: z.string().min(1, "Position name is required").min(2, "Position name must be at least 2 characters"),
-  positionCode: z.string().min(1, "Position code is required").min(2, "Position code must be at least 2 characters"),
+  positionName: z
+    .string()
+    .min(1, "Position name is required")
+    .min(2, "Position name must be at least 2 characters"),
+  positionCode: z
+    .string()
+    .min(1, "Position code is required")
+    .min(2, "Position code must be at least 2 characters"),
   description: z.string().optional(),
   departmentId: z.string().min(1, "Department is required"),
   level: z.string().min(1, "Level is required"),
   minSalary: z.string().optional(),
   maxSalary: z.string().optional(),
   isActive: z.boolean(),
-})
+});
 
-type PositionFormData = z.infer<typeof positionFormSchema>
+type PositionFormData = z.infer<typeof positionFormSchema>;
 
 interface AddPositionModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: CreatePositionDto) => Promise<void>
-  departments: Department[]
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: CreatePositionRequest) => Promise<void>;
+  departments: Department[];
 }
 
-export function AddPositionModal({ 
-  open, 
-  onOpenChange, 
-  onSubmit, 
-  departments 
+export function AddPositionModal({
+  open,
+  onOpenChange,
+  onSubmit,
+  departments,
 }: AddPositionModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PositionFormData>({
     resolver: zodResolver(positionFormSchema),
@@ -73,34 +78,34 @@ export function AddPositionModal({
       maxSalary: "",
       isActive: true,
     },
-  })
+  });
 
   const handleSubmit = async (data: PositionFormData) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const submitData = {
         ...data,
         departmentId: parseInt(data.departmentId),
         minSalary: data.minSalary ? parseInt(data.minSalary) : undefined,
         maxSalary: data.maxSalary ? parseInt(data.maxSalary) : undefined,
-      }
-      await onSubmit(submitData)
-      form.reset()
+      };
+      await onSubmit(submitData);
+      form.reset();
     } catch (error) {
-      console.error('Failed to submit position:', error)
+      console.error("Failed to submit position:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      form.reset()
+      form.reset();
     }
-    onOpenChange(newOpen)
-  }
+    onOpenChange(newOpen);
+  };
 
-  const activeDepartments = departments?.filter(dept => dept.isActive)
+  const activeDepartments = departments?.filter((dept) => dept.isActive);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -108,12 +113,16 @@ export function AddPositionModal({
         <DialogHeader>
           <DialogTitle>Add New Position</DialogTitle>
           <DialogDescription>
-            Create a new job position with salary range and department assignment.
+            Create a new job position with salary range and department
+            assignment.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -151,7 +160,10 @@ export function AddPositionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select department" />
@@ -159,8 +171,8 @@ export function AddPositionModal({
                       </FormControl>
                       <SelectContent>
                         {activeDepartments.map((dept) => (
-                          <SelectItem 
-                            key={dept.departmentId} 
+                          <SelectItem
+                            key={dept.departmentId}
                             value={dept.departmentId.toString()}
                           >
                             {dept.departmentName} ({dept.departmentCode})
@@ -179,7 +191,10 @@ export function AddPositionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Level *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select level" />
@@ -209,10 +224,10 @@ export function AddPositionModal({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Brief description of the position's responsibilities and requirements"
                       rows={3}
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -228,11 +243,7 @@ export function AddPositionModal({
                   <FormItem>
                     <FormLabel>Minimum Salary (VND)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="15000000" 
-                        {...field} 
-                      />
+                      <Input type="number" placeholder="15000000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -246,11 +257,7 @@ export function AddPositionModal({
                   <FormItem>
                     <FormLabel>Maximum Salary (VND)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="25000000" 
-                        {...field} 
-                      />
+                      <Input type="number" placeholder="25000000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -275,5 +282,5 @@ export function AddPositionModal({
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

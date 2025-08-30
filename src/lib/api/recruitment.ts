@@ -68,7 +68,7 @@ export interface UpdateJobPostingRequest {
   headquarterId?: number;
 }
 
-export interface GetJobPostingsParams {
+export interface GetJobPostingsParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   keyword?: string;
@@ -149,7 +149,7 @@ export interface UpdateCandidateRequest {
   linkedinUrl?: string;
 }
 
-export interface GetCandidatesParams {
+export interface GetCandidatesParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   keyword?: string;
@@ -191,7 +191,7 @@ export interface UpdateApplicationRequest {
   coverLetter?: string;
 }
 
-export interface GetApplicationsParams {
+export interface GetApplicationsParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   jobPostingId?: number;
@@ -255,7 +255,7 @@ export interface UpdateInterviewRequest {
   status?: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
 }
 
-export interface GetInterviewsParams {
+export interface GetInterviewsParams extends Record<string, unknown> {
   page?: number;
   limit?: number;
   applicationId?: number;
