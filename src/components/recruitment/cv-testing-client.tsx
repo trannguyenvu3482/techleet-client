@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { 
-  Upload, 
   FileText, 
   Brain, 
   Clock, 
@@ -17,14 +16,14 @@ import {
   AlertCircle,
   Loader2,
   Zap,
-  Users
+  Settings,
+  Briefcase
 } from "lucide-react"
 import { toast } from "sonner"
 import { recruitmentAPI, type CvTestRequest, type CvTestResult } from "@/lib/api/recruitment"
 
 export function CvTestingClient() {
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingApplications, setIsLoadingApplications] = useState(false)
   const [result, setResult] = useState<CvTestResult | null>(null)
   const [applications, setApplications] = useState<Array<{ applicationId: number; candidateName: string; jobTitle: string; appliedDate: string }>>([])
   const [testMode, setTestMode] = useState<'mock' | 'real'>('mock')
@@ -34,21 +33,37 @@ export function CvTestingClient() {
     mockApplicationId: 9999
   })
 
+  // Mock JD for testing
+  const mockJobDescription = {
+    jobPostingId: 999,
+    title: 'Software Engineer',
+    skills: 'JavaScript, React, Node.js, TypeScript',
+    minExperience: 2,
+    maxExperience: 5,
+    educationLevel: 'Bachelor degree',
+    description: 'Test job posting for CV screening'
+  }
+
+  // Helper function to convert file path to full URL
+  const getCvUrl = (filePath: string) => {
+    if (filePath.startsWith('./uploads/')) {
+      return filePath.replace('./uploads/', 'https://techleet.me/api/v1/recruitment-service/uploads/')
+    }
+    return filePath
+  }
+
   // Load applications on component mount
   useEffect(() => {
     loadApplications()
   }, [])
 
   const loadApplications = async () => {
-    setIsLoadingApplications(true)
     try {
       const apps = await recruitmentAPI.getApplicationsForTesting()
       setApplications(apps)
     } catch (error) {
       console.error('Error loading applications:', error)
       toast.error("Lỗi khi tải danh sách đơn ứng tuyển")
-    } finally {
-      setIsLoadingApplications(false)
     }
   }
 
@@ -111,139 +126,129 @@ export function CvTestingClient() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
               Cấu hình Test
             </CardTitle>
             <CardDescription>
-              Thiết lập thông tin để test CV screening với AI
+              Thiết lập tham số cho việc kiểm thử CV screening
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Test Mode Selection */}
             <div className="space-y-2">
-              <Label htmlFor="filePath">Đường dẫn file CV</Label>
-              <Input
-                id="filePath"
-                value={testData.filePath}
-                onChange={(e) => setTestData({ ...testData, filePath: e.target.value })}
-                placeholder="./uploads/test-cv.pdf"
-              />
-              <p className="text-xs text-muted-foreground">
-                Đường dẫn tới file CV trên server (ví dụ: ./uploads/test-cv.pdf)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="jobPostingId">ID Vị trí tuyển dụng</Label>
-              <Input
-                id="jobPostingId"
-                type="number"
-                value={testData.jobPostingId}
-                onChange={(e) => setTestData({ ...testData, jobPostingId: parseInt(e.target.value) || 1 })}
-                placeholder="1"
-              />
-              <p className="text-xs text-muted-foreground">
-                ID của vị trí tuyển dụng để so sánh (để trống sẽ dùng mock data)
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Chế độ test</Label>
+              <Label>Chế độ test:</Label>
               <div className="flex gap-2">
                 <Button
-                  type="button"
-                  variant={testMode === 'mock' ? 'default' : 'outline'}
+                  variant={testMode === 'mock' ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTestMode('mock')}
-                  className="flex-1"
                 >
                   Mock Data
                 </Button>
                 <Button
-                  type="button"
-                  variant={testMode === 'real' ? 'default' : 'outline'}
+                  variant={testMode === 'real' ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTestMode('real')}
-                  className="flex-1"
                 >
-                  <Users className="mr-1 h-3 w-3" />
-                  Đơn thực tế
+                  Real Applications
                 </Button>
               </div>
             </div>
 
-            {testMode === 'mock' ? (
-              <div className="space-y-2">
-                <Label htmlFor="mockApplicationId">Mock Application ID</Label>
-                <Input
-                  id="mockApplicationId"
-                  type="number"
-                  value={testData.mockApplicationId || 9999}
-                  onChange={(e) => setTestData({ ...testData, mockApplicationId: parseInt(e.target.value) || 9999 })}
-                  placeholder="9999"
-                />
-                <p className="text-xs text-muted-foreground">
-                  ID ứng dụng giả để test (mặc định: 9999)
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="applicationId">Chọn đơn ứng tuyển thực tế</Label>
-                {isLoadingApplications ? (
-                  <div className="flex items-center gap-2 p-3 border rounded-md">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Đang tải danh sách...</span>
+            {/* Mock JD Display */}
+            {testMode === 'mock' && (
+              <div className="space-y-3 p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-blue-600" />
+                  <h4 className="font-medium text-sm">Mock Job Description</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">Position:</span> {mockJobDescription.title}
                   </div>
-                ) : (
-                  <Select
-                    value={testData.applicationId?.toString() || ""}
-                    onValueChange={(value) => setTestData({ ...testData, applicationId: parseInt(value) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn đơn ứng tuyển để test..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {applications.map((app) => (
-                        <SelectItem key={app.applicationId} value={app.applicationId.toString()}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{app.candidateName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {app.jobTitle} • Nộp ngày {new Date(app.appliedDate).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {applications.length} đơn ứng tuyển có sẵn
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={loadApplications}
-                    disabled={isLoadingApplications}
-                    className="ml-2 h-5 px-2 text-xs"
-                  >
-                    {isLoadingApplications ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      "Tải lại"
-                    )}
-                  </Button>
-                </p>
+                  <div>
+                    <span className="font-medium">Required Skills:</span> {mockJobDescription.skills}
+                  </div>
+                  <div>
+                    <span className="font-medium">Experience:</span> {mockJobDescription.minExperience}-{mockJobDescription.maxExperience} years
+                  </div>
+                  <div>
+                    <span className="font-medium">Education:</span> {mockJobDescription.educationLevel}
+                  </div>
+                  <div>
+                    <span className="font-medium">Description:</span> {mockJobDescription.description}
+                  </div>
+                </div>
               </div>
             )}
 
+            {/* Real Application Selection */}
+            {testMode === 'real' && (
+              <div className="space-y-2">
+                <Label>Chọn đơn ứng tuyển:</Label>
+                <Select 
+                  value={testData.applicationId?.toString() || ""} 
+                  onValueChange={(value) => setTestData({ ...testData, applicationId: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn application để test" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {applications.map((app) => (
+                      <SelectItem key={app.applicationId} value={app.applicationId.toString()}>
+                        {app.candidateName} - {app.jobTitle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* File Path Input */}
+            <div className="space-y-2">
+              <Label>Đường dẫn file CV:</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={testData.filePath}
+                  onChange={(e) => setTestData({ ...testData, filePath: e.target.value })}
+                  placeholder="./uploads/test-cv.pdf"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const cvUrl = testData.filePath.replace('./uploads/', 'https://techleet.me/api/v1/recruitment-service/uploads/')
+                    window.open(cvUrl, '_blank')
+                  }}
+                  disabled={!testData.filePath || !testData.filePath.includes('./uploads/')}
+                  title="Xem file CV hiện tại"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Job Posting ID Input */}
+            <div className="space-y-2">
+              <Label>Job Posting ID (optional):</Label>
+              <Input
+                type="number"
+                value={testData.jobPostingId || ""}
+                onChange={(e) => setTestData({ ...testData, jobPostingId: parseInt(e.target.value) || 1 })}
+                placeholder="1"
+              />
+            </div>
+
+            {/* Run Test Button */}
             <Button 
               onClick={handleTest} 
               disabled={isLoading}
               className="w-full"
-              size="lg"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang xử lý CV...
+                  Đang xử lý...
                 </>
               ) : (
                 <>
@@ -270,6 +275,28 @@ export function CvTestingClient() {
                   onClick={() => setTestData({ ...testData, filePath: "./uploads/test-cv-senior.pdf" })}
                 >
                   CV Senior
+                </Button>
+              </div>
+              
+              {/* View Sample CVs */}
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open('https://techleet.me/api/v1/recruitment-service/uploads/test-cv.pdf', '_blank')}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <FileText className="mr-1 h-3 w-3" />
+                  Xem CV Junior
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open('https://techleet.me/api/v1/recruitment-service/uploads/test-cv-senior.pdf', '_blank')}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <FileText className="mr-1 h-3 w-3" />
+                  Xem CV Senior
                 </Button>
               </div>
             </div>
@@ -347,6 +374,20 @@ export function CvTestingClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Test Information */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Briefcase className="h-4 w-4 text-blue-600" />
+                <h4 className="font-medium text-sm text-blue-900">Job Description Used for Testing</h4>
+              </div>
+              <div className="space-y-1 text-sm text-blue-800">
+                <div><span className="font-medium">Position:</span> {mockJobDescription.title}</div>
+                <div><span className="font-medium">Required Skills:</span> {mockJobDescription.skills}</div>
+                <div><span className="font-medium">Experience Range:</span> {mockJobDescription.minExperience}-{mockJobDescription.maxExperience} years</div>
+                <div><span className="font-medium">Education:</span> {mockJobDescription.educationLevel}</div>
+              </div>
+            </div>
+
             {/* Overall Scores */}
             <div className="grid gap-4 md:grid-cols-4">
               <div className="text-center">
