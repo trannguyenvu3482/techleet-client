@@ -2,10 +2,10 @@ import { cookies } from 'next/headers'
 
 export interface UserInfo {
   email: string
+  firstName: string
+  lastName: string
   fullName: string
-  phoneNumber: string
-  avatarUrl?: string
-  employeeId: number
+  userId: number
 }
 
 export async function getUserInfo(): Promise<UserInfo | null> {

@@ -1,14 +1,14 @@
 import {
   AudioWaveform,
   BookOpen,
-  Bot,
+  Building2,
   Command,
-  Frame,
   GalleryVerticalEnd,
-  Map,
   PieChart,
   Settings2,
   SquareTerminal,
+  Users,
+  UserCheck,
 } from "lucide-react";
 
 export const sidebarData = {
@@ -36,74 +36,109 @@ export const sidebarData = {
   ],
   navMain: [
     {
-      title: "Tuyển dụng",
-      url: "#",
-      icon: SquareTerminal,
+      title: "Dashboard",
+      url: "/",
+      icon: PieChart,
       isActive: true,
+    },
+    {
+      title: "Tuyển dụng",
+      url: "/recruitment",
+      icon: SquareTerminal,
       items: [
         {
-          title: "Danh sách ứng viên",
-          url: "#",
+          title: "Tin tuyển dụng",
+          url: "/recruitment/jobs",
         },
         {
-          title: "Tin tuyển dụng",
-          url: "#",
+          title: "Danh sách ứng viên",
+          url: "/recruitment/candidates",
+        },
+        {
+          title: "Đơn ứng tuyển",
+          url: "/recruitment/applications",
         },
         {
           title: "Lịch phỏng vấn",
-          url: "#",
+          url: "/recruitment/interviews",
         },
       ],
     },
     {
-      title: "Danh sách nhân viên",
+      title: "Nhân viên",
       url: "/employees",
-      icon: Bot,
+      icon: Users,
+    },
+    // {
+    //   title: "Quản lý người dùng",
+    //   url: "/users",
+    //   icon: UserCheck,
+    //   items: [
+    //     {
+    //       title: "Danh sách người dùng",
+    //       url: "/users",
+    //     },
+    //     {
+    //       title: "Vai trò & Quyền",
+    //       url: "/users/roles",
+    //     },
+    //   ],
+    // },
+    {
+      title: "Công ty",
+      url: "/company",
+      icon: Building2,
+      items: [
+        {
+          title: "Phòng ban",
+          url: "/company/departments",
+        },
+        {
+          title: "Vị trí công việc",
+          url: "/company/positions",
+        },
+        {
+          title: "Văn phòng",
+          url: "/company/headquarters",
+        },
+      ],
     },
     {
       title: "Báo cáo",
-      url: "#",
+      url: "/reports",
       icon: BookOpen,
       items: [
         {
-          title: "Tuyển dụng",
-          url: "#",
+          title: "Báo cáo tuyển dụng",
+          url: "/reports/recruitment",
         },
         {
-          title: "Hiệu suất",
-          url: "#",
+          title: "Báo cáo nhân sự",
+          url: "/reports/employees",
         },
         {
-          title: "Thống kê nghỉ phép",
-          url: "#",
-        },
-        {
-          title: "Biến động nhân sự",
-          url: "#",
+          title: "Thống kê hiệu suất",
+          url: "/reports/performance",
         },
       ],
     },
     {
       title: "Cài đặt",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {
           title: "Cấu hình chung",
           url: "/settings/general",
         },
-        {
-          title: "Phân quyền",
-          url: "#",
-        },
-        {
-          title: "Thông tin công ty",
-          url: "#",
-        },
-        {
-          title: "Giới hạn truy cập",
-          url: "#",
-        },
+        // {
+        //   title: "Cài đặt công ty",
+        //   url: "/settings/company",
+        // },
+        // {
+        //   title: "Cài đặt hệ thống",
+        //   url: "/settings/system",
+        // },
       ],
     },
   ],

@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -13,15 +16,23 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import type { Metadata } from "next"
+import { PositionClient } from "@/components/company/position-client"
+import { useRequireAuth } from "@/hooks/use-auth"
 
-export const metadata: Metadata = {
-  title: "General Settings | TechLeet Admin",
-  description: "Configure general settings and preferences for TechLeet Admin portal",
-  keywords: ["settings", "configuration", "TechLeet", "admin", "preferences"],
-}
+export default function PositionsPage() {
+  const { isLoading } = useRequireAuth()
 
-export default function GeneralSettingsPage() {
+  useEffect(() => {
+    document.title = "Position Management | TechLeet Admin"
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -36,36 +47,20 @@ export default function GeneralSettingsPage() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">
-                    Trang chủ
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/settings">
-                    Cài đặt
+                  <BreadcrumbLink href="/company">
+                    Company
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Cấu hình chung</BreadcrumbPage>
+                  <BreadcrumbPage>Positions</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Cấu hình chung</h1>
-            <p className="text-muted-foreground">
-              Quản lý cấu hình chung của hệ thống
-            </p>
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-6">
-            <p className="text-center text-muted-foreground">
-              Cấu hình chung sẽ được hiển thị ở đây
-            </p>
-          </div>
+          <PositionClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call the backend login API
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    // Call the backend login API through API Gateway
+    const response = await fetch(`${API_BASE_URL}/api/v1/user-service/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,20 +32,25 @@ export async function POST(request: NextRequest) {
     }
 
     const loginData = await response.json()
-    
-    // Extract the data from the response structure
+
+    // Extract the data from the response structure (backend returns data wrapper)
     const { data } = loginData
-    const { token, refreshToken, email: userEmail, fullName, phoneNumber, avatarUrl, employeeId } = data
+    const { token, refreshToken, email: userEmail, fullName, employeeId } = data
+
+    // Parse firstName and lastName from fullName
+    const nameParts = fullName.split(' ')
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
 
     // Create the response
     const nextResponse = NextResponse.json({
       success: true,
       user: {
         email: userEmail,
+        firstName,
+        lastName,
         fullName,
-        phoneNumber,
-        avatarUrl,
-        employeeId,
+        userId: employeeId, // Map employeeId to userId for consistency
       }
     })
 
@@ -71,10 +76,10 @@ export async function POST(request: NextRequest) {
     // Set user info cookie (HTTP-only for server-side access)
     nextResponse.cookies.set('user_info', JSON.stringify({
       email: userEmail,
+      firstName,
+      lastName,
       fullName,
-      phoneNumber,
-      avatarUrl,
-      employeeId,
+      userId: employeeId, // Map employeeId to userId for consistency
     }), {
       httpOnly: true, // Server-side only
       secure: process.env.NODE_ENV === 'production',

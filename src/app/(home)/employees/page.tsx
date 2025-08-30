@@ -1,11 +1,12 @@
+"use client"
+
+import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -14,13 +15,23 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { EmployeeClient } from "@/components/employees/employee-client"
-import { serverEmployeeAPI } from "@/lib/api/server"
+import { useRequireAuth } from "@/hooks/use-auth"
 
-export default async function EmployeesPage() {
-  // Fetch data on the server
-  const employeeData = await serverEmployeeAPI.getEmployees({ page: 0, limit: 10 })
-  console.log("employees:", employeeData);
-  
+export default function EmployeesPage() {
+  const { isLoading } = useRequireAuth()
+
+  useEffect(() => {
+    document.title = "Employee Management | TechLeet Admin"
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -34,24 +45,15 @@ export default async function EmployeesPage() {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">
-                    Trang chủ
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Danh sách nhân viên</BreadcrumbPage>
+                  <BreadcrumbPage>Employees</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        <div className="p-4 pt-0">
-          <EmployeeClient
-            initialEmployees={employeeData.data}
-            initialTotal={employeeData.total}
-          />
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <EmployeeClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

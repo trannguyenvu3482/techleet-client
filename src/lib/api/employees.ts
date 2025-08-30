@@ -1,5 +1,7 @@
 import { Employee } from "@/components/employees/employee-table"
 import { EmployeeFormData } from "@/components/employees/add-employee-modal"
+import { api } from "./client"
+import { PaginatedResponse } from '@/types/api'
 
 export interface GetEmployeesParams {
   page?: number
@@ -41,36 +43,13 @@ export interface CreateEmployeeRequest {
   permissions: number[]
 }
 
-// Client-side employee API functions that call our Next.js API routes
+// Client-side employee API functions that call the API Gateway directly
 export const employeeAPI = {
   async getEmployees(params: GetEmployeesParams = {}): Promise<GetEmployeesResponse> {
-    const searchParams = new URLSearchParams()
-
-    // Add all parameters to search params
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          value.forEach(v => searchParams.append(key, String(v)))
-        } else {
-          searchParams.append(key, String(value))
-        }
-      }
-    })
-
-    const response = await fetch(`/api/employees?${searchParams.toString()}`, {
-      method: 'GET',
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch employees')
-    }
-
-    const data = await response.json()
+    const response = await api.get<PaginatedResponse<Employee>>('/api/v1/user-service/employee', params)
     return {
-      data: data.data,
-      total: data.total
+      data: response.data,
+      total: response.total
     }
   },
 
@@ -92,41 +71,15 @@ export const employeeAPI = {
       permissions: data.permissions,
     }
 
-    const response = await fetch('/api/employees', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(requestData),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to create employee')
-    }
-
-    const result = await response.json()
-    return result.data
+    return api.post<Employee>('/api/v1/user-service/employee', requestData)
   },
 
-  async updateEmployee(employeeId: number, data: Partial<EmployeeFormData>): Promise<Employee> {
+  async updateEmployee(_employeeId: number, _data: Partial<EmployeeFormData>): Promise<Employee> {
     // TODO: Implement update API route
     throw new Error('Update employee not implemented yet')
   },
 
   async getMyProfile(): Promise<Employee> {
-    const response = await fetch('/api/profile', {
-      method: 'GET',
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to fetch profile')
-    }
-
-    const result = await response.json()
-    return result.data
+    return api.get<Employee>('/api/v1/user-service/employee/my-profile')
   },
 }

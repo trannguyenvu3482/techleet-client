@@ -5,8 +5,10 @@ import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -14,14 +16,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { DashboardContent } from "@/components/dashboard/dashboard-content"
+import { CvTestingClient } from "@/components/recruitment/cv-testing-client"
 import { useRequireAuth } from "@/hooks/use-auth"
 
-export default function Page() {
+export default function CvTestingPage() {
   const { isLoading } = useRequireAuth()
 
   useEffect(() => {
-    document.title = "Dashboard | TechLeet Admin"
+    document.title = "Kiểm thử CV Screening | TechLeet Admin"
   }, [])
 
   if (isLoading) {
@@ -46,14 +48,22 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbLink href="/recruitment">Tuyển dụng</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/recruitment/jobs">Quản lý công việc</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Kiểm thử CV</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <DashboardContent />
+          <CvTestingClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

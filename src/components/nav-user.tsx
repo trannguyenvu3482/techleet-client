@@ -5,8 +5,7 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
-  Sparkles,
+  LogOut,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,63 +24,24 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LogoutButton } from "@/components/logout-button";
-
-interface UserInfo {
-  email: string;
-  fullName: string;
-  phoneNumber: string;
-  avatarUrl?: string;
-  employeeId: number;
-}
+import { useOptionalAuth } from "@/hooks/use-auth";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const { user, logout } = useOptionalAuth();
 
-  React.useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const response = await fetch("/api/profile", {
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUserInfo(data.data);
-        } else {
-          setUserInfo(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-        setUserInfo(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserInfo();
-  }, []);
-
-  // Show loading or fallback if no user info
-  if (loading || !userInfo) {
+  // Show fallback if no user info
+  if (!user) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg">
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarFallback className="rounded-lg">
-                {loading ? "..." : "?"}
-              </AvatarFallback>
+              <AvatarFallback className="rounded-lg">?</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">
-                {loading ? "Đang tải..." : "Người dùng"}
-              </span>
-              <span className="truncate text-xs">
-                {loading ? "..." : "Chưa đăng nhập"}
-              </span>
+              <span className="truncate font-medium">Người dùng</span>
+              <span className="truncate text-xs">Chưa đăng nhập</span>
             </div>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -89,7 +49,7 @@ export function NavUser() {
     );
   }
 
-  const initials = userInfo.fullName
+  const initials = user.fullName
     .split(" ")
     .map((name) => name.charAt(0))
     .join("")
@@ -107,8 +67,8 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
-                  src={userInfo.avatarUrl || ""}
-                  alt={userInfo.fullName}
+                  src=""
+                  alt={user.fullName}
                 />
                 <AvatarFallback className="rounded-lg">
                   {initials}
@@ -116,9 +76,9 @@ export function NavUser() {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {userInfo.fullName}
+                  {user.fullName}
                 </span>
-                <span className="truncate text-xs">{userInfo.email}</span>
+                <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -133,8 +93,8 @@ export function NavUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
-                    src={userInfo.avatarUrl || ""}
-                    alt={userInfo.fullName}
+                    src=""
+                    alt={user.fullName}
                   />
                   <AvatarFallback className="rounded-lg">
                     {initials}
@@ -142,9 +102,9 @@ export function NavUser() {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {userInfo.fullName}
+                    {user.fullName}
                   </span>
-                  <span className="truncate text-xs">{userInfo.email}</span>
+                  <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -160,7 +120,10 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <LogoutButton />
+            <DropdownMenuItem onClick={logout}>
+              <LogOut />
+              Đăng xuất
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

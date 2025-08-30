@@ -1,0 +1,488 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { 
+  Upload, 
+  FileText, 
+  Brain, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle,
+  Loader2,
+  Download,
+  Eye,
+  Zap,
+  Users
+} from "lucide-react"
+import { toast } from "sonner"
+import { recruitmentAPI, type CvTestRequest, type CvTestResult } from "@/lib/api/recruitment"
+
+export function CvTestingClient() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false)
+  const [result, setResult] = useState<CvTestResult | null>(null)
+  const [applications, setApplications] = useState<Array<{ applicationId: number; candidateName: string; jobTitle: string; appliedDate: string }>>([])
+  const [testMode, setTestMode] = useState<'mock' | 'real'>('mock')
+  const [testData, setTestData] = useState<CvTestRequest>({
+    filePath: "./uploads/test-cv.pdf",
+    jobPostingId: 1,
+    mockApplicationId: 9999
+  })
+
+  // Load applications on component mount
+  useEffect(() => {
+    loadApplications()
+  }, [])
+
+  const loadApplications = async () => {
+    setIsLoadingApplications(true)
+    try {
+      const apps = await recruitmentAPI.getApplicationsForTesting()
+      setApplications(apps)
+    } catch (error) {
+      console.error('Error loading applications:', error)
+      toast.error("Lỗi khi tải danh sách đơn ứng tuyển")
+    } finally {
+      setIsLoadingApplications(false)
+    }
+  }
+
+  const handleTest = async () => {
+    setIsLoading(true)
+    try {
+      // Prepare test data based on mode
+      const requestData: CvTestRequest = {
+        filePath: testData.filePath,
+        jobPostingId: testData.jobPostingId,
+      }
+
+      if (testMode === 'mock') {
+        requestData.mockApplicationId = testData.mockApplicationId
+      } else {
+        requestData.applicationId = testData.applicationId
+      }
+
+      const result = await recruitmentAPI.testCvScreening(requestData)
+      setResult(result)
+      toast.success("CV screening test hoàn thành!")
+    } catch (error) {
+      console.error('Test error:', error)
+      toast.error("Lỗi khi thực hiện test CV")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-600"
+    if (score >= 60) return "text-yellow-600"
+    return "text-red-600"
+  }
+
+  const getScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
+    if (score >= 80) return "default"
+    if (score >= 60) return "secondary"
+    return "destructive"
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Kiểm thử CV Screening</h1>
+          <p className="text-muted-foreground">
+            Thử nghiệm và đánh giá hiệu quả của hệ thống AI trong việc phân tích CV
+          </p>
+        </div>
+        <Badge variant="outline" className="px-3 py-1">
+          <Brain className="mr-1 h-3 w-3" />
+          AI Powered
+        </Badge>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Test Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Cấu hình Test
+            </CardTitle>
+            <CardDescription>
+              Thiết lập thông tin để test CV screening với AI
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="filePath">Đường dẫn file CV</Label>
+              <Input
+                id="filePath"
+                value={testData.filePath}
+                onChange={(e) => setTestData({ ...testData, filePath: e.target.value })}
+                placeholder="./uploads/test-cv.pdf"
+              />
+              <p className="text-xs text-muted-foreground">
+                Đường dẫn tới file CV trên server (ví dụ: ./uploads/test-cv.pdf)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="jobPostingId">ID Vị trí tuyển dụng</Label>
+              <Input
+                id="jobPostingId"
+                type="number"
+                value={testData.jobPostingId}
+                onChange={(e) => setTestData({ ...testData, jobPostingId: parseInt(e.target.value) || 1 })}
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">
+                ID của vị trí tuyển dụng để so sánh (để trống sẽ dùng mock data)
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Chế độ test</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={testMode === 'mock' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTestMode('mock')}
+                  className="flex-1"
+                >
+                  Mock Data
+                </Button>
+                <Button
+                  type="button"
+                  variant={testMode === 'real' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTestMode('real')}
+                  className="flex-1"
+                >
+                  <Users className="mr-1 h-3 w-3" />
+                  Đơn thực tế
+                </Button>
+              </div>
+            </div>
+
+            {testMode === 'mock' ? (
+              <div className="space-y-2">
+                <Label htmlFor="mockApplicationId">Mock Application ID</Label>
+                <Input
+                  id="mockApplicationId"
+                  type="number"
+                  value={testData.mockApplicationId || 9999}
+                  onChange={(e) => setTestData({ ...testData, mockApplicationId: parseInt(e.target.value) || 9999 })}
+                  placeholder="9999"
+                />
+                <p className="text-xs text-muted-foreground">
+                  ID ứng dụng giả để test (mặc định: 9999)
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="applicationId">Chọn đơn ứng tuyển thực tế</Label>
+                {isLoadingApplications ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-md">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Đang tải danh sách...</span>
+                  </div>
+                ) : (
+                  <Select
+                    value={testData.applicationId?.toString() || ""}
+                    onValueChange={(value) => setTestData({ ...testData, applicationId: parseInt(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn đơn ứng tuyển để test..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {applications.map((app) => (
+                        <SelectItem key={app.applicationId} value={app.applicationId.toString()}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{app.candidateName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {app.jobTitle} • Nộp ngày {new Date(app.appliedDate).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {applications.length} đơn ứng tuyển có sẵn
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadApplications}
+                    disabled={isLoadingApplications}
+                    className="ml-2 h-5 px-2 text-xs"
+                  >
+                    {isLoadingApplications ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      "Tải lại"
+                    )}
+                  </Button>
+                </p>
+              </div>
+            )}
+
+            <Button 
+              onClick={handleTest} 
+              disabled={isLoading}
+              className="w-full"
+              size="lg"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý CV...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Chạy Test CV Screening
+                </>
+              )}
+            </Button>
+
+            {/* Quick Test Options */}
+            <div className="space-y-2">
+              <Label>Test nhanh với file mẫu:</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTestData({ ...testData, filePath: "./uploads/test-cv.pdf" })}
+                >
+                  CV Junior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTestData({ ...testData, filePath: "./uploads/test-cv-senior.pdf" })}
+                >
+                  CV Senior
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Trạng thái hệ thống
+            </CardTitle>
+            <CardDescription>
+              Thông tin về hiệu năng và trạng thái của hệ thống AI
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">AI Service</span>
+                <Badge variant="default">Hoạt động</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Vector Database</span>
+                <Badge variant="default">Kết nối</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Skill Taxonomy</span>
+                <Badge variant="default">10 kỹ năng</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Processing Queue</span>
+                <Badge variant="secondary">Sẵn sàng</Badge>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Thống kê gần đây</h4>
+              <div className="grid gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">CV đã test:</span>
+                  <span>0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Thời gian TB:</span>
+                  <span>-</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Điểm TB:</span>
+                  <span>-</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Test Results */}
+      {result && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Kết quả phân tích CV
+              <Badge variant="outline" className="ml-auto">
+                <Clock className="mr-1 h-3 w-3" />
+                {(result.processingTimeMs / 1000).toFixed(1)}s
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Kết quả chi tiết từ hệ thống AI CV Screening
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Overall Scores */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getScoreColor(result.scores.overallScore)}`}>
+                  {result.scores.overallScore}
+                </div>
+                <div className="text-sm text-muted-foreground">Tổng điểm</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getScoreColor(result.scores.skillsScore)}`}>
+                  {result.scores.skillsScore}
+                </div>
+                <div className="text-sm text-muted-foreground">Kỹ năng</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getScoreColor(result.scores.experienceScore)}`}>
+                  {result.scores.experienceScore}
+                </div>
+                <div className="text-sm text-muted-foreground">Kinh nghiệm</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getScoreColor(result.scores.educationScore)}`}>
+                  {result.scores.educationScore}
+                </div>
+                <div className="text-sm text-muted-foreground">Học vấn</div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* AI Summary */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Tóm tắt AI</h3>
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm leading-relaxed">{result.summary.summary}</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Badge variant={getScoreBadgeVariant(result.summary.fitScore)}>
+                  Độ phù hợp: {result.summary.fitScore}%
+                </Badge>
+                <Badge variant="outline">{result.summary.recommendation}</Badge>
+                <Badge variant="secondary">{result.summary.skillsAssessment.experienceLevel}</Badge>
+              </div>
+            </div>
+
+            {/* Highlights & Concerns */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                <h4 className="font-medium text-green-700 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Điểm mạnh
+                </h4>
+                <ul className="space-y-2">
+                  {result.summary.highlights.map((highlight, index) => (
+                    <li key={index} className="text-sm bg-green-50 p-2 rounded border-l-2 border-green-200">
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Điểm cần lưu ý
+                </h4>
+                <ul className="space-y-2">
+                  {result.summary.concerns.map((concern, index) => (
+                    <li key={index} className="text-sm bg-amber-50 p-2 rounded border-l-2 border-amber-200">
+                      {concern}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Skills Breakdown */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Phân tích kỹ năng</h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <h4 className="font-medium mb-2">Kỹ năng kỹ thuật ({result.processedData.skills.technical.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {result.processedData.skills.technical.map((skill, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">Frameworks ({result.processedData.skills.frameworks.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {result.processedData.skills.frameworks.map((framework, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {framework}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium mb-2">Tools ({result.processedData.skills.tools.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {result.processedData.skills.tools.map((tool, index) => (
+                      <Badge key={index} variant="destructive" className="text-xs">
+                        {tool}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Info */}
+            <div className="bg-muted p-3 rounded text-sm">
+              <div className="flex items-center gap-4 text-muted-foreground">
+                <span>File: {result.testInfo.filePath}</span>
+                <span>Job ID: {result.testInfo.jobPostingId}</span>
+                {testMode === 'mock' ? (
+                  <span>Mock App: {result.testInfo.mockApplicationId}</span>
+                ) : (
+                  <span>Application ID: {testData.applicationId}</span>
+                )}
+                <Badge variant="outline" className="text-xs">
+                  {testMode === 'mock' ? 'Mock Data' : 'Real Application'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}

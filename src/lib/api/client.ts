@@ -1,15 +1,10 @@
-type RequestOptions = {
-  headers?: Record<string, string>;
-  params?: Record<string, any>;
-  body?: any;
-  timeout?: number;
-};
+import { ApiError as IApiError } from '@/types/api';
 
-type ApiResponse<T = any> = {
-  data: T;
-  statusCode: number;
-  timestamp: string;
-  path: string;
+type InternalRequestOptions = {
+  headers?: Record<string, string>;
+  params?: Record<string, unknown>;
+  body?: unknown;
+  timeout?: number;
 };
 
 class ApiClient {
@@ -23,19 +18,29 @@ class ApiClient {
   }
 
   private getAuthToken(): string | null {
-    if (typeof window === "undefined") return null;
+    if (typeof window === 'undefined') return null
 
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth_token="))
-      ?.split("=")[1];
-
-    console.log("auth token: ", token);
-
-    return token || null;
+    try {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage)
+        return parsed.state?.token || null
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error)
+    }
+    return null
   }
 
-  private buildURL(endpoint: string, params?: Record<string, any>): string {
+  private clearAuthAndRedirect(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-storage')
+      // Use window.location to avoid Next.js router issues
+      window.location.href = '/sign-in'
+    }
+  }
+
+  private buildURL(endpoint: string, params?: Record<string, unknown>): string {
     const url = new URL(
       endpoint.startsWith("/") ? endpoint.slice(1) : endpoint,
       this.baseURL
@@ -56,10 +61,10 @@ class ApiClient {
     return url.toString();
   }
 
-  private async request<T = any>(
+  private async request<T = unknown>(
     method: string,
     endpoint: string,
-    options: RequestOptions = {}
+    options: InternalRequestOptions = {}
   ): Promise<T> {
     const {
       headers = {},
@@ -112,7 +117,7 @@ class ApiClient {
 
       // Handle different response types
       const contentType = response.headers.get("content-type");
-      let responseData: any;
+      let responseData: unknown;
 
       if (contentType?.includes("application/json")) {
         responseData = await response.json();
@@ -121,24 +126,29 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        // Handle API error responses
-        const errorMessage =
-          responseData?.message ||
-          responseData?.error ||
-          `HTTP ${response.status}`;
-        throw new ApiError(errorMessage, response.status, responseData);
+        // Handle 401 Unauthorized - clear auth and redirect
+        if (response.status === 401) {
+          this.clearAuthAndRedirect();
+        }
+
+        // Handle API error responses - check if it's a standardized error format
+        if (responseData && typeof responseData === 'object') {
+          const errorData = responseData as { message?: string; error?: string };
+          const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+          throw new ApiError(errorMessage, response.status, responseData);
+        } else {
+          throw new ApiError(`HTTP ${response.status}`, response.status);
+        }
       }
 
-      // Return the data directly if it's in the expected API response format
-      if (
-        responseData &&
-        typeof responseData === "object" &&
-        "data" in responseData
-      ) {
-        return responseData.data;
+      // Check if response follows standardized format { statusCode, timestamp, path, data }
+      if (responseData && typeof responseData === 'object' && 'data' in responseData && 'statusCode' in responseData) {
+        // Return just the data portion for backward compatibility
+        return (responseData as { data: T }).data;
       }
 
-      return responseData;
+      // Return the raw response data for non-standardized endpoints
+      return responseData as T;
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -158,55 +168,55 @@ class ApiClient {
   }
 
   // GET request
-  async get<T = any>(
+  async get<T = unknown>(
     endpoint: string,
-    params?: Record<string, any>,
-    options?: Omit<RequestOptions, "params" | "body">
+    params?: Record<string, unknown>,
+    options?: Omit<InternalRequestOptions, "params" | "body">
   ): Promise<T> {
     return this.request<T>("GET", endpoint, { ...options, params });
   }
 
   // POST request
-  async post<T = any>(
+  async post<T = unknown>(
     endpoint: string,
-    body?: any,
-    options?: Omit<RequestOptions, "body">
+    body?: unknown,
+    options?: Omit<InternalRequestOptions, "body">
   ): Promise<T> {
     return this.request<T>("POST", endpoint, { ...options, body });
   }
 
   // PUT request
-  async put<T = any>(
+  async put<T = unknown>(
     endpoint: string,
-    body?: any,
-    options?: Omit<RequestOptions, "body">
+    body?: unknown,
+    options?: Omit<InternalRequestOptions, "body">
   ): Promise<T> {
     return this.request<T>("PUT", endpoint, { ...options, body });
   }
 
   // PATCH request
-  async patch<T = any>(
+  async patch<T = unknown>(
     endpoint: string,
-    body?: any,
-    options?: Omit<RequestOptions, "body">
+    body?: unknown,
+    options?: Omit<InternalRequestOptions, "body">
   ): Promise<T> {
     return this.request<T>("PATCH", endpoint, { ...options, body });
   }
 
   // DELETE request
-  async delete<T = any>(
+  async delete<T = unknown>(
     endpoint: string,
-    params?: Record<string, any>,
-    options?: Omit<RequestOptions, "params" | "body">
+    params?: Record<string, unknown>,
+    options?: Omit<InternalRequestOptions, "params" | "body">
   ): Promise<T> {
     return this.request<T>("DELETE", endpoint, { ...options, params });
   }
 
   // Upload file
-  async upload<T = any>(
+  async upload<T = unknown>(
     endpoint: string,
     file: File,
-    additionalData?: Record<string, any>
+    additionalData?: Record<string, unknown>
   ): Promise<T> {
     const formData = new FormData();
     formData.append("file", file);
@@ -224,9 +234,9 @@ class ApiClient {
 // Custom error class for API errors
 export class ApiError extends Error {
   public status: number;
-  public data?: any;
+  public data?: unknown;
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -241,4 +251,4 @@ export const api = new ApiClient();
 export { ApiClient };
 
 // Export types
-export type { RequestOptions, ApiResponse };
+export type { InternalRequestOptions as RequestOptions };

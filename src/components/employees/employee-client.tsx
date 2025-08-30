@@ -7,15 +7,14 @@ import { employeeAPI } from "@/lib/api/employees"
 import { toast } from "sonner"
 
 interface EmployeeClientProps {
-  initialEmployees: Employee[]
-  initialTotal: number
+  // Props can be added here when needed
 }
 
-export function EmployeeClient({ initialEmployees, initialTotal }: EmployeeClientProps) {
-  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees)
-  const [total, setTotal] = React.useState(initialTotal)
+export function EmployeeClient(_props: EmployeeClientProps = {}) {
+  const [employees, setEmployees] = React.useState<Employee[]>([])
+  const [total, setTotal] = React.useState(0)
   const [creating, setCreating] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState(1)

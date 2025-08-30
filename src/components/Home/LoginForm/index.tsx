@@ -14,13 +14,15 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
+import { userAPI } from "@/lib/api/users";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = React.useState(false)
+  const { login, setLoading, isLoading } = useAuthStore()
   const [formData, setFormData] = React.useState({
     email: "",
     password: "",
@@ -34,22 +36,16 @@ export function LoginForm({
       return
     }
 
-    setIsLoading(true)
+    setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const response = await userAPI.login({
+        email: formData.email,
+        password: formData.password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại')
-      }
+      // Store auth data in Zustand - response is now the direct LoginResponse
+      login(response)
 
       toast.success('Đăng nhập thành công!')
 
@@ -60,7 +56,7 @@ export function LoginForm({
       console.error('Login error:', error)
       toast.error(error instanceof Error ? error.message : 'Đăng nhập thất bại')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 

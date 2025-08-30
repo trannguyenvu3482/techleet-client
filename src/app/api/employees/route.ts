@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     // Extract query parameters
-    const params: Record<string, any> = {}
+    const params: Record<string, unknown> = {}
     
     // Pagination
     const page = searchParams.get('page')
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     if (birthDateTo) params.birthDateTo = birthDateTo
 
     // Call the server API with authentication
-    const response = await serverApi.get<{ total: number; data: any[] }>('/employee', params)
+    const response = await serverApi.get<{ total: number; data: unknown[] }>('/api/v1/company-service/employees', params)
     
     return NextResponse.json({
       success: true,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Call the server API to create employee
-    const response = await serverApi.post('/employee', body)
+    const response = await serverApi.post('/api/v1/company-service/employees', body)
 
     return NextResponse.json({
       success: true,

@@ -14,14 +14,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { DashboardContent } from "@/components/dashboard/dashboard-content"
+import { JobPostingClient } from "@/components/recruitment/job-posting-client"
 import { useRequireAuth } from "@/hooks/use-auth"
 
-export default function Page() {
+export default function JobPostingsPage() {
   const { isLoading } = useRequireAuth()
 
   useEffect(() => {
-    document.title = "Dashboard | TechLeet Admin"
+    document.title = "Job Posting Management | TechLeet Admin"
   }, [])
 
   if (isLoading) {
@@ -46,14 +46,14 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage>Job Postings</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <DashboardContent />
+          <JobPostingClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

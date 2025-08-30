@@ -5,8 +5,10 @@ import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -14,14 +16,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { DashboardContent } from "@/components/dashboard/dashboard-content"
+import { JobManagementClient } from "@/components/recruitment/job-management-client"
 import { useRequireAuth } from "@/hooks/use-auth"
 
-export default function Page() {
+export default function JobsPage() {
   const { isLoading } = useRequireAuth()
 
   useEffect(() => {
-    document.title = "Dashboard | TechLeet Admin"
+    document.title = "Quản lý tuyển dụng | TechLeet Admin"
   }, [])
 
   if (isLoading) {
@@ -46,14 +48,18 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbLink href="/recruitment">Tuyển dụng</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Quản lý công việc</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <DashboardContent />
+          <JobManagementClient />
         </div>
       </SidebarInset>
     </SidebarProvider>
