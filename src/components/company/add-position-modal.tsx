@@ -31,6 +31,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { type Department } from "@/lib/api/company"
+import { type CreatePositionDto } from "@/types/company"
 
 const positionFormSchema = z.object({
   positionName: z.string().min(1, "Position name is required").min(2, "Position name must be at least 2 characters"),
@@ -48,7 +49,7 @@ type PositionFormData = z.infer<typeof positionFormSchema>
 interface AddPositionModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: CreatePositionDto) => Promise<void>
   departments: Department[]
 }
 

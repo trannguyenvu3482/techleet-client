@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AddPositionModal } from "@/components/company/add-position-modal"
-import { companyAPI, type Position, type Department } from "@/lib/api/company"
+import { companyAPI, type Position, type Department, type CreatePositionRequest } from "@/lib/api/company"
 import { toast } from "sonner"
 
 export function PositionClient() {
@@ -32,7 +32,7 @@ export function PositionClient() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all")
   const [showAddModal, setShowAddModal] = useState(false)
 
-  const fetchPositions = async () => {
+  const fetchPositions = useCallback(async () => {
     try {
       setLoading(true)
       const response = await companyAPI.getPositions({
@@ -48,7 +48,7 @@ export function PositionClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm, selectedDepartment, selectedLevel])
 
   const fetchDepartments = async () => {
     try {
@@ -65,9 +65,9 @@ export function PositionClient() {
 
   useEffect(() => {
     fetchPositions()
-  }, [searchTerm, selectedDepartment, selectedLevel])
+  }, [searchTerm, selectedDepartment, selectedLevel, fetchPositions])
 
-  const handleAddPosition = async (positionData: any) => {
+  const handleAddPosition = async (positionData: CreatePositionRequest) => {
     try {
       await companyAPI.createPosition(positionData)
       toast.success('Position created successfully')

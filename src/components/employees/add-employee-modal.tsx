@@ -119,7 +119,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
     }
   }
 
-  const updateFormData = (field: keyof EmployeeFormData, value: any) => {
+  const updateFormData = (field: keyof EmployeeFormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 

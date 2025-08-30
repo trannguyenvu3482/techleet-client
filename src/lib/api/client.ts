@@ -1,4 +1,4 @@
-import { ApiError as IApiError } from '@/types/api';
+
 
 type InternalRequestOptions = {
   headers?: Record<string, string>;

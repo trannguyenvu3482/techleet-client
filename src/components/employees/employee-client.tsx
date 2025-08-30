@@ -6,11 +6,7 @@ import { AddEmployeeModal, EmployeeFormData } from "@/components/employees/add-e
 import { employeeAPI } from "@/lib/api/employees"
 import { toast } from "sonner"
 
-interface EmployeeClientProps {
-  // Props can be added here when needed
-}
-
-export function EmployeeClient(_props: EmployeeClientProps = {}) {
+export function EmployeeClient() {
   const [employees, setEmployees] = React.useState<Employee[]>([])
   const [total, setTotal] = React.useState(0)
   const [creating, setCreating] = React.useState(false)
@@ -37,11 +33,6 @@ export function EmployeeClient(_props: EmployeeClientProps = {}) {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Fetch employees when page, search, or sort changes
-  React.useEffect(() => {
-    fetchEmployees()
-  }, [currentPage, debouncedSearchTerm, sortBy, sortOrder])
-
   const fetchEmployees = React.useCallback(async () => {
     try {
       setLoading(true)
@@ -61,6 +52,11 @@ export function EmployeeClient(_props: EmployeeClientProps = {}) {
       setLoading(false)
     }
   }, [currentPage, pageSize, debouncedSearchTerm, sortBy, sortOrder])
+
+  // Fetch employees when page, search, or sort changes
+  React.useEffect(() => {
+    fetchEmployees()
+  }, [fetchEmployees])
 
   const refreshEmployees = () => {
     fetchEmployees()

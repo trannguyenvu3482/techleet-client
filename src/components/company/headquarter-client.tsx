@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AddHeadquarterModal } from "@/components/company/add-headquarter-modal"
-import { companyAPI, type Headquarter } from "@/lib/api/company"
+import { companyAPI, type Headquarter, type CreateHeadquarterRequest } from "@/lib/api/company"
 import { toast } from "sonner"
 
 export function HeadquarterClient() {
@@ -33,7 +33,7 @@ export function HeadquarterClient() {
 
   console.log("HEADQUARTERS", headquarters);
 
-  const fetchHeadquarters = async () => {
+  const fetchHeadquarters = useCallback(async () => {
     try {
       setLoading(true)
       const response = await companyAPI.getHeadquarters({
@@ -50,13 +50,13 @@ export function HeadquarterClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm, selectedCity, selectedCountry])
 
   useEffect(() => {
     fetchHeadquarters()
-  }, [searchTerm, selectedCity, selectedCountry])
+  }, [searchTerm, selectedCity, selectedCountry, fetchHeadquarters])
 
-  const handleAddHeadquarter = async (headquarterData: any) => {
+  const handleAddHeadquarter = async (headquarterData: CreateHeadquarterRequest) => {
     try {
       await companyAPI.createHeadquarter(headquarterData)
       toast.success('Headquarter created successfully')
@@ -193,7 +193,7 @@ export function HeadquarterClient() {
         <div>
           <h1 className="text-2xl font-bold">Headquarters Management</h1>
           <p className="text-muted-foreground">
-            Manage your company's office locations and regional headquarters
+            Manage your company&apos;s office locations and regional headquarters
           </p>
         </div>
         <Button onClick={() => setShowAddModal(true)}>

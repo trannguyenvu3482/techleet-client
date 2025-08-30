@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AddDepartmentModal } from "./add-department-modal"
-import { companyAPI, type Department } from "@/lib/api/company"
+import { companyAPI, type Department, type CreateDepartmentRequest } from "@/lib/api/company"
 import { toast } from "sonner"
 
 export function DepartmentClient() {
@@ -22,7 +22,7 @@ export function DepartmentClient() {
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
 
-  const fetchDepartments = async () => {
+  const fetchDepartments = useCallback(async () => {
     try {
       setLoading(true)
       const response = await companyAPI.getDepartments({
@@ -36,13 +36,13 @@ export function DepartmentClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm])
 
   useEffect(() => {
     fetchDepartments()
-  }, [searchTerm])
+  }, [searchTerm, fetchDepartments])
 
-  const handleAddDepartment = async (departmentData: any) => {
+  const handleAddDepartment = async (departmentData: CreateDepartmentRequest) => {
     try {
       await companyAPI.createDepartment(departmentData)
       toast.success('Department created successfully')
@@ -164,7 +164,7 @@ export function DepartmentClient() {
         <div>
           <h1 className="text-2xl font-bold">Department Management</h1>
           <p className="text-muted-foreground">
-            Manage your organization's department structure and hierarchy
+            Manage your organization&apos;s department structure and hierarchy
           </p>
         </div>
         <Button onClick={() => setShowAddModal(true)}>

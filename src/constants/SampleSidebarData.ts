@@ -8,7 +8,6 @@ import {
   Settings2,
   SquareTerminal,
   Users,
-  UserCheck,
 } from "lucide-react";
 
 export const sidebarData = {

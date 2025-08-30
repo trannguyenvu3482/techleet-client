@@ -297,8 +297,8 @@ export interface CvTestResult {
       certifications: string[];
     };
     experienceYears: number;
-    education: any[];
-    workExperience: any[];
+    education: Array<Record<string, unknown>>;
+    workExperience: Array<Record<string, unknown>>;
   };
   scores: {
     overallScore: number;

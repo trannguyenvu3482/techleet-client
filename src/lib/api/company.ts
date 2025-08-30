@@ -362,11 +362,11 @@ export const companyAPI = {
     return api.get('/api/v1/company-service/statistics');
   },
 
-  async getDepartmentStatistics(departmentId: number): Promise<any> {
+  async getDepartmentStatistics(departmentId: number): Promise<Record<string, unknown>> {
     return api.get(`/api/v1/company-service/departments/${departmentId}/statistics`);
   },
 
-  async getHeadquarterStatistics(headquarterId: number): Promise<any> {
+  async getHeadquarterStatistics(headquarterId: number): Promise<Record<string, unknown>> {
     return api.get(`/api/v1/company-service/headquarters/${headquarterId}/statistics`);
   },
 };

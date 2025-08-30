@@ -16,8 +16,6 @@ import {
   CheckCircle, 
   AlertCircle,
   Loader2,
-  Download,
-  Eye,
   Zap,
   Users
 } from "lucide-react"

@@ -74,8 +74,9 @@ export const employeeAPI = {
     return api.post<Employee>('/api/v1/user-service/employee', requestData)
   },
 
-  async updateEmployee(_employeeId: number, _data: Partial<EmployeeFormData>): Promise<Employee> {
+  async updateEmployee(employeeId: number, data: Partial<EmployeeFormData>): Promise<Employee> {
     // TODO: Implement update API route
+    console.log('Update employee:', employeeId, data)
     throw new Error('Update employee not implemented yet')
   },
 
