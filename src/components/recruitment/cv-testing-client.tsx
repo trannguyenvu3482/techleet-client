@@ -217,10 +217,10 @@ export function CvTestingClient() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const cvUrl = testData.filePath.replace('./uploads/', 'https://techleet.me/api/v1/recruitment-service/uploads/')
+                    const cvUrl = getCvUrl(testData.filePath)
                     window.open(cvUrl, '_blank')
                   }}
-                  disabled={!testData.filePath || !testData.filePath.includes('./uploads/')}
+                  disabled={!testData.filePath}
                   title="Xem file CV hiện tại"
                 >
                   <FileText className="h-4 w-4" />
@@ -385,6 +385,28 @@ export function CvTestingClient() {
                 <div><span className="font-medium">Required Skills:</span> {mockJobDescription.skills}</div>
                 <div><span className="font-medium">Experience Range:</span> {mockJobDescription.minExperience}-{mockJobDescription.maxExperience} years</div>
                 <div><span className="font-medium">Education:</span> {mockJobDescription.educationLevel}</div>
+              </div>
+            </div>
+
+            {/* CV File Information */}
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-green-600" />
+                  <h4 className="font-medium text-sm text-green-900">CV File Tested</h4>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(getCvUrl(testData.filePath), '_blank')}
+                  className="text-green-600 hover:text-green-700"
+                >
+                  <FileText className="mr-1 h-3 w-3" />
+                  Xem CV
+                </Button>
+              </div>
+              <div className="text-sm text-green-800 mt-1">
+                <span className="font-medium">File:</span> {testData.filePath}
               </div>
             </div>
 
