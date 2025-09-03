@@ -155,10 +155,12 @@ export function JobManagementClient() {
             <CardContent>
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Danh sách việc làm sẽ được hiển thị ở đây</p>
-                <Button className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Thêm vị trí tuyển dụng
-                </Button>
+                <Link href="/recruitment/job-postings">
+                  <Button className="mt-4">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Thêm vị trí tuyển dụng
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

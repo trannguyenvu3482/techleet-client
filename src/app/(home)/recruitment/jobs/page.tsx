@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
+import { JobManagementClient } from "@/components/recruitment/job-management-client"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,8 +16,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { JobManagementClient } from "@/components/recruitment/job-management-client"
 import { useRequireAuth } from "@/hooks/use-auth"
+import { useEffect } from "react"
 
 export default function JobsPage() {
   const { isLoading } = useRequireAuth()
