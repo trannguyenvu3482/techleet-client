@@ -1,7 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
-import { JobManagementClient } from "@/components/recruitment/job-management-client"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,14 +16,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { JobEditClient } from "@/components/recruitment/job-edit-client"
 import { useRequireAuth } from "@/hooks/use-auth"
-import { useEffect } from "react"
 
-export default function JobsPage() {
+export default function JobEditPage() {
   const { isLoading } = useRequireAuth()
 
   useEffect(() => {
-    document.title = "Quản lý tuyển dụng | TechLeet Admin"
+    document.title = "Chỉnh sửa vị trí tuyển dụng | TechLeet Admin"
   }, [])
 
   if (isLoading) {
@@ -52,14 +52,18 @@ export default function JobsPage() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Quản lý công việc</BreadcrumbPage>
+                  <BreadcrumbLink href="/recruitment/jobs">Danh sách việc làm</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Chỉnh sửa vị trí</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <JobManagementClient />
+          <JobEditClient />
         </div>
       </SidebarInset>
     </SidebarProvider>
