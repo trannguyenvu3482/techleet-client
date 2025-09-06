@@ -71,6 +71,7 @@ export interface UpdateJobPostingRequest {
   departmentId?: number;
   positionId?: number;
   hiringManagerId?: number;
+  status?: string;
 }
 
 export interface GetJobPostingsParams extends Record<string, unknown> {

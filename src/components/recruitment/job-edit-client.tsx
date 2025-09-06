@@ -36,7 +36,8 @@ export function JobEditClient() {
     location: "",
     departmentId: "",
     positionId: "",
-    hiringManagerId: ""
+    hiringManagerId: "",
+    status: ""
   })
 
   useEffect(() => {
@@ -68,7 +69,8 @@ export function JobEditClient() {
         location: jobData.location,
         departmentId: jobData.departmentId.toString(),
         positionId: jobData.positionId.toString(),
-        hiringManagerId: jobData.hiringManagerId.toString()
+        hiringManagerId: jobData.hiringManagerId.toString(),
+        status: jobData.status
       })
     } catch (error) {
       console.error("Error fetching job:", error)
@@ -109,7 +111,8 @@ export function JobEditClient() {
         location: formData.location,
         departmentId: Number(formData.departmentId),
         positionId: Number(formData.positionId),
-        hiringManagerId: Number(formData.hiringManagerId)
+        hiringManagerId: Number(formData.hiringManagerId),
+        status: formData.status
       }
 
       await recruitmentAPI.updateJobPosting(job.jobPostingId, updateData)
@@ -403,20 +406,35 @@ export function JobEditClient() {
                 </Select>
               </div>
 
-                             <div className="space-y-2">
-                 <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
-                 <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Chọn người quản lý" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="1">Manager 1</SelectItem>
-                     <SelectItem value="2">Manager 2</SelectItem>
-                     <SelectItem value="3">Manager 3</SelectItem>
-                     <SelectItem value="4">Manager 4</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
+              <div className="space-y-2">
+                <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
+                <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn người quản lý" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Manager 1</SelectItem>
+                    <SelectItem value="2">Manager 2</SelectItem>
+                    <SelectItem value="3">Manager 3</SelectItem>
+                    <SelectItem value="4">Manager 4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Trạng thái</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Bản nháp</SelectItem>
+                    <SelectItem value="published">Đã xuất bản</SelectItem>
+                    <SelectItem value="closed">Đã đóng</SelectItem>
+                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
         </div>

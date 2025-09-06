@@ -7,29 +7,44 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit, Trash2, Eye, Calendar, MapPin, DollarSign } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, Calendar, MapPin, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
+import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
 
 export function JobsListClient() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState<string>("all")
+  const [experienceLevelFilter, setExperienceLevelFilter] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     fetchJobs()
-  }, [statusFilter])
+  }, [statusFilter, employmentTypeFilter, experienceLevelFilter, currentPage, pageSize])
 
   const fetchJobs = async () => {
     try {
       setLoading(true)
-      const params: any = {}
-      if (statusFilter !== "all") {
-        params.status = statusFilter
+      const params: GetJobPostingsParams = {
+        page: currentPage,
+        limit: pageSize,
+        keyword: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter as any : undefined,
+        employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
+        experienceLevel: experienceLevelFilter !== "all" ? experienceLevelFilter : undefined,
+        sortBy: "createdAt",
+        sortOrder: "DESC"
       }
-      const response = await recruitmentAPI.getJobPostings(params)
+      
+      const response: GetJobPostingsResponse = await recruitmentAPI.getJobPostings(params)
       setJobs(response.data)
+      setTotalPages(response.totalPages)
+      setTotal(response.total)
     } catch (error) {
       console.error("Error fetching jobs:", error)
     } finally {
@@ -37,10 +52,19 @@ export function JobsListClient() {
     }
   }
 
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleSearch = () => {
+    setCurrentPage(0) // Reset to first page when searching
+    fetchJobs()
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleFilterChange = () => {
+    setCurrentPage(0) // Reset to first page when filtering
+    fetchJobs()
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -101,29 +125,87 @@ export function JobsListClient() {
           <CardDescription>Tìm kiếm và lọc vị trí tuyển dụng</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm vị trí..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm vị trí..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleSearch}>
+                <Search className="mr-2 h-4 w-4" />
+                Tìm kiếm
+              </Button>
+            </div>
+            
+            {/* Filter Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Trạng thái</label>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="draft">Nháp</SelectItem>
+                    <SelectItem value="published">Đang tuyển</SelectItem>
+                    <SelectItem value="closed">Đã đóng</SelectItem>
+                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Loại việc làm</label>
+                <Select value={employmentTypeFilter} onValueChange={(value) => {
+                  setEmploymentTypeFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Loại việc làm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="full-time">Toàn thời gian</SelectItem>
+                    <SelectItem value="part-time">Bán thời gian</SelectItem>
+                    <SelectItem value="contract">Hợp đồng</SelectItem>
+                    <SelectItem value="internship">Thực tập</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mức độ kinh nghiệm</label>
+                <Select value={experienceLevelFilter} onValueChange={(value) => {
+                  setExperienceLevelFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Mức độ kinh nghiệm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+                    <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+                    <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+                    <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+                    <SelectItem value="lead">Lead/Manager</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="draft">Nháp</SelectItem>
-                <SelectItem value="published">Đang tuyển</SelectItem>
-                <SelectItem value="closed">Đã đóng</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -131,10 +213,31 @@ export function JobsListClient() {
       {/* Jobs Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách vị trí</CardTitle>
-          <CardDescription>
-            {filteredJobs.length} vị trí được tìm thấy
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Danh sách vị trí</CardTitle>
+              <CardDescription>
+                Hiển thị {jobs.length} trong tổng số {total} kết quả
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Hiển thị:</span>
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(value) => setPageSize(parseInt(value))}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -142,7 +245,7 @@ export function JobsListClient() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="text-muted-foreground mt-2">Đang tải...</p>
             </div>
-          ) : filteredJobs.length === 0 ? (
+          ) : jobs.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Không tìm thấy vị trí tuyển dụng nào</p>
             </div>
@@ -151,6 +254,8 @@ export function JobsListClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Vị trí</TableHead>
+                  <TableHead>Loại việc làm</TableHead>
+                  <TableHead>Kinh nghiệm</TableHead>
                   <TableHead>Phòng ban</TableHead>
                   <TableHead>Địa điểm</TableHead>
                   <TableHead>Mức lương</TableHead>
@@ -160,19 +265,29 @@ export function JobsListClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredJobs.map((job) => (
+                {jobs.map((job) => (
                   <TableRow key={job.jobPostingId}>
                     <TableCell>
                       <div>
                         <div className="font-medium">{job.title}</div>
                         <div className="text-sm text-muted-foreground">
-                          {job.employmentType} • {job.experienceLevel}
+                          {job.description.substring(0, 50)}...
                         </div>
                       </div>
                     </TableCell>
-                                         <TableCell>
-                       {job.departmentId}
-                     </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {job.employmentType}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {job.experienceLevel}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {job.departmentId}
+                    </TableCell>
                      <TableCell>
                        <div className="flex items-center text-sm text-muted-foreground">
                          <MapPin className="mr-1 h-3 w-3" />
@@ -222,6 +337,60 @@ export function JobsListClient() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Trang {currentPage + 1} của {totalPages}
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Trước
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = i + Math.max(0, currentPage - 2)
+                    if (pageNum >= totalPages) return null
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    )
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  Sau
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

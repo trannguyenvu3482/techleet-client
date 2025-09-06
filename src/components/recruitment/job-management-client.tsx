@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { FileText, TestTube, BarChart3, Settings, Plus } from "lucide-react"
 import Link from "next/link"
+import { JobsListClient } from "./jobs-list-client"
 
 export function JobManagementClient() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -21,10 +22,7 @@ export function JobManagementClient() {
             Quản lý các vị trí tuyển dụng và kiểm thử hệ thống CV screening
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Tạo vị trí mới
-        </Button>
+        
       </div>
 
       {/* Quick Stats */}
@@ -153,15 +151,7 @@ export function JobManagementClient() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Danh sách việc làm sẽ được hiển thị ở đây</p>
-                <Link href="/recruitment/job-postings">
-                  <Button className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm vị trí tuyển dụng
-                  </Button>
-                </Link>
-              </div>
+               <JobsListClient/>
             </CardContent>
           </Card>
         </TabsContent>
