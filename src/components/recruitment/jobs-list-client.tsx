@@ -55,8 +55,10 @@ export function JobsListClient() {
     }
   }
 
-  const formatSalary = (min: number, max: number) => {
-    return `${min.toLocaleString()} - ${max.toLocaleString()} VND`
+  const formatSalary = (min: string, max: string) => {
+    const minNum = parseFloat(min).toLocaleString();
+    const maxNum = parseFloat(max).toLocaleString();
+    return `${minNum} - ${maxNum} VND`;
   }
 
   const formatDate = (dateString: string) => {
@@ -168,21 +170,21 @@ export function JobsListClient() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {job.department?.departmentName || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <MapPin className="mr-1 h-3 w-3" />
-                        {job.headquarter?.city || "N/A"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm">
-                        <DollarSign className="mr-1 h-3 w-3 text-muted-foreground" />
-                        {formatSalary(job.minSalary, job.maxSalary)}
-                      </div>
-                    </TableCell>
+                                         <TableCell>
+                       {job.departmentId}
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex items-center text-sm text-muted-foreground">
+                         <MapPin className="mr-1 h-3 w-3" />
+                         {job.location || "N/A"}
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex items-center text-sm">
+                         <DollarSign className="mr-1 h-3 w-3 text-muted-foreground" />
+                         {formatSalary(job.salaryMin, job.salaryMax)}
+                       </div>
+                     </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Calendar className="mr-1 h-3 w-3" />

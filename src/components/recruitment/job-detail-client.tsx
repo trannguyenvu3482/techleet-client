@@ -61,8 +61,10 @@ export function JobDetailClient() {
     }
   }
 
-  const formatSalary = (min: number, max: number) => {
-    return `${min.toLocaleString()} - ${max.toLocaleString()} VND`
+  const formatSalary = (min: string, max: string) => {
+    const minNum = parseFloat(min).toLocaleString();
+    const maxNum = parseFloat(max).toLocaleString();
+    return `${minNum} - ${maxNum} VND`;
   }
 
   const formatDate = (dateString: string) => {
@@ -130,30 +132,30 @@ export function JobDetailClient() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <strong>Phòng ban:</strong> {job.department?.departmentName || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <strong>Vị trí:</strong> {job.position?.positionName || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <strong>Địa điểm:</strong> {job.headquarter?.city || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <strong>Mức lương:</strong> {formatSalary(job.minSalary, job.maxSalary)}
-                  </span>
-                </div>
+                                 <div className="flex items-center gap-2">
+                   <Building className="h-4 w-4 text-muted-foreground" />
+                   <span className="text-sm">
+                     <strong>Phòng ban:</strong> {job.departmentId}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <Users className="h-4 w-4 text-muted-foreground" />
+                   <span className="text-sm">
+                     <strong>Vị trí:</strong> {job.positionId}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <MapPin className="h-4 w-4 text-muted-foreground" />
+                   <span className="text-sm">
+                     <strong>Địa điểm:</strong> {job.location || "N/A"}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <DollarSign className="h-4 w-4 text-muted-foreground" />
+                   <span className="text-sm">
+                     <strong>Mức lương:</strong> {formatSalary(job.salaryMin, job.salaryMax)}
+                   </span>
+                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">

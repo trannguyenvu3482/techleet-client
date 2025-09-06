@@ -19,16 +19,21 @@ export function JobCreateClient() {
     title: "",
     description: "",
     requirements: "",
-    minSalary: "",
-    maxSalary: "",
+    benefits: "",
+    salaryMin: "",
+    salaryMax: "",
+    vacancies: "",
     employmentType: "",
     experienceLevel: "",
-    benefits: "",
+    skills: "",
+    minExperience: "",
+    maxExperience: "",
+    educationLevel: "",
     applicationDeadline: "",
-    status: "draft" as "draft" | "published",
+    location: "",
     departmentId: "",
     positionId: "",
-    headquarterId: ""
+    hiringManagerId: ""
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -47,16 +52,21 @@ export function JobCreateClient() {
         title: formData.title,
         description: formData.description,
         requirements: formData.requirements,
-        minSalary: Number(formData.minSalary),
-        maxSalary: Number(formData.maxSalary),
+        benefits: formData.benefits,
+        salaryMin: Number(formData.salaryMin),
+        salaryMax: Number(formData.salaryMax),
+        vacancies: Number(formData.vacancies),
         employmentType: formData.employmentType,
         experienceLevel: formData.experienceLevel,
-        benefits: formData.benefits,
+        skills: formData.skills,
+        minExperience: Number(formData.minExperience),
+        maxExperience: Number(formData.maxExperience),
+        educationLevel: formData.educationLevel,
         applicationDeadline: formData.applicationDeadline,
-        status: formData.status,
+        location: formData.location,
         departmentId: Number(formData.departmentId),
         positionId: Number(formData.positionId),
-        headquarterId: Number(formData.headquarterId)
+        hiringManagerId: Number(formData.hiringManagerId)
       }
 
       const newJob = await recruitmentAPI.createJobPosting(createData)
@@ -156,30 +166,30 @@ export function JobCreateClient() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minSalary">Lương tối thiểu *</Label>
-                  <Input
-                    id="minSalary"
-                    type="number"
-                    value={formData.minSalary}
-                    onChange={(e) => handleInputChange("minSalary", e.target.value)}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxSalary">Lương tối đa *</Label>
-                  <Input
-                    id="maxSalary"
-                    type="number"
-                    value={formData.maxSalary}
-                    onChange={(e) => handleInputChange("maxSalary", e.target.value)}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-              </div>
+                             <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="salaryMin">Lương tối thiểu *</Label>
+                   <Input
+                     id="salaryMin"
+                     type="number"
+                     value={formData.salaryMin}
+                     onChange={(e) => handleInputChange("salaryMin", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="salaryMax">Lương tối đa *</Label>
+                   <Input
+                     id="salaryMax"
+                     type="number"
+                     value={formData.salaryMax}
+                     onChange={(e) => handleInputChange("salaryMax", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="employmentType">Loại việc làm *</Label>
@@ -212,29 +222,86 @@ export function JobCreateClient() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="applicationDeadline">Hạn nộp hồ sơ *</Label>
-                <Input
-                  id="applicationDeadline"
-                  type="date"
-                  value={formData.applicationDeadline}
-                  onChange={(e) => handleInputChange("applicationDeadline", e.target.value)}
-                  required
-                />
-              </div>
+                             <div className="space-y-2">
+                 <Label htmlFor="vacancies">Số lượng tuyển *</Label>
+                 <Input
+                   id="vacancies"
+                   type="number"
+                   value={formData.vacancies}
+                   onChange={(e) => handleInputChange("vacancies", e.target.value)}
+                   placeholder="1"
+                   required
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
-                <Select value={formData.status} onValueChange={(value: "draft" | "published") => handleInputChange("status", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Nháp</SelectItem>
-                    <SelectItem value="published">Đang tuyển</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+               <div className="space-y-2">
+                 <Label htmlFor="skills">Kỹ năng *</Label>
+                 <Input
+                   id="skills"
+                   value={formData.skills}
+                   onChange={(e) => handleInputChange("skills", e.target.value)}
+                   placeholder="React, Node.js, TypeScript, PostgreSQL"
+                   required
+                 />
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="minExperience">Kinh nghiệm tối thiểu (năm) *</Label>
+                   <Input
+                     id="minExperience"
+                     type="number"
+                     value={formData.minExperience}
+                     onChange={(e) => handleInputChange("minExperience", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="maxExperience">Kinh nghiệm tối đa (năm) *</Label>
+                   <Input
+                     id="maxExperience"
+                     type="number"
+                     value={formData.maxExperience}
+                     onChange={(e) => handleInputChange("maxExperience", e.target.value)}
+                     placeholder="10"
+                     required
+                   />
+                 </div>
+               </div>
+
+                              <div className="space-y-2">
+                 <Label htmlFor="educationLevel">Trình độ học vấn *</Label>
+                 <Input
+                   id="educationLevel"
+                   value={formData.educationLevel}
+                   onChange={(e) => handleInputChange("educationLevel", e.target.value)}
+                   placeholder="Bachelor degree in Computer Science"
+                   required
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="applicationDeadline">Hạn nộp hồ sơ *</Label>
+                 <Input
+                   id="applicationDeadline"
+                   type="date"
+                   value={formData.applicationDeadline}
+                   onChange={(e) => handleInputChange("applicationDeadline", e.target.value)}
+                   required
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="location">Địa điểm *</Label>
+                 <Input
+                   id="location"
+                   value={formData.location}
+                   onChange={(e) => handleInputChange("location", e.target.value)}
+                   placeholder="Nhập địa điểm làm việc"
+                   required
+                 />
+               </div>
             </CardContent>
           </Card>
 
@@ -277,20 +344,20 @@ export function JobCreateClient() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="headquarterId">Địa điểm *</Label>
-                <Select value={formData.headquarterId} onValueChange={(value) => handleInputChange("headquarterId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn địa điểm" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Hà Nội</SelectItem>
-                    <SelectItem value="2">TP. Hồ Chí Minh</SelectItem>
-                    <SelectItem value="3">Đà Nẵng</SelectItem>
-                    <SelectItem value="4">Cần Thơ</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                             <div className="space-y-2">
+                 <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
+                 <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Chọn người quản lý" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="1">Manager 1</SelectItem>
+                     <SelectItem value="2">Manager 2</SelectItem>
+                     <SelectItem value="3">Manager 3</SelectItem>
+                     <SelectItem value="4">Manager 4</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
             </CardContent>
           </Card>
         </div>
