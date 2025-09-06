@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { FileText, TestTube, BarChart3, Settings, Plus } from "lucide-react"
+import { FileText, TestTube, BarChart3, Settings } from "lucide-react"
 import Link from "next/link"
 import { JobsListClient } from "./jobs-list-client"
 

@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
   Download,
-  Share2,
   Edit,
   Trash2,
   Pin,

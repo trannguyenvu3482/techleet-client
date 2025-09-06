@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { documentAPI, type CreateDocumentCategoryRequest, type DocumentCategory } from "@/lib/api/document"
-import { Edit, Plus, Save, Trash2, X } from "lucide-react"
+import { Plus, Save, Trash2, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -39,7 +39,6 @@ export function DocumentCategoryManager({
 }: DocumentCategoryManagerProps) {
   const [categories, setCategories] = useState<DocumentCategory[]>([])
   const [loading, setLoading] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<DocumentCategory | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
     categoryName: '',
@@ -99,23 +98,7 @@ export function DocumentCategoryManager({
     }
   }
 
-  const handleUpdateCategory = async (category: DocumentCategory) => {
-    try {
-      await documentAPI.updateDocumentCategory(category.categoryId, {
-        categoryName: category.categoryName,
-        description: category.description,
-        color: category.color,
-        icon: category.icon,
-        isActive: category.isActive
-      })
-      toast.success('Cập nhật danh mục thành công')
-      setEditingCategory(null)
-      fetchCategories()
-    } catch (error) {
-      console.error('Failed to update category:', error)
-      toast.error('Không thể cập nhật danh mục')
-    }
-  }
+
 
   const handleDeleteCategory = async (categoryId: number) => {
     if (!confirm('Bạn có chắc chắn muốn xóa danh mục này? Tất cả tài liệu trong danh mục sẽ bị ảnh hưởng.')) {
@@ -310,13 +293,6 @@ export function DocumentCategoryManager({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingCategory(category)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

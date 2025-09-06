@@ -36,10 +36,6 @@ export function DocumentClient() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [showCategoryManager, setShowCategoryManager] = useState(false)
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [sortBy, setSortBy] = useState<"title" | "createdAt" | "downloadCount">("createdAt")
@@ -129,9 +125,9 @@ export function DocumentClient() {
     }
   }
 
-  const handlePreview = (document: Document) => {
-    setSelectedDocument(document)
-    setShowPreviewModal(true)
+  const handlePreview = () => {
+    // TODO: Implement preview functionality
+    toast.info('Chức năng xem trước đang được phát triển')
   }
 
   const handleDelete = async (documentId: number) => {
@@ -216,12 +212,12 @@ export function DocumentClient() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
-            onClick={() => setShowCategoryManager(true)}
+            onClick={() => toast.info('Chức năng quản lý danh mục đang được phát triển')}
           >
             <Filter className="mr-2 h-4 w-4" />
             Quản lý danh mục
           </Button>
-          <Button onClick={() => setShowUploadModal(true)}>
+          <Button onClick={() => toast.info('Chức năng tải lên đang được phát triển')}>
             <Plus className="mr-2 h-4 w-4" />
             Tải lên tài liệu
           </Button>
@@ -253,7 +249,7 @@ export function DocumentClient() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+          <Select value={sortBy} onValueChange={(value: "title" | "createdAt" | "downloadCount") => setSortBy(value)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Sắp xếp theo" />
             </SelectTrigger>
@@ -299,7 +295,7 @@ export function DocumentClient() {
                 <p className="text-muted-foreground text-center mb-4">
                   Bắt đầu bằng cách tải lên tài liệu đầu tiên của bạn
                 </p>
-                <Button onClick={() => setShowUploadModal(true)}>
+                <Button onClick={() => toast.info('Chức năng tải lên đang được phát triển')}>
                   <Upload className="mr-2 h-4 w-4" />
                   Tải lên tài liệu
                 </Button>
@@ -335,7 +331,7 @@ export function DocumentClient() {
                             <div 
                               className="font-medium text-sm cursor-pointer hover:text-primary truncate"
                               title={document.title}
-                              onClick={() => handlePreview(document)}
+                              onClick={() => handlePreview()}
                             >
                               {document.title}
                             </div>
@@ -404,7 +400,7 @@ export function DocumentClient() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handlePreview(document)}>
+                              <DropdownMenuItem onClick={() => handlePreview()}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Xem trước
                               </DropdownMenuItem>

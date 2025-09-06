@@ -28,32 +28,28 @@ export function DocumentPreviewModal({
   onOpenChange,
   document
 }: DocumentPreviewModalProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    const loadPreview = async () => {
+      if (!document) return
+
+      try {
+        setLoading(true)
+        // For now, we'll just show document info
+        // In the future, you could implement actual file preview
+      } catch (error) {
+        console.error('Failed to load preview:', error)
+        toast.error('Không thể tải xem trước')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (open && document) {
       loadPreview()
-    } else {
-      setPreviewUrl(null)
     }
   }, [open, document])
-
-  const loadPreview = async () => {
-    if (!document) return
-
-    try {
-      setLoading(true)
-      // For now, we'll just show document info
-      // In the future, you could implement actual file preview
-      setPreviewUrl('info')
-    } catch (error) {
-      console.error('Failed to load preview:', error)
-      toast.error('Không thể tải xem trước')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleDownload = async () => {
     if (!document) return
