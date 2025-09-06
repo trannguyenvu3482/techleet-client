@@ -5,8 +5,10 @@ import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -14,14 +16,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-// import { JobPostingClient } from "@/components/recruitment/job-management-client"
+import { JobCreateClient } from "@/components/recruitment/job-create-client"
 import { useRequireAuth } from "@/hooks/use-auth"
 
-export default function JobPostingsPage() {
+export default function JobCreatePage() {
   const { isLoading } = useRequireAuth()
 
   useEffect(() => {
-    document.title = "Job Posting Management | TechLeet Admin"
+    document.title = "Tạo vị trí tuyển dụng | TechLeet Admin"
   }, [])
 
   if (isLoading) {
@@ -46,14 +48,22 @@ export default function JobPostingsPage() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Job Postings</BreadcrumbPage>
+                  <BreadcrumbLink href="/recruitment">Tuyển dụng</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/recruitment/jobs">Danh sách việc làm</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Tạo vị trí mới</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* <JobPostingClient /> */}
+          <JobCreateClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

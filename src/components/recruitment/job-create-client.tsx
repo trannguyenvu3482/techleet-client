@@ -1,0 +1,389 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { recruitmentAPI, CreateJobPostingRequest } from "@/lib/api/recruitment"
+
+export function JobCreateClient() {
+  const router = useRouter()
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    requirements: "",
+    benefits: "",
+    salaryMin: "",
+    salaryMax: "",
+    vacancies: "",
+    employmentType: "",
+    experienceLevel: "",
+    skills: "",
+    minExperience: "",
+    maxExperience: "",
+    educationLevel: "",
+    applicationDeadline: "",
+    location: "",
+    departmentId: "",
+    positionId: "",
+    hiringManagerId: ""
+  })
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      setSaving(true)
+      const createData: CreateJobPostingRequest = {
+        title: formData.title,
+        description: formData.description,
+        requirements: formData.requirements,
+        benefits: formData.benefits,
+        salaryMin: Number(formData.salaryMin),
+        salaryMax: Number(formData.salaryMax),
+        vacancies: Number(formData.vacancies),
+        employmentType: formData.employmentType,
+        experienceLevel: formData.experienceLevel,
+        skills: formData.skills,
+        minExperience: Number(formData.minExperience),
+        maxExperience: Number(formData.maxExperience),
+        educationLevel: formData.educationLevel,
+        applicationDeadline: formData.applicationDeadline,
+        location: formData.location,
+        departmentId: Number(formData.departmentId),
+        positionId: Number(formData.positionId),
+        hiringManagerId: Number(formData.hiringManagerId)
+      }
+
+      const newJob = await recruitmentAPI.createJobPosting(createData)
+      router.push(`/recruitment/jobs/detail/${newJob.jobPostingId}`)
+    } catch (error) {
+      console.error("Error creating job:", error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/recruitment/jobs">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Quay lại
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Tạo vị trí tuyển dụng mới</h1>
+            <p className="text-muted-foreground">
+              Tạo một vị trí tuyển dụng mới cho công ty
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Thông tin cơ bản</CardTitle>
+              <CardDescription>
+                Thông tin chính của vị trí tuyển dụng
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Tiêu đề vị trí *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Nhập tiêu đề vị trí"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Mô tả công việc *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="Mô tả chi tiết công việc"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="requirements">Yêu cầu *</Label>
+                <Textarea
+                  id="requirements"
+                  value={formData.requirements}
+                  onChange={(e) => handleInputChange("requirements", e.target.value)}
+                  placeholder="Yêu cầu về kỹ năng, kinh nghiệm"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="benefits">Phúc lợi</Label>
+                <Textarea
+                  id="benefits"
+                  value={formData.benefits}
+                  onChange={(e) => handleInputChange("benefits", e.target.value)}
+                  placeholder="Phúc lợi và đãi ngộ"
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Job Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Chi tiết vị trí</CardTitle>
+              <CardDescription>
+                Thông tin về lương, loại việc làm và thời hạn
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                             <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="salaryMin">Lương tối thiểu *</Label>
+                   <Input
+                     id="salaryMin"
+                     type="number"
+                     value={formData.salaryMin}
+                     onChange={(e) => handleInputChange("salaryMin", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="salaryMax">Lương tối đa *</Label>
+                   <Input
+                     id="salaryMax"
+                     type="number"
+                     value={formData.salaryMax}
+                     onChange={(e) => handleInputChange("salaryMax", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="employmentType">Loại việc làm *</Label>
+                <Select value={formData.employmentType} onValueChange={(value) => handleInputChange("employmentType", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn loại việc làm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full-time">Toàn thời gian</SelectItem>
+                    <SelectItem value="part-time">Bán thời gian</SelectItem>
+                    <SelectItem value="contract">Hợp đồng</SelectItem>
+                    <SelectItem value="internship">Thực tập</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="experienceLevel">Mức độ kinh nghiệm *</Label>
+                <Select value={formData.experienceLevel} onValueChange={(value) => handleInputChange("experienceLevel", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn mức độ kinh nghiệm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+                    <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+                    <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+                    <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+                    <SelectItem value="lead">Lead/Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+                             <div className="space-y-2">
+                 <Label htmlFor="vacancies">Số lượng tuyển *</Label>
+                 <Input
+                   id="vacancies"
+                   type="number"
+                   value={formData.vacancies}
+                   onChange={(e) => handleInputChange("vacancies", e.target.value)}
+                   placeholder="1"
+                   required
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="skills">Kỹ năng *</Label>
+                 <Input
+                   id="skills"
+                   value={formData.skills}
+                   onChange={(e) => handleInputChange("skills", e.target.value)}
+                   placeholder="React, Node.js, TypeScript, PostgreSQL"
+                   required
+                 />
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="minExperience">Kinh nghiệm tối thiểu (năm) *</Label>
+                   <Input
+                     id="minExperience"
+                     type="number"
+                     value={formData.minExperience}
+                     onChange={(e) => handleInputChange("minExperience", e.target.value)}
+                     placeholder="0"
+                     required
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="maxExperience">Kinh nghiệm tối đa (năm) *</Label>
+                   <Input
+                     id="maxExperience"
+                     type="number"
+                     value={formData.maxExperience}
+                     onChange={(e) => handleInputChange("maxExperience", e.target.value)}
+                     placeholder="10"
+                     required
+                   />
+                 </div>
+               </div>
+
+                              <div className="space-y-2">
+                 <Label htmlFor="educationLevel">Trình độ học vấn *</Label>
+                 <Input
+                   id="educationLevel"
+                   value={formData.educationLevel}
+                   onChange={(e) => handleInputChange("educationLevel", e.target.value)}
+                   placeholder="Bachelor degree in Computer Science"
+                   required
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="applicationDeadline">Hạn nộp hồ sơ *</Label>
+                 <Input
+                   id="applicationDeadline"
+                   type="date"
+                   value={formData.applicationDeadline}
+                   onChange={(e) => handleInputChange("applicationDeadline", e.target.value)}
+                   required
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label htmlFor="location">Địa điểm *</Label>
+                 <Input
+                   id="location"
+                   value={formData.location}
+                   onChange={(e) => handleInputChange("location", e.target.value)}
+                   placeholder="Nhập địa điểm làm việc"
+                   required
+                 />
+               </div>
+            </CardContent>
+          </Card>
+
+          {/* Organization */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Thông tin tổ chức</CardTitle>
+              <CardDescription>
+                Phòng ban, vị trí và địa điểm làm việc
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="departmentId">Phòng ban *</Label>
+                <Select value={formData.departmentId} onValueChange={(value) => handleInputChange("departmentId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn phòng ban" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Phòng Kỹ thuật</SelectItem>
+                    <SelectItem value="2">Phòng Nhân sự</SelectItem>
+                    <SelectItem value="3">Phòng Marketing</SelectItem>
+                    <SelectItem value="4">Phòng Kinh doanh</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="positionId">Vị trí *</Label>
+                <Select value={formData.positionId} onValueChange={(value) => handleInputChange("positionId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn vị trí" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Software Engineer</SelectItem>
+                    <SelectItem value="2">Product Manager</SelectItem>
+                    <SelectItem value="3">UI/UX Designer</SelectItem>
+                    <SelectItem value="4">Data Analyst</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+                             <div className="space-y-2">
+                 <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
+                 <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Chọn người quản lý" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="1">Manager 1</SelectItem>
+                     <SelectItem value="2">Manager 2</SelectItem>
+                     <SelectItem value="3">Manager 3</SelectItem>
+                     <SelectItem value="4">Manager 4</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-4 pt-6">
+          <Link href="/recruitment/jobs">
+            <Button variant="outline" type="button">
+              Hủy
+            </Button>
+          </Link>
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Đang tạo...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Tạo vị trí
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+}

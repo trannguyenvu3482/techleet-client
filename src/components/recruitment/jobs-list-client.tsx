@@ -1,0 +1,396 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Search, Edit, Trash2, Eye, Calendar, MapPin, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
+import Link from "next/link"
+import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
+
+export function JobsListClient() {
+  const [jobs, setJobs] = useState<JobPosting[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState<string>("all")
+  const [experienceLevelFilter, setExperienceLevelFilter] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    fetchJobs()
+  }, [statusFilter, employmentTypeFilter, experienceLevelFilter, currentPage, pageSize])
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true)
+      const params: GetJobPostingsParams = {
+        page: currentPage,
+        limit: pageSize,
+        keyword: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter as any : undefined,
+        employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
+        experienceLevel: experienceLevelFilter !== "all" ? experienceLevelFilter : undefined,
+        sortBy: "createdAt",
+        sortOrder: "DESC"
+      }
+      
+      const response: GetJobPostingsResponse = await recruitmentAPI.getJobPostings(params)
+      setJobs(response.data)
+      setTotalPages(response.totalPages)
+      setTotal(response.total)
+    } catch (error) {
+      console.error("Error fetching jobs:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = () => {
+    setCurrentPage(0) // Reset to first page when searching
+    fetchJobs()
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleFilterChange = () => {
+    setCurrentPage(0) // Reset to first page when filtering
+    fetchJobs()
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "draft":
+        return <Badge variant="secondary">Nháp</Badge>
+      case "published":
+        return <Badge variant="default">Đang tuyển</Badge>
+      case "closed":
+        return <Badge variant="destructive">Đã đóng</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  const formatSalary = (min: string, max: string) => {
+    const minNum = parseFloat(min).toLocaleString();
+    const maxNum = parseFloat(max).toLocaleString();
+    return `${minNum} - ${maxNum} VND`;
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN")
+  }
+
+  const handleDeleteJob = async (jobId: number) => {
+    if (confirm("Bạn có chắc chắn muốn xóa vị trí tuyển dụng này?")) {
+      try {
+        await recruitmentAPI.deleteJobPosting(jobId)
+        fetchJobs()
+      } catch (error) {
+        console.error("Error deleting job:", error)
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Danh sách vị trí tuyển dụng</h1>
+          <p className="text-muted-foreground">
+            Quản lý tất cả các vị trí tuyển dụng với các trạng thái khác nhau
+          </p>
+        </div>
+        <Link href="/recruitment/jobs/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Tạo vị trí mới
+          </Button>
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Bộ lọc</CardTitle>
+          <CardDescription>Tìm kiếm và lọc vị trí tuyển dụng</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm vị trí..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleSearch}>
+                <Search className="mr-2 h-4 w-4" />
+                Tìm kiếm
+              </Button>
+            </div>
+            
+            {/* Filter Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Trạng thái</label>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="draft">Nháp</SelectItem>
+                    <SelectItem value="published">Đang tuyển</SelectItem>
+                    <SelectItem value="closed">Đã đóng</SelectItem>
+                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Loại việc làm</label>
+                <Select value={employmentTypeFilter} onValueChange={(value) => {
+                  setEmploymentTypeFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Loại việc làm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="full-time">Toàn thời gian</SelectItem>
+                    <SelectItem value="part-time">Bán thời gian</SelectItem>
+                    <SelectItem value="contract">Hợp đồng</SelectItem>
+                    <SelectItem value="internship">Thực tập</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mức độ kinh nghiệm</label>
+                <Select value={experienceLevelFilter} onValueChange={(value) => {
+                  setExperienceLevelFilter(value)
+                  handleFilterChange()
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Mức độ kinh nghiệm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+                    <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+                    <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+                    <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+                    <SelectItem value="lead">Lead/Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Jobs Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Danh sách vị trí</CardTitle>
+              <CardDescription>
+                Hiển thị {jobs.length} trong tổng số {total} kết quả
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Hiển thị:</span>
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(value) => setPageSize(parseInt(value))}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-2">Đang tải...</p>
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Không tìm thấy vị trí tuyển dụng nào</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vị trí</TableHead>
+                  <TableHead>Loại việc làm</TableHead>
+                  <TableHead>Kinh nghiệm</TableHead>
+                  <TableHead>Phòng ban</TableHead>
+                  <TableHead>Địa điểm</TableHead>
+                  <TableHead>Mức lương</TableHead>
+                  <TableHead>Hạn nộp</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {jobs.map((job) => (
+                  <TableRow key={job.jobPostingId}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{job.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {job.description.substring(0, 50)}...
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {job.employmentType}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {job.experienceLevel}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {job.departmentId}
+                    </TableCell>
+                     <TableCell>
+                       <div className="flex items-center text-sm text-muted-foreground">
+                         <MapPin className="mr-1 h-3 w-3" />
+                         {job.location || "N/A"}
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex items-center text-sm">
+                         <DollarSign className="mr-1 h-3 w-3 text-muted-foreground" />
+                         {formatSalary(job.salaryMin, job.salaryMax)}
+                       </div>
+                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {formatDate(job.applicationDeadline)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(job.status)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/recruitment/jobs/detail/${job.jobPostingId}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/recruitment/jobs/edit/${job.jobPostingId}`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteJob(job.jobPostingId)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Trang {currentPage + 1} của {totalPages}
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Trước
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = i + Math.max(0, currentPage - 2)
+                    if (pageNum >= totalPages) return null
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    )
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  Sau
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}

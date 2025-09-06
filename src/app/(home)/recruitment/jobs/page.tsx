@@ -4,6 +4,7 @@ import { JobManagementClient } from "@/components/recruitment/job-management-cli
 import { useRequireAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 
+
 export default function JobsPage() {
   const { isLoading } = useRequireAuth();
 
