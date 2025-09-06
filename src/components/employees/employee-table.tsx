@@ -110,96 +110,97 @@ export function EmployeeTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0">
       {/* Search Input */}
-      <div className="flex items-center space-x-2">
-        <Search className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center space-x-2 min-w-0">
+        <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         <Input
           placeholder="Tìm kiếm theo tên nhân viên..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm min-w-0"
         />
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('firstName')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Nhân viên
-                  {getSortIcon('firstName')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('email')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Email
-                  {getSortIcon('email')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('phoneNumber')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Số điện thoại
-                  {getSortIcon('phoneNumber')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('gender')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Giới tính
-                  {getSortIcon('gender')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('startDate')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Ngày bắt đầu
-                  {getSortIcon('startDate')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('baseSalary')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Lương cơ bản
-                  {getSortIcon('baseSalary')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('isActive')}
-                  className="h-auto p-0 font-semibold"
-                >
-                  Trạng thái
-                  {getSortIcon('isActive')}
-                </Button>
-              </TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="rounded-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="w-[280px] sticky left-0 bg-background z-10 border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('firstName')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Nhân viên
+                    {getSortIcon('firstName')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[200px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('email')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Email
+                    {getSortIcon('email')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[140px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('phoneNumber')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Số điện thoại
+                    {getSortIcon('phoneNumber')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[100px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('gender')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Giới tính
+                    {getSortIcon('gender')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[120px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('startDate')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Ngày bắt đầu
+                    {getSortIcon('startDate')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[140px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('baseSalary')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Lương cơ bản
+                    {getSortIcon('baseSalary')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[120px] border-r border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('isActive')}
+                    className="h-auto p-0 font-semibold"
+                  >
+                    Trạng thái
+                    {getSortIcon('isActive')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[70px] sticky right-0 bg-background z-10"></TableHead>
+              </TableRow>
+            </TableHeader>
         <TableBody>
           {employees.length === 0 ? (
             <TableRow>
@@ -209,17 +210,17 @@ export function EmployeeTable({
             </TableRow>
           ) : (
             employees.map((employee) => (
-              <TableRow key={employee.employeeId}>
-                <TableCell>
+              <TableRow key={employee.employeeId} className="border-b border-gray-100 hover:bg-gray-50">
+                <TableCell className="w-[280px] sticky left-0 bg-background z-10 border-r border-gray-200">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage src={employee.avatarUrl} />
                       <AvatarFallback>
                         {getInitials(employee.firstName, employee.lastName)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium">
+                    <div className="min-w-0">
+                      <div className="font-medium break-words">
                         {employee.firstName} {employee.lastName}
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -228,21 +229,29 @@ export function EmployeeTable({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.phoneNumber}</TableCell>
-                <TableCell>
+                <TableCell className="w-[200px] border-r border-gray-200">
+                  <span className="break-words">{employee.email}</span>
+                </TableCell>
+                <TableCell className="w-[140px] border-r border-gray-200">
+                  <span className="break-words">{employee.phoneNumber}</span>
+                </TableCell>
+                <TableCell className="w-[100px] border-r border-gray-200">
                   <Badge variant={employee.gender ? "default" : "secondary"}>
                     {employee.gender ? "Nam" : "Nữ"}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatDate(employee.startDate)}</TableCell>
-                <TableCell>{formatCurrency(employee.baseSalary)}</TableCell>
-                <TableCell>
+                <TableCell className="w-[120px] border-r border-gray-200">
+                  <span className="whitespace-nowrap">{formatDate(employee.startDate)}</span>
+                </TableCell>
+                <TableCell className="w-[140px] border-r border-gray-200">
+                  <span className="whitespace-nowrap">{formatCurrency(employee.baseSalary)}</span>
+                </TableCell>
+                <TableCell className="w-[120px] border-r border-gray-200">
                   <Badge variant={employee.isActive ? "default" : "destructive"}>
                     {employee.isActive ? "Hoạt động" : "Không hoạt động"}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="w-[70px] sticky right-0 bg-background z-10">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -268,8 +277,9 @@ export function EmployeeTable({
             ))
           )}
         </TableBody>
-      </Table>
-    </div>
+        </Table>
+        </div>
+      </div>
 
     {/* Pagination */}
     <div className="flex items-center justify-between">

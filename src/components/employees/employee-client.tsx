@@ -106,15 +106,12 @@ export function EmployeeClient() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4 min-w-0">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Danh sách nhân viên</h1>
-          <p className="text-muted-foreground">
-            Quản lý thông tin nhân viên trong công ty ({total} nhân viên)
-          </p>
+        <div className="text-sm text-muted-foreground">
+          {total} nhân viên
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={refreshEmployees}
             disabled={loading}
@@ -132,11 +129,11 @@ export function EmployeeClient() {
         </div>
       </div>
       
-      <div className="flex-1">
-        {employees.length === 0 ? (
+      <div className="flex-1 min-w-0">
+        {total === 0 ? (
           <div className="flex items-center justify-center h-64 border rounded-lg">
             <div className="text-center">
-              <p className="text-muted-foreground mb-2">Không có nhân viên nào</p>
+              <p className="text-muted-foreground mb-2">Chưa có nhân viên nào</p>
               <AddEmployeeModal onSubmit={handleCreateEmployee} isLoading={creating} />
             </div>
           </div>
