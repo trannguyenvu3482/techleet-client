@@ -103,13 +103,7 @@ export function JobsListClient() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Danh sách vị trí tuyển dụng</h1>
-          <p className="text-muted-foreground">
-            Quản lý tất cả các vị trí tuyển dụng với các trạng thái khác nhau
-          </p>
-        </div>
+      <div className="flex items-end justify-end">
         <Link href="/recruitment/jobs/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" />

@@ -245,7 +245,7 @@ export function JobDetailClient() {
             <CardHeader>
               <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="grid grid-cols-1 gap-2">
               <Link href={`/recruitment/jobs/edit/${job.jobPostingId}`}>
                 <Button variant="outline" className="w-full justify-start">
                   <Edit className="mr-2 h-4 w-4" />
