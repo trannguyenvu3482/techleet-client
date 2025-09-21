@@ -241,17 +241,11 @@ export function JobDetailClient() {
           </Card>
 
           {/* Quick Actions */}
-          <Card>
+          <Card  hidden={job.status === "closed"}>
             <CardHeader>
-              <CardTitle>Thao tác nhanh</CardTitle>
+              <CardTitle>Trạng thái</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-2">
-              <Link href={`/recruitment/jobs/edit/${job.jobPostingId}`}>
-                <Button variant="outline" className="w-full justify-start">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Chỉnh sửa vị trí
-                </Button>
-              </Link>
               {job.status === "draft" && (
                 <Button 
                   variant="outline" 

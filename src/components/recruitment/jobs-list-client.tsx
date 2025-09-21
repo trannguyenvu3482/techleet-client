@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Edit, Trash2, Eye, Calendar, MapPin, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
+import { useRouter } from "next/navigation"
 
 export function JobsListClient() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
@@ -22,6 +23,7 @@ export function JobsListClient() {
   const [totalPages, setTotalPages] = useState(0)
   const [total, setTotal] = useState(0)
   const [pageSize, setPageSize] = useState(10)
+  const router = useRouter()
 
   useEffect(() => {
     fetchJobs()
@@ -260,7 +262,7 @@ export function JobsListClient() {
               </TableHeader>
               <TableBody>
                 {jobs.map((job) => (
-                  <TableRow key={job.jobPostingId}>
+                  <TableRow className="cursor-pointer" onClick={() => router.push(`/recruitment/jobs/detail/${job.jobPostingId}`)} key={job.jobPostingId} >
                     <TableCell>
                       <div>
                         <div className="font-medium">{job.title}</div>
@@ -305,7 +307,7 @@ export function JobsListClient() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Link href={`/recruitment/jobs/detail/${job.jobPostingId}`}>
+                        {/* <Link href={`/recruitment/jobs/detail/${job.jobPostingId}`}>
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -314,7 +316,7 @@ export function JobsListClient() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                        </Link>
+                        </Link> */}
                         <Button 
                           variant="ghost" 
                           size="sm"
