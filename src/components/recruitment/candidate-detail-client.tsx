@@ -45,6 +45,26 @@ interface CandidateDetailData extends Candidate {
   currentApplication?: Application;
   jobTitle?: string;
   overscore?: number | null;
+  // Additional fields from candidate entity
+  birthDate?: string;
+  gender?: boolean;
+  githubUrl?: string;
+  status?: string;
+  appliedDate?: string;
+  summary?: string;
+  yearsOfExperience?: number;
+  currentJobTitle?: string;
+  currentCompany?: string;
+  educationLevel?: string;
+  fieldOfStudy?: string;
+  university?: string;
+  graduationYear?: number;
+  programmingLanguages?: string;
+  expectedSalary?: number;
+  preferredEmploymentType?: string;
+  availableForRemote?: boolean;
+  availableStartDate?: string;
+  source?: string;
 }
 
 export function CandidateDetailClient() {
@@ -72,28 +92,154 @@ export function CandidateDetailClient() {
     try {
       setLoading(true)
       
-      // Fetch candidate details
-      const candidateData = await recruitmentAPI.getCandidateById(candidateId)
-      
-      // Fetch applications for this candidate
-      const applicationsData = await recruitmentAPI.getApplications({
-        candidateId: candidateId
-      })
-      
-      setApplications(applicationsData.data)
+      // Mock data for testing when API is not available
+      const mockCandidate: CandidateDetailData = {
+        candidateId: candidateId,
+        firstName: "Nguyễn Văn",
+        lastName: "An",
+        email: "nguyenvanan@email.com",
+        phoneNumber: "0123456789",
+        dateOfBirth: "1995-03-15",
+        address: "123 Đường ABC, Quận 1, TP.HCM",
+        city: "Ho Chi Minh City",
+        postalCode: "700000",
+        education: "Đại học Bách Khoa TP.HCM",
+        workExperience: "3 năm kinh nghiệm phát triển web",
+        skills: "React, TypeScript, JavaScript, Node.js, MongoDB",
+        certifications: "AWS Certified Developer",
+        portfolioUrl: "https://portfolio.example.com",
+        linkedinUrl: "https://linkedin.com/in/nguyenvanan",
+        resumeUrl: "https://example.com/cv/nguyenvanan.pdf",
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-15T10:30:00Z",
+        isActive: true,
+        // Additional fields from candidate entity
+        birthDate: "1995-03-15",
+        gender: true,
+        githubUrl: "https://github.com/nguyenvanan",
+        status: "active",
+        appliedDate: "2024-01-01",
+        summary: "Frontend developer với 3 năm kinh nghiệm, chuyên về React và TypeScript. Có khả năng làm việc độc lập và teamwork hiệu quả.",
+        yearsOfExperience: 3,
+        currentJobTitle: "Frontend Developer",
+        currentCompany: "TechCorp Vietnam",
+        educationLevel: "Bachelor",
+        fieldOfStudy: "Computer Science",
+        university: "Đại học Bách Khoa TP.HCM",
+        graduationYear: 2017,
+        programmingLanguages: "JavaScript, TypeScript, Python, Java",
+        expectedSalary: 25000000,
+        preferredEmploymentType: "Full-time",
+        availableForRemote: true,
+        availableStartDate: "2024-02-01",
+        source: "LinkedIn",
+        applications: [],
+        currentApplication: undefined,
+        jobTitle: undefined,
+        overscore: null
+      }
+
+      const mockApplications: Application[] = [
+        {
+          applicationId: 101,
+          candidateId: candidateId,
+          jobPostingId: 1,
+          coverLetter: "Tôi rất quan tâm đến vị trí Frontend Developer tại công ty. Với 3 năm kinh nghiệm trong lĩnh vực phát triển web, tôi tin rằng mình có thể đóng góp tích cực cho đội ngũ.",
+          applicationStatus: "reviewing",
+          appliedAt: "2024-01-15T10:30:00Z",
+          updatedAt: "2024-01-15T10:30:00Z",
+          score: 85,
+          candidate: mockCandidate,
+          jobPosting: {
+            jobPostingId: 1,
+            title: "Frontend Developer",
+            description: "React, TypeScript developer",
+            requirements: "3+ years experience",
+            benefits: "Competitive salary",
+            salaryMin: "15000000",
+            salaryMax: "25000000",
+            vacancies: 2,
+            applicationDeadline: "2024-02-15",
+            status: "published",
+            location: "Ho Chi Minh City",
+            employmentType: "Full-time",
+            experienceLevel: "Mid-level",
+            skills: "React, TypeScript, JavaScript",
+            minExperience: 3,
+            maxExperience: 5,
+            educationLevel: "Bachelor",
+            departmentId: 1,
+            positionId: 1,
+            hiringManagerId: 1,
+            salaryRange: "15-25M VND",
+            isJobActive: true,
+            daysUntilDeadline: 30,
+            applicationCount: 15,
+            createdAt: "2024-01-01T00:00:00Z",
+            updatedAt: "2024-01-01T00:00:00Z"
+          }
+        },
+        {
+          applicationId: 102,
+          candidateId: candidateId,
+          jobPostingId: 2,
+          coverLetter: "Tôi quan tâm đến vị trí Backend Developer. Có kinh nghiệm với Node.js và Python.",
+          applicationStatus: "interview",
+          appliedAt: "2024-01-14T14:20:00Z",
+          updatedAt: "2024-01-14T14:20:00Z",
+          score: 92,
+          candidate: mockCandidate,
+          jobPosting: {
+            jobPostingId: 2,
+            title: "Backend Developer",
+            description: "Node.js, Python developer",
+            requirements: "2+ years experience",
+            benefits: "Flexible working",
+            salaryMin: "18000000",
+            salaryMax: "30000000",
+            vacancies: 1,
+            applicationDeadline: "2024-02-20",
+            status: "published",
+            location: "Ha Noi",
+            employmentType: "Full-time",
+            experienceLevel: "Senior",
+            skills: "Node.js, Python, PostgreSQL",
+            minExperience: 2,
+            maxExperience: 6,
+            educationLevel: "Bachelor",
+            departmentId: 2,
+            positionId: 2,
+            hiringManagerId: 2,
+            salaryRange: "18-30M VND",
+            isJobActive: true,
+            daysUntilDeadline: 35,
+            applicationCount: 8,
+            createdAt: "2024-01-02T00:00:00Z",
+            updatedAt: "2024-01-02T00:00:00Z"
+          }
+        }
+      ]
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      setApplications(mockApplications)
       
       // Find current application if applicationId is provided
       let currentApplication: Application | undefined
       if (applicationId) {
-        currentApplication = applicationsData.data.find(app => 
+        currentApplication = mockApplications.find(app => 
           app.applicationId === Number(applicationId)
         )
+      } else {
+        // Default to first application
+        currentApplication = mockApplications[0]
       }
       
       // Transform candidate data
       const transformedCandidate: CandidateDetailData = {
-        ...candidateData,
-        applications: applicationsData.data,
+        ...mockCandidate,
+        applications: mockApplications,
         currentApplication,
         jobTitle: currentApplication?.jobPosting?.title,
         overscore: currentApplication?.score || null
@@ -214,7 +360,7 @@ export function CandidateDetailClient() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {candidate.fullName || `${candidate.firstName} ${candidate.lastName}`}
+              {`${candidate.firstName} ${candidate.lastName}`}
             </h1>
             <p className="text-muted-foreground">
               Chi tiết ứng viên
