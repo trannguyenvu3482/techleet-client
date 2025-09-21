@@ -35,10 +35,24 @@ import {
   Save,
   X,
   Building,
-  DollarSign
+  DollarSign,
+  Image,
+  File,
+  FileSpreadsheet,
+  FileType,
+  Maximize2
 } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, Application, JobPosting, Candidate } from "@/lib/api/recruitment"
+
+interface CertificateFile {
+  id: string;
+  name: string;
+  url: string;
+  type: 'image' | 'document' | 'excel' | 'pdf' | 'other';
+  size: string;
+  uploadDate: string;
+}
 
 interface CandidateDetailData extends Candidate {
   applications?: Application[];
@@ -65,6 +79,7 @@ interface CandidateDetailData extends Candidate {
   availableForRemote?: boolean;
   availableStartDate?: string;
   source?: string;
+  certificates?: CertificateFile[];
 }
 
 export function CandidateDetailClient() {
@@ -136,7 +151,57 @@ export function CandidateDetailClient() {
         applications: [],
         currentApplication: undefined,
         jobTitle: undefined,
-        overscore: null
+        overscore: null,
+        certificates: [
+          {
+            id: "1",
+            name: "AWS Certified Developer Certificate.pdf",
+            url: "https://example.com/certificates/aws-developer.pdf",
+            type: "pdf",
+            size: "2.5 MB",
+            uploadDate: "2024-01-10T10:30:00Z"
+          },
+          {
+            id: "2",
+            name: "React Certification.jpg",
+            url: "https://example.com/certificates/react-cert.jpg",
+            type: "image",
+            size: "1.2 MB",
+            uploadDate: "2024-01-08T14:20:00Z"
+          },
+          {
+            id: "3",
+            name: "TypeScript Course Completion.xlsx",
+            url: "https://example.com/certificates/typescript-course.xlsx",
+            type: "excel",
+            size: "850 KB",
+            uploadDate: "2024-01-05T09:15:00Z"
+          },
+          {
+            id: "4",
+            name: "English Proficiency Test Results.pdf",
+            url: "https://example.com/certificates/english-test.pdf",
+            type: "pdf",
+            size: "1.8 MB",
+            uploadDate: "2024-01-03T16:45:00Z"
+          },
+          {
+            id: "5",
+            name: "Project Portfolio Documentation.docx",
+            url: "https://example.com/certificates/portfolio-docs.docx",
+            type: "document",
+            size: "3.2 MB",
+            uploadDate: "2024-01-01T11:30:00Z"
+          },
+          {
+            id: "6",
+            name: "University Degree Certificate.png",
+            url: "https://example.com/certificates/degree-cert.png",
+            type: "image",
+            size: "2.1 MB",
+            uploadDate: "2023-12-28T13:20:00Z"
+          }
+        ]
       }
 
       const mockApplications: Application[] = [
@@ -295,6 +360,37 @@ export function CandidateDetailClient() {
     if (score >= 80) return "text-green-600"
     if (score >= 60) return "text-yellow-600"
     return "text-red-600"
+  }
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'image':
+        return <Image className="h-5 w-5 text-blue-500" />
+      case 'pdf':
+        return <FileText className="h-5 w-5 text-red-500" />
+      case 'excel':
+        return <FileSpreadsheet className="h-5 w-5 text-green-500" />
+      case 'document':
+        return <File className="h-5 w-5 text-blue-600" />
+      default:
+        return <FileType className="h-5 w-5 text-gray-500" />
+    }
+  }
+
+  const handleFileClick = (file: CertificateFile) => {
+    // Open file in new tab
+    window.open(file.url, '_blank')
+  }
+
+  const handleFileDownload = (file: CertificateFile, event: React.MouseEvent) => {
+    event.stopPropagation()
+    // Trigger download
+    const link = document.createElement('a')
+    link.href = file.url
+    link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleStatusUpdate = async () => {
@@ -609,6 +705,95 @@ export function CandidateDetailClient() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Certificates & Documents */}
+          {candidate.certificates && candidate.certificates.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  Chứng chỉ & Tài liệu
+                </CardTitle>
+                <CardDescription>
+                  Danh sách các chứng chỉ và tài liệu đã nộp
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Horizontal scrollable file list */}
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
+                      {candidate.certificates.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex-shrink-0 w-64 border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
+                          onClick={() => handleFileClick(file)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              {getFileIcon(file.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate" title={file.name}>
+                                {file.name}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {file.size}
+                                </span>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(file.uploadDate)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => handleFileDownload(file, e)}
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Tải
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleFileClick(file)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Xem
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File type summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                    {['pdf', 'image', 'excel', 'document'].map((type) => {
+                      const count = candidate.certificates?.filter(f => f.type === type).length || 0
+                      if (count === 0) return null
+                      
+                      return (
+                        <div key={type} className="text-center">
+                          <div className="flex justify-center mb-2">
+                            {getFileIcon(type)}
+                          </div>
+                          <div className="text-sm font-medium">{count} file</div>
+                          <div className="text-xs text-muted-foreground capitalize">{type}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Application History */}
           {applications.length > 0 && (

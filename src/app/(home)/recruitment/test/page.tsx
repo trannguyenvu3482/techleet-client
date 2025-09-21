@@ -191,6 +191,8 @@ export default function RecruitmentTestPage() {
                       <li>• Quản lý trạng thái CV</li>
                       <li>• Lịch sử ứng tuyển</li>
                       <li>• Link từ job detail đến candidate list</li>
+                      <li>• Hiển thị chứng chỉ & tài liệu</li>
+                      <li>• Scroll ngang và preview file</li>
                     </ul>
                   </div>
                   <div>
@@ -203,6 +205,7 @@ export default function RecruitmentTestPage() {
                       <li>• Kỹ năng và ngôn ngữ lập trình</li>
                       <li>• Thông tin học vấn và kinh nghiệm</li>
                       <li>• Social links (LinkedIn, GitHub, Portfolio)</li>
+                      <li>• Chứng chỉ & tài liệu với preview</li>
                     </ul>
                   </div>
                 </div>
