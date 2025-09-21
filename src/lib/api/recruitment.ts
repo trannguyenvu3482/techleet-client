@@ -189,6 +189,7 @@ export interface Application {
   updatedAt: string;
   candidate?: Candidate;
   jobPosting?: JobPosting;
+  score?: number;
 }
 
 export interface CreateApplicationRequest {

@@ -106,7 +106,7 @@ export function JobDetailClient() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/recruitment/candidate/list?jobId=${job.jobPostingId}`}>
+          <Link href={`/recruitment/jobs/${job.jobPostingId}/applications`}>
             <Button variant="outline">
               <FileText className="mr-2 h-4 w-4" />
               Xem CV đã nộp
