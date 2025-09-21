@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,18 +25,14 @@ export function JobsListClient() {
   const [pageSize, setPageSize] = useState(10)
   const router = useRouter()
 
-  useEffect(() => {
-    fetchJobs()
-  }, [statusFilter, employmentTypeFilter, experienceLevelFilter, currentPage, pageSize])
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
       setLoading(true)
       const params: GetJobPostingsParams = {
         page: currentPage,
         limit: pageSize,
         keyword: searchTerm || undefined,
-        status: statusFilter !== "all" ? statusFilter as any : undefined,
+        status: statusFilter !== "all" ? (statusFilter as "draft" | "published" | "closed") : undefined,
         employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
         experienceLevel: experienceLevelFilter !== "all" ? experienceLevelFilter : undefined,
         sortBy: "createdAt",
@@ -52,7 +48,11 @@ export function JobsListClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter, employmentTypeFilter, experienceLevelFilter, currentPage, pageSize, searchTerm])
+
+  useEffect(() => {
+    fetchJobs()
+  }, [fetchJobs])
 
   const handleSearch = () => {
     setCurrentPage(0) // Reset to first page when searching

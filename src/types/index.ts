@@ -12,3 +12,6 @@ export * from './company';
 
 // Recruitment Types
 export * from './recruitment';
+
+// Document Types
+export * from './document';

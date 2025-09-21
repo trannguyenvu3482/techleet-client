@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Edit, Trash2, ArrowLeft, Calendar, MapPin, DollarSign, Building, Users, Clock, FileText } from "lucide-react"
@@ -16,13 +16,7 @@ export function JobDetailClient() {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (params.id) {
-      fetchJob(Number(params.id))
-    }
-  }, [params.id])
-
-  const fetchJob = async (jobId: number) => {
+  const fetchJob = useCallback(async (jobId: number) => {
     try {
       setLoading(true)
       const jobData = await recruitmentAPI.getJobPostingById(jobId)
@@ -33,7 +27,13 @@ export function JobDetailClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchJob(Number(params.id))
+    }
+  }, [params.id, fetchJob])
 
   const handleDeleteJob = async () => {
     if (!job) return

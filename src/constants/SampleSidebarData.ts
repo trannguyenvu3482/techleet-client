@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   Command,
+  FileText,
   GalleryVerticalEnd,
   PieChart,
   Settings2,
@@ -67,6 +68,33 @@ export const sidebarData = {
       title: "Nhân viên",
       url: "/employees",
       icon: Users,
+    },
+    {
+      title: "Tài liệu",
+      url: "/documents",
+      icon: FileText,
+      items: [
+        {
+          title: "Tất cả tài liệu",
+          url: "/documents",
+        },
+        {
+          title: "Quy trình onboarding",
+          url: "/documents/onboarding",
+        },
+        {
+          title: "Chính sách công ty",
+          url: "/documents/policies",
+        },
+        {
+          title: "Quy định nội bộ",
+          url: "/documents/regulations",
+        },
+        {
+          title: "Mẫu biểu & Form",
+          url: "/documents/templates",
+        },
+      ],
     },
     // {
     //   title: "Quản lý người dùng",

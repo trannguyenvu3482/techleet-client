@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,13 +40,7 @@ export function JobEditClient() {
     status: ""
   })
 
-  useEffect(() => {
-    if (params.id) {
-      fetchJob(Number(params.id))
-    }
-  }, [params.id])
-
-  const fetchJob = async (jobId: number) => {
+  const fetchJob = useCallback(async (jobId: number) => {
     try {
       setLoading(true)
       const jobData = await recruitmentAPI.getJobPostingById(jobId)
@@ -78,7 +72,13 @@ export function JobEditClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchJob(Number(params.id))
+    }
+  }, [params.id, fetchJob])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
