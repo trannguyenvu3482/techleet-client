@@ -30,6 +30,7 @@ import {
   Mail,
   Eye
 } from "lucide-react"
+import Link from "next/link"
 import { recruitmentAPI, Application, JobPosting } from "@/lib/api/recruitment"
 
 interface CandidateListItem {
@@ -387,10 +388,12 @@ export function CandidateListClient() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Xem chi tiết
-                        </Button>
+                        <Link href={`/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}` : ''}`}>
+                          <Button variant="outline" size="sm">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Xem chi tiết
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>
