@@ -348,6 +348,30 @@ export interface CvTestResult {
   };
 }
 
+// Candidate File Types
+export interface CandidateFile {
+  fileId: number;
+  originalName: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize: string;
+  fileType: string;
+  referenceId: number;
+  status: string;
+  description: string | null;
+  metadata: {
+    source: string;
+    messageId: string;
+    senderEmail: string;
+    subject: string;
+    downloadToken: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 // Recruitment Management API
 export const recruitmentAPI = {
   // Job Posting Management
@@ -443,6 +467,12 @@ export const recruitmentAPI = {
     return api.upload(
       `/api/v1/recruitment-service/candidates/${candidateId}/resume`,
       file
+    );
+  },
+
+  async getCandidateFiles(candidateId: number): Promise<CandidateFile[]> {
+    return api.get(
+      `/api/v1/recruitment-service/files/candidate/${candidateId}`
     );
   },
 

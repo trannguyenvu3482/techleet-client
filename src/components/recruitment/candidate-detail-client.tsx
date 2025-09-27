@@ -43,7 +43,7 @@ import {
   Maximize2
 } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, Application, JobPosting, Candidate } from "@/lib/api/recruitment"
+import { recruitmentAPI, Application, JobPosting, Candidate, CandidateFile } from "@/lib/api/recruitment"
 
 interface CertificateFile {
   id: string;
@@ -159,6 +159,7 @@ interface CandidateDetailData extends Candidate {
   availableStartDate?: string;
   source?: string;
   certificates?: CertificateFile[];
+  candidateFiles?: CandidateFile[];
 }
 
 export function CandidateDetailClient() {
@@ -167,6 +168,7 @@ export function CandidateDetailClient() {
   const searchParams = useSearchParams()
   const [candidate, setCandidate] = useState<CandidateDetailData | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
+  const [candidateFiles, setCandidateFiles] = useState<CandidateFile[]>([])
   const [loading, setLoading] = useState(true)
   const [isEditingStatus, setIsEditingStatus] = useState(false)
   const [newStatus, setNewStatus] = useState<string>("")
@@ -194,11 +196,9 @@ export function CandidateDetailClient() {
     try {
       setLoading(true)
       
-      // Try to fetch real data from API if applicationId is provided
       if (applicationId) {
         try {
           const response = await recruitmentAPI.getApplicationById(Number(applicationId))
-          
           
           if (response) {
             const {candidate:apiCandidate, application} = response
@@ -275,6 +275,15 @@ export function CandidateDetailClient() {
             
             setNewStatus(application.status)
             setSelectedApplicationId(application.applicationId)
+            
+            // Fetch candidate files
+            try {
+              const files = await recruitmentAPI.getCandidateFiles(apiCandidate.candidateId)
+              setCandidateFiles(files)
+            } catch (fileError) {
+              console.error("Error fetching candidate files:", fileError)
+              setCandidateFiles([])
+            }
             
             return // Exit early if API call successful
           }
@@ -492,6 +501,9 @@ export function CandidateDetailClient() {
         setNewStatus(currentApplication.applicationStatus)
         setSelectedApplicationId(currentApplication.applicationId)
       }
+      
+      // Set empty candidate files for mock data
+      setCandidateFiles([])
     } catch (error) {
       console.error("Error fetching data:", error)
       router.push("/recruitment/candidate/list")
@@ -554,6 +566,23 @@ export function CandidateDetailClient() {
     }
   }
 
+  const getFileIconFromMimeType = (mimeType: string) => {
+    if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />
+    if (mimeType.includes('image')) return <Image className="h-5 w-5 text-blue-500" />
+    if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />
+    if (mimeType.includes('word') || mimeType.includes('document')) return <File className="h-5 w-5 text-blue-600" />
+    return <FileType className="h-5 w-5 text-gray-500" />
+  }
+
+  const formatFileSize = (sizeInBytes: string) => {
+    const bytes = parseInt(sizeInBytes)
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
   const handleFileClick = (file: CertificateFile) => {
     // Open file in new tab
     window.open(file.url, '_blank')
@@ -565,6 +594,22 @@ export function CandidateDetailClient() {
     const link = document.createElement('a')
     link.href = file.url
     link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleCandidateFileClick = (file: CandidateFile) => {
+    // Open file in new tab
+    window.open(file.fileUrl, '_blank')
+  }
+
+  const handleCandidateFileDownload = (file: CandidateFile, event: React.MouseEvent) => {
+    event.stopPropagation()
+    // Trigger download
+    const link = document.createElement('a')
+    link.href = file.fileUrl
+    link.download = file.originalName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -642,15 +687,7 @@ export function CandidateDetailClient() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {candidate.resumeUrl && (
-            <Button 
-              variant="outline"
-              onClick={() => window.open(candidate.resumeUrl, '_blank')}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Tải CV
-            </Button>
-          )}
+          
           <Button 
             variant="outline"
             onClick={() => window.open(candidate.resumeUrl, '_blank')}
@@ -966,6 +1003,105 @@ export function CandidateDetailClient() {
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Candidate Files from API */}
+          {candidateFiles && candidateFiles.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Tài liệu ứng viên
+                </CardTitle>
+                <CardDescription>
+                  Danh sách các tài liệu được tải lên bởi ứng viên
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Horizontal scrollable file list */}
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
+                      {candidateFiles.map((file) => (
+                        <div
+                          key={file.fileId}
+                          className="flex-shrink-0 w-64 border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
+                          onClick={() => handleCandidateFileClick(file)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              {getFileIconFromMimeType(file.mimeType)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate" title={file.originalName}>
+                                {file.originalName}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.fileSize)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(file.createdAt)}
+                                </span>
+                              </div>
+                              {file.metadata?.subject && (
+                                <div className="text-xs text-muted-foreground mt-1 truncate" title={file.metadata.subject}>
+                                  Subject: {file.metadata.subject}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => handleCandidateFileDownload(file, e)}
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Tải
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleCandidateFileClick(file)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Xem
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File type summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                    {Object.entries(candidateFiles.reduce((acc, file) => {
+                      const type = file.mimeType.split('/')[0]
+                      acc[type] = (acc[type] || 0) + 1
+                      return acc
+                    }, {} as Record<string, number>)).map(([type, count]) => (
+                      <div key={type} className="text-center">
+                        <div className="flex justify-center mb-2">
+                          {type === 'application' ? (
+                            <FileText className="h-5 w-5 text-red-500" />
+                          ) : type === 'image' ? (
+                            <Image className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <FileType className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className="text-sm font-medium">{count} file</div>
+                        <div className="text-xs text-muted-foreground capitalize">{type}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
