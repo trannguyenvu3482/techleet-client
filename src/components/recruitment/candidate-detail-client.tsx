@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { 
   Select,
   SelectContent,
@@ -28,8 +27,6 @@ import {
   GraduationCap,
   ExternalLink,
   Eye,
-  CheckCircle,
-  XCircle,
   Clock,
   Edit,
   Save,
@@ -39,11 +36,10 @@ import {
   Image,
   File,
   FileSpreadsheet,
-  FileType,
-  Maximize2
+  FileType
 } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, Application, JobPosting, Candidate, CandidateFile } from "@/lib/api/recruitment"
+import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
 
 interface CertificateFile {
   id: string;
@@ -54,83 +50,33 @@ interface CertificateFile {
   uploadDate: string;
 }
 
-// Interface for real API response from /api/applications/{id}
-interface RealApplicationDetailResponse {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  data: {
-    application: {
-      createdAt: string;
-      updatedAt: string;
-      deletedAt: string | null;
-      isActive: boolean;
-      notes: string | null;
-      applicationId: number;
-      coverLetter: string | null;
-      resumeUrl: string | null;
-      status: string;
-      appliedDate: string;
-      reviewedDate: string | null;
-      reviewNotes: string | null;
-      score: number | null;
-      feedback: string | null;
-      offerDate: string | null;
-      offeredSalary: number | null;
-      offerExpiryDate: string | null;
-      offerStatus: string | null;
-      offerResponseDate: string | null;
-      rejectionReason: string | null;
-      expectedStartDate: string | null;
-      applicationNotes: string | null;
-      priority: string | null;
-      tags: string | null;
-      jobPostingId: number;
-      candidateId: number;
-      reviewedBy: number | null;
-      hiringManagerId: number | null;
-      isScreeningCompleted: boolean;
-      screeningScore: number | null;
-      screeningStatus: string;
-      screeningCompletedAt: string | null;
-    };
-    candidate: {
-      createdAt: string;
-      updatedAt: string;
-      deletedAt: string | null;
-      isActive: boolean;
-      notes: string | null;
-      candidateId: number;
-      firstName: string;
-      lastName: string;
-      email: string;
-      phoneNumber: string;
-      birthDate: string | null;
-      gender: string | null;
-      address: string;
-      resumeUrl: string | null;
-      linkedinUrl: string | null;
-      githubUrl: string | null;
-      portfolioUrl: string | null;
-      status: string;
-      appliedDate: string;
-      summary: string;
-      yearsOfExperience: number;
-      currentJobTitle: string | null;
-      currentCompany: string | null;
-      educationLevel: string | null;
-      fieldOfStudy: string | null;
-      university: string | null;
-      graduationYear: number | null;
-      skills: string;
-      programmingLanguages: string;
-      expectedSalary: number | null;
-      preferredEmploymentType: string | null;
-      availableForRemote: boolean;
-      availableStartDate: string | null;
-      source: string | null;
-    };
-  };
+interface ApiCandidateResponse extends Candidate {
+  university?: string;
+  yearsOfExperience?: number;
+  skills?: string;
+  summary?: string;
+  currentJobTitle?: string;
+  currentCompany?: string;
+  educationLevel?: string;
+  fieldOfStudy?: string;
+  graduationYear?: number;
+  programmingLanguages?: string;
+  expectedSalary?: number;
+  preferredEmploymentType?: string;
+  availableForRemote?: boolean;
+  availableStartDate?: string;
+  source?: string;
+  gender?: string;
+  status?: string;
+  appliedDate?: string;
+  birthDate?: string;
+  githubUrl?: string;
+}
+
+interface ApiApplicationResponse extends Omit<Application, 'score'> {
+  status: "pending" | "reviewing" | "approved" | "rejected";
+  appliedDate: string;
+  score: number | null;
 }
 
 interface CandidateDetailData extends Candidate {
@@ -179,20 +125,14 @@ export function CandidateDetailClient() {
   const candidateId = Number(params.candidateId)
 
   // Helper function to handle null/undefined values
-  const safeValue = (value: any, defaultValue: string = "-"): string => {
+  const safeValue = (value: unknown, defaultValue: string = "-"): string => {
     if (value === null || value === undefined || value === "") {
       return defaultValue;
     }
     return String(value);
   };
 
-  useEffect(() => {
-    if (candidateId) {
-      fetchData()
-    }
-  }, [candidateId, applicationId])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -201,7 +141,7 @@ export function CandidateDetailClient() {
           const response = await recruitmentAPI.getApplicationById(Number(applicationId))
           
           if (response) {
-            const {candidate:apiCandidate, application} = response
+            const {candidate:apiCandidate, application} = response as {candidate: ApiCandidateResponse, application: ApiApplicationResponse}
             
             // Transform API data to match our interface
             const transformedCandidate: CandidateDetailData = {
@@ -213,7 +153,7 @@ export function CandidateDetailClient() {
               address: "Hồ Chí Minh",//safeValue(apiCandidate.address)
               city: "-", // Not in API response
               postalCode: "-", // Not in API response
-              education: safeValue(apiCandidate.university),
+              education: safeValue(apiCandidate.university || apiCandidate.education),
               workExperience: `${safeValue(apiCandidate.yearsOfExperience)} năm kinh nghiệm`,
               skills: apiCandidate.skills ? JSON.parse(apiCandidate.skills).join(", ") : "-",
               certifications: "-", // Not in API response
@@ -256,7 +196,7 @@ export function CandidateDetailClient() {
               candidateId: application.candidateId,
               jobPostingId: application.jobPostingId,
               coverLetter: safeValue(application.coverLetter),
-              applicationStatus: application.status as any,
+              applicationStatus: application.status === "approved" ? "accepted" : application.status as "pending" | "reviewing" | "interview" | "rejected" | "accepted",
               appliedAt: application.appliedDate,
               updatedAt: application.updatedAt,
               score: application.score || undefined,
@@ -510,7 +450,13 @@ export function CandidateDetailClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [candidateId, applicationId, router])
+
+  useEffect(() => {
+    if (candidateId) {
+      fetchData()
+    }
+  }, [candidateId, applicationId, fetchData])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -554,6 +500,7 @@ export function CandidateDetailClient() {
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'image':
+        // eslint-disable-next-line jsx-a11y/alt-text
         return <Image className="h-5 w-5 text-blue-500" />
       case 'pdf':
         return <FileText className="h-5 w-5 text-red-500" />
@@ -568,6 +515,7 @@ export function CandidateDetailClient() {
 
   const getFileIconFromMimeType = (mimeType: string) => {
     if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />
+    // eslint-disable-next-line jsx-a11y/alt-text
     if (mimeType.includes('image')) return <Image className="h-5 w-5 text-blue-500" />
     if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />
     if (mimeType.includes('word') || mimeType.includes('document')) return <File className="h-5 w-5 text-blue-600" />
@@ -613,7 +561,7 @@ export function CandidateDetailClient() {
     
     try {
       await recruitmentAPI.updateApplication(selectedApplicationId, {
-        applicationStatus: newStatus as any
+        applicationStatus: newStatus === "approved" ? "accepted" : newStatus as "pending" | "reviewing" | "interview" | "rejected" | "accepted"
       })
       setIsEditingStatus(false)
       fetchData() // Refresh data
@@ -1077,6 +1025,7 @@ export function CandidateDetailClient() {
                           {type === 'application' ? (
                             <FileText className="h-5 w-5 text-red-500" />
                           ) : type === 'image' ? (
+                            // eslint-disable-next-line jsx-a11y/alt-text
                             <Image className="h-5 w-5 text-blue-500" />
                           ) : (
                             <FileType className="h-5 w-5 text-gray-500" />

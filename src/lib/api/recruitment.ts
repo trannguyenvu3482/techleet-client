@@ -485,11 +485,22 @@ export const recruitmentAPI = {
 
   async getApplicationById(
     applicationId: number
-  ): Promise<{ application: any; candidate: any }> {
+  ): Promise<{ application: Application; candidate: Candidate }> {
     return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
   },
 
-  async getApplicationsByJobId(jobId: number): Promise<any> {
+  async getApplicationsByJobId(jobId: number): Promise<{ 
+    data: Array<{
+      applicationId: number;
+      candidateId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      status: string;
+      createdAt: string;
+      score: number | null;
+    }>
+  }> {
     return api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
   },
 

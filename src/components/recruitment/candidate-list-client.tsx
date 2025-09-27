@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,11 +27,9 @@ import {
   Users,
   Calendar,
   Star,
-  Mail,
-  Eye
+  Mail
 } from "lucide-react"
-import Link from "next/link"
-import { recruitmentAPI, Application, JobPosting } from "@/lib/api/recruitment"
+import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
 
 interface CandidateListItem {
   candidateId: number;
@@ -42,77 +40,6 @@ interface CandidateListItem {
   overscore: number | null;
   applicationId?: number;
   jobTitle?: string;
-}
-
-// Interface for real API response from /api/applications/job/{jobId}
-interface RealApplicationResponse {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  data: {
-    data: Array<{
-      createdAt: string;
-      updatedAt: string;
-      deletedAt: string | null;
-      isActive: boolean;
-      notes: string | null;
-      applicationId: number;
-      coverLetter: string | null;
-      resumeUrl: string | null;
-      status: string;
-      appliedDate: string;
-      reviewedDate: string | null;
-      reviewNotes: string | null;
-      score: number | null;
-      feedback: string | null;
-      offerDate: string | null;
-      offeredSalary: number | null;
-      offerExpiryDate: string | null;
-      offerStatus: string | null;
-      offerResponseDate: string | null;
-      rejectionReason: string | null;
-      expectedStartDate: string | null;
-      applicationNotes: string | null;
-      priority: string | null;
-      tags: string | null;
-      jobPostingId: number;
-      candidateId: number;
-      reviewedBy: number | null;
-      hiringManagerId: number | null;
-      isScreeningCompleted: boolean;
-      screeningScore: number | null;
-      screeningStatus: string;
-      screeningCompletedAt: string | null;
-      firstName: string;
-      lastName: string;
-      email: string;
-      phoneNumber: string;
-      birthDate: string | null;
-      gender: string | null;
-      address: string;
-      linkedinUrl: string | null;
-      githubUrl: string | null;
-      portfolioUrl: string | null;
-      summary: string;
-      yearsOfExperience: number;
-      currentJobTitle: string | null;
-      currentCompany: string | null;
-      educationLevel: string | null;
-      fieldOfStudy: string | null;
-      university: string | null;
-      graduationYear: number | null;
-      skills: string;
-      programmingLanguages: string;
-      expectedSalary: number | null;
-      preferredEmploymentType: string | null;
-      availableForRemote: boolean;
-      availableStartDate: string | null;
-      source: string | null;
-    }>;
-    total: number;
-    page: number;
-    limit: number;
-  };
 }
 
 export function CandidateListClient() {
@@ -131,11 +58,6 @@ export function CandidateListClient() {
   const isJobSpecific = !!urlJobId || (jobIdFilter && jobIdFilter !== "all")
 
   useEffect(() => {
-    fetchData()
-    fetchJobs()
-  }, [sortBy, sortOrder, jobIdFilter])
-
-  useEffect(() => {
     if (urlJobId) {
       setJobIdFilter(urlJobId)
     } else {
@@ -143,7 +65,7 @@ export function CandidateListClient() {
     }
   }, [urlJobId])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -313,7 +235,7 @@ export function CandidateListClient() {
             
             if (response) {
               console.log("response",response)
-              realCandidates = response.data.map((app: any) => ({
+              realCandidates = response.data.map((app) => ({
                 candidateId: app.candidateId,
                 fullname: `${app.firstName} ${app.lastName}`,
                 email: app.email,
@@ -377,7 +299,12 @@ export function CandidateListClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isJobSpecific, urlJobId, jobIdFilter])
+
+  useEffect(() => {
+    fetchData()
+    fetchJobs()
+  }, [sortBy, sortOrder, jobIdFilter, fetchData])
 
   const fetchJobs = async () => {
     try {
