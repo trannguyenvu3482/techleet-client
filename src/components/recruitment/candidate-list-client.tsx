@@ -44,6 +44,77 @@ interface CandidateListItem {
   jobTitle?: string;
 }
 
+// Interface for real API response from /api/applications/job/{jobId}
+interface RealApplicationResponse {
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  data: {
+    data: Array<{
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      isActive: boolean;
+      notes: string | null;
+      applicationId: number;
+      coverLetter: string | null;
+      resumeUrl: string | null;
+      status: string;
+      appliedDate: string;
+      reviewedDate: string | null;
+      reviewNotes: string | null;
+      score: number | null;
+      feedback: string | null;
+      offerDate: string | null;
+      offeredSalary: number | null;
+      offerExpiryDate: string | null;
+      offerStatus: string | null;
+      offerResponseDate: string | null;
+      rejectionReason: string | null;
+      expectedStartDate: string | null;
+      applicationNotes: string | null;
+      priority: string | null;
+      tags: string | null;
+      jobPostingId: number;
+      candidateId: number;
+      reviewedBy: number | null;
+      hiringManagerId: number | null;
+      isScreeningCompleted: boolean;
+      screeningScore: number | null;
+      screeningStatus: string;
+      screeningCompletedAt: string | null;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      birthDate: string | null;
+      gender: string | null;
+      address: string;
+      linkedinUrl: string | null;
+      githubUrl: string | null;
+      portfolioUrl: string | null;
+      summary: string;
+      yearsOfExperience: number;
+      currentJobTitle: string | null;
+      currentCompany: string | null;
+      educationLevel: string | null;
+      fieldOfStudy: string | null;
+      university: string | null;
+      graduationYear: number | null;
+      skills: string;
+      programmingLanguages: string;
+      expectedSalary: number | null;
+      preferredEmploymentType: string | null;
+      availableForRemote: boolean;
+      availableStartDate: string | null;
+      source: string | null;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
 export function CandidateListClient() {
   const searchParams = useSearchParams()
   const [candidates, setCandidates] = useState<CandidateListItem[]>([])
@@ -56,6 +127,7 @@ export function CandidateListClient() {
   
   // Get jobId from URL params or search
   const urlJobId = searchParams.get("jobId")
+  console.log("urlJobId",urlJobId)
   const isJobSpecific = !!urlJobId || (jobIdFilter && jobIdFilter !== "all")
 
   useEffect(() => {
@@ -126,6 +198,46 @@ export function CandidateListClient() {
           overscore: 45,
           applicationId: 105,
           jobTitle: "DevOps Engineer"
+        },
+        {
+          candidateId: 6,
+          fullname: "Võ Thị Phương",
+          email: "vothiphuong@email.com",
+          status: "hired",
+          createdAt: "2024-01-11T08:20:00Z",
+          overscore: 95,
+          applicationId: 106,
+          jobTitle: "Product Manager"
+        },
+        {
+          candidateId: 7,
+          fullname: "Đỗ Minh Tuấn",
+          email: "dominhtuan@email.com",
+          status: "withdrawn",
+          createdAt: "2024-01-10T15:45:00Z",
+          overscore: 60,
+          applicationId: 107,
+          jobTitle: "Data Analyst"
+        },
+        {
+          candidateId: 8,
+          fullname: "Bùi Thị Lan",
+          email: "buithilan@email.com",
+          status: "active",
+          createdAt: "2024-01-09T12:30:00Z",
+          overscore: null,
+          applicationId: undefined,
+          jobTitle: undefined
+        },
+        {
+          candidateId: 9,
+          fullname: "Nguyễn Đức Minh",
+          email: "nguyenducminh@email.com",
+          status: "inactive",
+          createdAt: "2024-01-08T09:15:00Z",
+          overscore: null,
+          applicationId: undefined,
+          jobTitle: undefined
         }
       ]
 
@@ -188,29 +300,73 @@ export function CandidateListClient() {
         }
       ]
 
+      // Fetch real data from API if jobId is specified
+      let realCandidates: CandidateListItem[] = []
+      console.log("isJobSpecific",isJobSpecific)
+      if (isJobSpecific) {
+        try {
+          const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
+          console.log("jobId",jobId)
+          if (jobId) {
+            const response = await recruitmentAPI.getApplicationsByJobId(Number(jobId))
+            console.log("response",response)
+            
+            if (response) {
+              console.log("response",response)
+              realCandidates = response.data.map((app: any) => ({
+                candidateId: app.candidateId,
+                fullname: `${app.firstName} ${app.lastName}`,
+                email: app.email,
+                status: app.status,
+                createdAt: app.createdAt,
+                overscore: app.score,
+                applicationId: app.applicationId,
+                jobTitle: undefined // Will be filled by job filter logic
+              }))
+            }
+          }
+        } catch (apiError) {
+          console.error("Error fetching real API data:", apiError)
+          // Continue with mock data only if API fails
+        }
+      }
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       if (isJobSpecific) {
         // Filter candidates by job if jobId is provided
         const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
-        const filteredCandidates = jobId 
+        const filteredMockCandidates = jobId 
           ? mockCandidates.filter(c => c.jobTitle?.toLowerCase().includes(jobId === "1" ? "frontend" : "backend"))
           : mockCandidates
         
-        setCandidates(filteredCandidates)
+        // Combine mock data with real data (mock first, then real)
+        const combinedCandidates = [...filteredMockCandidates, ...realCandidates]
+        
+        setCandidates(combinedCandidates)
         setJobs(mockJobs)
       } else {
         // Show all candidates without overscore for general view
-        const generalCandidates = mockCandidates.map(candidate => ({
+        const generalMockCandidates = mockCandidates.map(candidate => ({
           ...candidate,
           overscore: null,
           applicationId: undefined,
           jobTitle: undefined,
-          status: candidate.status === "screening" || candidate.status === "interviewing" ? "active" : "inactive"
+          // Keep original status for display
         }))
         
-        setCandidates(generalCandidates)
+        // Combine mock data with real data for general view (also remove overscore from real data)
+        const generalRealCandidates = realCandidates.map(candidate => ({
+          ...candidate,
+          overscore: null,
+          applicationId: undefined,
+          jobTitle: undefined,
+        }))
+        
+        const combinedCandidates = [...generalMockCandidates, ...generalRealCandidates]
+        
+        setCandidates(combinedCandidates)
         setJobs(mockJobs)
       }
     } catch (error) {
@@ -289,6 +445,11 @@ export function CandidateListClient() {
       url.searchParams.delete("jobId")
       window.history.pushState({}, "", url.toString())
     }
+  }
+
+  const handleRowClick = (candidate: CandidateListItem) => {
+    const url = `/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}` : ''}`
+    window.location.href = url
   }
 
   const filteredCandidates = candidates.filter(candidate =>
@@ -443,13 +604,12 @@ export function CandidateListClient() {
                   </TableHead>
                 )}
                 <TableHead>Ngày tạo</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCandidates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isJobSpecific ? 6 : 5} className="text-center py-8">
+                  <TableCell colSpan={isJobSpecific ? 5 : 4} className="text-center py-8">
                     <div className="text-muted-foreground">
                       Không tìm thấy ứng viên nào
                     </div>
@@ -457,7 +617,11 @@ export function CandidateListClient() {
                 </TableRow>
               ) : (
                 filteredCandidates.map((candidate) => (
-                  <TableRow key={candidate.candidateId}>
+                  <TableRow 
+                    key={candidate.candidateId}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(candidate)}
+                  >
                     <TableCell className="font-medium">
                       {candidate.fullname}
                     </TableCell>
@@ -484,16 +648,6 @@ export function CandidateListClient() {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         {formatDate(candidate.createdAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}` : ''}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Xem chi tiết
-                          </Button>
-                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

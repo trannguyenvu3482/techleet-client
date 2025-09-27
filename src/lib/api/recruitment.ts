@@ -457,6 +457,10 @@ export const recruitmentAPI = {
     return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
   },
 
+  async getApplicationsByJobId(jobId: number): Promise<any> {
+    return api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
+  },
+
   async createApplication(
     data: CreateApplicationRequest
   ): Promise<Application> {
