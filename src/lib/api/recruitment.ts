@@ -453,7 +453,9 @@ export const recruitmentAPI = {
     return api.get("/api/v1/recruitment-service/applications", params);
   },
 
-  async getApplicationById(applicationId: number): Promise<Application> {
+  async getApplicationById(
+    applicationId: number
+  ): Promise<{ application: any; candidate: any }> {
     return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
   },
 

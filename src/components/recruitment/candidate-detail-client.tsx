@@ -54,6 +54,85 @@ interface CertificateFile {
   uploadDate: string;
 }
 
+// Interface for real API response from /api/applications/{id}
+interface RealApplicationDetailResponse {
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  data: {
+    application: {
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      isActive: boolean;
+      notes: string | null;
+      applicationId: number;
+      coverLetter: string | null;
+      resumeUrl: string | null;
+      status: string;
+      appliedDate: string;
+      reviewedDate: string | null;
+      reviewNotes: string | null;
+      score: number | null;
+      feedback: string | null;
+      offerDate: string | null;
+      offeredSalary: number | null;
+      offerExpiryDate: string | null;
+      offerStatus: string | null;
+      offerResponseDate: string | null;
+      rejectionReason: string | null;
+      expectedStartDate: string | null;
+      applicationNotes: string | null;
+      priority: string | null;
+      tags: string | null;
+      jobPostingId: number;
+      candidateId: number;
+      reviewedBy: number | null;
+      hiringManagerId: number | null;
+      isScreeningCompleted: boolean;
+      screeningScore: number | null;
+      screeningStatus: string;
+      screeningCompletedAt: string | null;
+    };
+    candidate: {
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      isActive: boolean;
+      notes: string | null;
+      candidateId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      birthDate: string | null;
+      gender: string | null;
+      address: string;
+      resumeUrl: string | null;
+      linkedinUrl: string | null;
+      githubUrl: string | null;
+      portfolioUrl: string | null;
+      status: string;
+      appliedDate: string;
+      summary: string;
+      yearsOfExperience: number;
+      currentJobTitle: string | null;
+      currentCompany: string | null;
+      educationLevel: string | null;
+      fieldOfStudy: string | null;
+      university: string | null;
+      graduationYear: number | null;
+      skills: string;
+      programmingLanguages: string;
+      expectedSalary: number | null;
+      preferredEmploymentType: string | null;
+      availableForRemote: boolean;
+      availableStartDate: string | null;
+      source: string | null;
+    };
+  };
+}
+
 interface CandidateDetailData extends Candidate {
   applications?: Application[];
   currentApplication?: Application;
@@ -97,6 +176,14 @@ export function CandidateDetailClient() {
   const applicationId = searchParams.get("applicationId")
   const candidateId = Number(params.candidateId)
 
+  // Helper function to handle null/undefined values
+  const safeValue = (value: any, defaultValue: string = "-"): string => {
+    if (value === null || value === undefined || value === "") {
+      return defaultValue;
+    }
+    return String(value);
+  };
+
   useEffect(() => {
     if (candidateId) {
       fetchData()
@@ -107,7 +194,97 @@ export function CandidateDetailClient() {
     try {
       setLoading(true)
       
-      // Mock data for testing when API is not available
+      // Try to fetch real data from API if applicationId is provided
+      if (applicationId) {
+        try {
+          const response = await recruitmentAPI.getApplicationById(Number(applicationId))
+          
+          
+          if (response) {
+            const {candidate:apiCandidate, application} = response
+            
+            // Transform API data to match our interface
+            const transformedCandidate: CandidateDetailData = {
+              candidateId: apiCandidate.candidateId,
+              firstName: safeValue(apiCandidate.firstName),
+              lastName: safeValue(apiCandidate.lastName),
+              email: safeValue(apiCandidate.email),
+              phoneNumber: safeValue(apiCandidate.phoneNumber),
+              address: "Hồ Chí Minh",//safeValue(apiCandidate.address)
+              city: "-", // Not in API response
+              postalCode: "-", // Not in API response
+              education: safeValue(apiCandidate.university),
+              workExperience: `${safeValue(apiCandidate.yearsOfExperience)} năm kinh nghiệm`,
+              skills: apiCandidate.skills ? JSON.parse(apiCandidate.skills).join(", ") : "-",
+              certifications: "-", // Not in API response
+              portfolioUrl: safeValue(apiCandidate.portfolioUrl),
+              linkedinUrl: safeValue(apiCandidate.linkedinUrl),
+              resumeUrl: safeValue(apiCandidate.resumeUrl),
+              createdAt: apiCandidate.createdAt,
+              updatedAt: apiCandidate.updatedAt,
+              isActive: apiCandidate.isActive,
+              // Additional fields from candidate entity
+              birthDate: safeValue(apiCandidate.birthDate),
+              gender: apiCandidate.gender === "Male" ? true : apiCandidate.gender === "Female" ? false : undefined,
+              githubUrl: safeValue(apiCandidate.githubUrl),
+              status: safeValue(apiCandidate.status),
+              appliedDate: safeValue(apiCandidate.appliedDate),
+              summary: safeValue(apiCandidate.summary),
+              yearsOfExperience: apiCandidate.yearsOfExperience || 0,
+              currentJobTitle: safeValue(apiCandidate.currentJobTitle),
+              currentCompany: safeValue(apiCandidate.currentCompany),
+              educationLevel: safeValue(apiCandidate.educationLevel),
+              fieldOfStudy: safeValue(apiCandidate.fieldOfStudy),
+              university: safeValue(apiCandidate.university),
+              graduationYear: apiCandidate.graduationYear || undefined,
+              programmingLanguages: apiCandidate.programmingLanguages ? JSON.parse(apiCandidate.programmingLanguages).join(", ") : "-",
+              expectedSalary: apiCandidate.expectedSalary || undefined,
+              preferredEmploymentType: safeValue(apiCandidate.preferredEmploymentType),
+              availableForRemote: apiCandidate.availableForRemote,
+              availableStartDate: safeValue(apiCandidate.availableStartDate),
+              source: safeValue(apiCandidate.source),
+              applications: [],
+              currentApplication: undefined,
+              jobTitle: undefined,
+              overscore: application.score || null,
+              certificates: [] // Not in API response
+            }
+
+            // Create application object
+            const transformedApplication: Application = {
+              applicationId: application.applicationId,
+              candidateId: application.candidateId,
+              jobPostingId: application.jobPostingId,
+              coverLetter: safeValue(application.coverLetter),
+              applicationStatus: application.status as any,
+              appliedAt: application.appliedDate,
+              updatedAt: application.updatedAt,
+              score: application.score || undefined,
+              candidate: transformedCandidate,
+              jobPosting: undefined // Not in API response
+            }
+
+            setApplications([transformedApplication])
+            setCandidate({
+              ...transformedCandidate,
+              applications: [transformedApplication],
+              currentApplication: transformedApplication,
+              jobTitle: undefined, // Will be filled when job data is available
+              overscore: application.score || undefined
+            })
+            
+            setNewStatus(application.status)
+            setSelectedApplicationId(application.applicationId)
+            
+            return // Exit early if API call successful
+          }
+        } catch (apiError) {
+          console.error("Error fetching real API data:", apiError)
+          // Continue with mock data if API fails
+        }
+      }
+      
+      // Fallback to mock data
       const mockCandidate: CandidateDetailData = {
         candidateId: candidateId,
         firstName: "Nguyễn Văn",
@@ -512,19 +689,19 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Địa chỉ:</strong> {candidate.address || "N/A"}
+                    <strong>Địa chỉ:</strong> {safeValue(candidate.address)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Ngày sinh:</strong> {candidate.birthDate ? formatDate(candidate.birthDate) : "N/A"}
+                    <strong>Ngày sinh:</strong> {candidate.birthDate ? formatDate(candidate.birthDate) : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Giới tính:</strong> {candidate.gender === true ? "Nam" : candidate.gender === false ? "Nữ" : "N/A"}
+                    <strong>Giới tính:</strong> {candidate.gender === true ? "Nam" : candidate.gender === false ? "Nữ" : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -601,25 +778,25 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Công ty hiện tại:</strong> {candidate.currentCompany || "N/A"}
+                    <strong>Công ty hiện tại:</strong> {safeValue(candidate.currentCompany)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Vị trí hiện tại:</strong> {candidate.currentJobTitle || "N/A"}
+                    <strong>Vị trí hiện tại:</strong> {safeValue(candidate.currentJobTitle)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Mức lương mong muốn:</strong> {formatSalary(candidate.expectedSalary)}
+                    <strong>Mức lương mong muốn:</strong> {candidate.expectedSalary ? formatSalary(candidate.expectedSalary) : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Loại công việc:</strong> {candidate.preferredEmploymentType || "N/A"}
+                    <strong>Loại công việc:</strong> {safeValue(candidate.preferredEmploymentType)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -681,25 +858,25 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Trình độ:</strong> {candidate.educationLevel || "N/A"}
+                    <strong>Trình độ:</strong> {safeValue(candidate.educationLevel)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Chuyên ngành:</strong> {candidate.fieldOfStudy || "N/A"}
+                    <strong>Chuyên ngành:</strong> {safeValue(candidate.fieldOfStudy)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Trường:</strong> {candidate.university || "N/A"}
+                    <strong>Trường:</strong> {safeValue(candidate.university)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Năm tốt nghiệp:</strong> {candidate.graduationYear || "N/A"}
+                    <strong>Năm tốt nghiệp:</strong> {candidate.graduationYear ? candidate.graduationYear.toString() : "-"}
                   </span>
                 </div>
               </div>

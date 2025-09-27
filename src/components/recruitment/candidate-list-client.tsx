@@ -581,6 +581,7 @@ export function CandidateListClient() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Mã</TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort("createdAt")}
@@ -609,7 +610,7 @@ export function CandidateListClient() {
             <TableBody>
               {filteredCandidates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isJobSpecific ? 5 : 4} className="text-center py-8">
+                  <TableCell colSpan={isJobSpecific ? 6 : 5} className="text-center py-8">
                     <div className="text-muted-foreground">
                       Không tìm thấy ứng viên nào
                     </div>
@@ -622,6 +623,9 @@ export function CandidateListClient() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(candidate)}
                   >
+                    <TableCell className="font-medium">
+                      {candidate.candidateId}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {candidate.fullname}
                     </TableCell>

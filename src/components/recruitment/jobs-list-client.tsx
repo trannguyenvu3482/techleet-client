@@ -249,6 +249,7 @@ export function JobsListClient() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Vị trí</TableHead>
                   <TableHead>Loại việc làm</TableHead>
                   <TableHead>Kinh nghiệm</TableHead>
@@ -263,6 +264,9 @@ export function JobsListClient() {
               <TableBody>
                 {jobs.map((job) => (
                   <TableRow className="cursor-pointer" onClick={() => router.push(`/recruitment/jobs/detail/${job.jobPostingId}`)} key={job.jobPostingId} >
+                    <TableCell>
+                      {job.jobPostingId}
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{job.title}</div>
@@ -307,16 +311,6 @@ export function JobsListClient() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {/* <Link href={`/recruitment/jobs/detail/${job.jobPostingId}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/recruitment/jobs/edit/${job.jobPostingId}`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link> */}
                         <Button 
                           variant="ghost" 
                           size="sm"
