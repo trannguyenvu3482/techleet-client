@@ -585,14 +585,17 @@ export function CandidateDetailClient() {
 
   const handleFileClick = (file: CertificateFile) => {
     // Open file in new tab
-    window.open(file.url, '_blank')
+    console.log("https://techleet.me/api/v1/recruitment-service/" + file.url)
+    window.open("https://techleet.me/api/v1/recruitment-service/" + file.url, '_blank')
   }
 
   const handleFileDownload = (file: CertificateFile, event: React.MouseEvent) => {
+    console.log("https://techleet.me/api/v1/recruitment-service/" + file)
+
     event.stopPropagation()
     // Trigger download
     const link = document.createElement('a')
-    link.href = file.url
+    link.href = "https://techleet.me/api/v1/recruitment-service/" + file.url
     link.download = file.name
     document.body.appendChild(link)
     link.click()
@@ -601,19 +604,9 @@ export function CandidateDetailClient() {
 
   const handleCandidateFileClick = (file: CandidateFile) => {
     // Open file in new tab
-    window.open(file.fileUrl, '_blank')
+    window.open("https://techleet.me/api/v1/recruitment-service/" + file.fileUrl, '_blank')
   }
 
-  const handleCandidateFileDownload = (file: CandidateFile, event: React.MouseEvent) => {
-    event.stopPropagation()
-    // Trigger download
-    const link = document.createElement('a')
-    link.href = file.fileUrl
-    link.download = file.originalName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   const handleStatusUpdate = async () => {
     if (!selectedApplicationId || !newStatus) return
@@ -686,16 +679,7 @@ export function CandidateDetailClient() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          
-          <Button 
-            variant="outline"
-            onClick={() => window.open(candidate.resumeUrl, '_blank')}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Xem CV
-          </Button>
-        </div>
+        
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -1054,8 +1038,8 @@ export function CandidateDetailClient() {
                                   Subject: {file.metadata.subject}
                                 </div>
                               )}
-                              <div className="flex items-center gap-2 mt-2">
-                                <Button
+                              <div className="flex items-end gap-2 mt-2 justify-end  ">
+                                {/* <Button
                                   size="sm"
                                   variant="outline"
                                   className="h-6 px-2 text-xs"
@@ -1063,7 +1047,7 @@ export function CandidateDetailClient() {
                                 >
                                   <Download className="h-3 w-3 mr-1" />
                                   Tải
-                                </Button>
+                                </Button> */}
                                 <Button
                                   size="sm"
                                   variant="outline"
