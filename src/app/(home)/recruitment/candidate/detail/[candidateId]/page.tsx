@@ -1,23 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { CandidateDetailClient } from "@/components/recruitment/candidate-detail-client";
 import { useRequireAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 export default function CandidateDetailPage() {
   const { isLoading } = useRequireAuth();
