@@ -52,7 +52,7 @@ export const sidebarData = {
         },
         {
           title: "Danh sách ứng viên",
-          url: "/recruitment/candidates",
+          url: "/recruitment/candidate/list",
         },
         {
           title: "Đơn ứng tuyển",
