@@ -43,7 +43,7 @@ import {
   Maximize2
 } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, Application, JobPosting, Candidate } from "@/lib/api/recruitment"
+import { recruitmentAPI, Application, JobPosting, Candidate, CandidateFile } from "@/lib/api/recruitment"
 
 interface CertificateFile {
   id: string;
@@ -52,6 +52,85 @@ interface CertificateFile {
   type: 'image' | 'document' | 'excel' | 'pdf' | 'other';
   size: string;
   uploadDate: string;
+}
+
+// Interface for real API response from /api/applications/{id}
+interface RealApplicationDetailResponse {
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  data: {
+    application: {
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      isActive: boolean;
+      notes: string | null;
+      applicationId: number;
+      coverLetter: string | null;
+      resumeUrl: string | null;
+      status: string;
+      appliedDate: string;
+      reviewedDate: string | null;
+      reviewNotes: string | null;
+      score: number | null;
+      feedback: string | null;
+      offerDate: string | null;
+      offeredSalary: number | null;
+      offerExpiryDate: string | null;
+      offerStatus: string | null;
+      offerResponseDate: string | null;
+      rejectionReason: string | null;
+      expectedStartDate: string | null;
+      applicationNotes: string | null;
+      priority: string | null;
+      tags: string | null;
+      jobPostingId: number;
+      candidateId: number;
+      reviewedBy: number | null;
+      hiringManagerId: number | null;
+      isScreeningCompleted: boolean;
+      screeningScore: number | null;
+      screeningStatus: string;
+      screeningCompletedAt: string | null;
+    };
+    candidate: {
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      isActive: boolean;
+      notes: string | null;
+      candidateId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      birthDate: string | null;
+      gender: string | null;
+      address: string;
+      resumeUrl: string | null;
+      linkedinUrl: string | null;
+      githubUrl: string | null;
+      portfolioUrl: string | null;
+      status: string;
+      appliedDate: string;
+      summary: string;
+      yearsOfExperience: number;
+      currentJobTitle: string | null;
+      currentCompany: string | null;
+      educationLevel: string | null;
+      fieldOfStudy: string | null;
+      university: string | null;
+      graduationYear: number | null;
+      skills: string;
+      programmingLanguages: string;
+      expectedSalary: number | null;
+      preferredEmploymentType: string | null;
+      availableForRemote: boolean;
+      availableStartDate: string | null;
+      source: string | null;
+    };
+  };
 }
 
 interface CandidateDetailData extends Candidate {
@@ -80,6 +159,7 @@ interface CandidateDetailData extends Candidate {
   availableStartDate?: string;
   source?: string;
   certificates?: CertificateFile[];
+  candidateFiles?: CandidateFile[];
 }
 
 export function CandidateDetailClient() {
@@ -88,6 +168,7 @@ export function CandidateDetailClient() {
   const searchParams = useSearchParams()
   const [candidate, setCandidate] = useState<CandidateDetailData | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
+  const [candidateFiles, setCandidateFiles] = useState<CandidateFile[]>([])
   const [loading, setLoading] = useState(true)
   const [isEditingStatus, setIsEditingStatus] = useState(false)
   const [newStatus, setNewStatus] = useState<string>("")
@@ -96,6 +177,14 @@ export function CandidateDetailClient() {
   // Get applicationId from URL params if available
   const applicationId = searchParams.get("applicationId")
   const candidateId = Number(params.candidateId)
+
+  // Helper function to handle null/undefined values
+  const safeValue = (value: any, defaultValue: string = "-"): string => {
+    if (value === null || value === undefined || value === "") {
+      return defaultValue;
+    }
+    return String(value);
+  };
 
   useEffect(() => {
     if (candidateId) {
@@ -107,7 +196,104 @@ export function CandidateDetailClient() {
     try {
       setLoading(true)
       
-      // Mock data for testing when API is not available
+      if (applicationId) {
+        try {
+          const response = await recruitmentAPI.getApplicationById(Number(applicationId))
+          
+          if (response) {
+            const {candidate:apiCandidate, application} = response
+            
+            // Transform API data to match our interface
+            const transformedCandidate: CandidateDetailData = {
+              candidateId: apiCandidate.candidateId,
+              firstName: safeValue(apiCandidate.firstName),
+              lastName: safeValue(apiCandidate.lastName),
+              email: safeValue(apiCandidate.email),
+              phoneNumber: safeValue(apiCandidate.phoneNumber),
+              address: "Hồ Chí Minh",//safeValue(apiCandidate.address)
+              city: "-", // Not in API response
+              postalCode: "-", // Not in API response
+              education: safeValue(apiCandidate.university),
+              workExperience: `${safeValue(apiCandidate.yearsOfExperience)} năm kinh nghiệm`,
+              skills: apiCandidate.skills ? JSON.parse(apiCandidate.skills).join(", ") : "-",
+              certifications: "-", // Not in API response
+              portfolioUrl: safeValue(apiCandidate.portfolioUrl),
+              linkedinUrl: safeValue(apiCandidate.linkedinUrl),
+              resumeUrl: safeValue(apiCandidate.resumeUrl),
+              createdAt: apiCandidate.createdAt,
+              updatedAt: apiCandidate.updatedAt,
+              isActive: apiCandidate.isActive,
+              // Additional fields from candidate entity
+              birthDate: safeValue(apiCandidate.birthDate),
+              gender: apiCandidate.gender === "Male" ? true : apiCandidate.gender === "Female" ? false : undefined,
+              githubUrl: safeValue(apiCandidate.githubUrl),
+              status: safeValue(apiCandidate.status),
+              appliedDate: safeValue(apiCandidate.appliedDate),
+              summary: safeValue(apiCandidate.summary),
+              yearsOfExperience: apiCandidate.yearsOfExperience || 0,
+              currentJobTitle: safeValue(apiCandidate.currentJobTitle),
+              currentCompany: safeValue(apiCandidate.currentCompany),
+              educationLevel: safeValue(apiCandidate.educationLevel),
+              fieldOfStudy: safeValue(apiCandidate.fieldOfStudy),
+              university: safeValue(apiCandidate.university),
+              graduationYear: apiCandidate.graduationYear || undefined,
+              programmingLanguages: apiCandidate.programmingLanguages ? JSON.parse(apiCandidate.programmingLanguages).join(", ") : "-",
+              expectedSalary: apiCandidate.expectedSalary || undefined,
+              preferredEmploymentType: safeValue(apiCandidate.preferredEmploymentType),
+              availableForRemote: apiCandidate.availableForRemote,
+              availableStartDate: safeValue(apiCandidate.availableStartDate),
+              source: safeValue(apiCandidate.source),
+              applications: [],
+              currentApplication: undefined,
+              jobTitle: undefined,
+              overscore: application.score || null,
+              certificates: [] // Not in API response
+            }
+
+            // Create application object
+            const transformedApplication: Application = {
+              applicationId: application.applicationId,
+              candidateId: application.candidateId,
+              jobPostingId: application.jobPostingId,
+              coverLetter: safeValue(application.coverLetter),
+              applicationStatus: application.status as any,
+              appliedAt: application.appliedDate,
+              updatedAt: application.updatedAt,
+              score: application.score || undefined,
+              candidate: transformedCandidate,
+              jobPosting: undefined // Not in API response
+            }
+
+            setApplications([transformedApplication])
+            setCandidate({
+              ...transformedCandidate,
+              applications: [transformedApplication],
+              currentApplication: transformedApplication,
+              jobTitle: undefined, // Will be filled when job data is available
+              overscore: application.score || undefined
+            })
+            
+            setNewStatus(application.status)
+            setSelectedApplicationId(application.applicationId)
+            
+            // Fetch candidate files
+            try {
+              const files = await recruitmentAPI.getCandidateFiles(apiCandidate.candidateId)
+              setCandidateFiles(files)
+            } catch (fileError) {
+              console.error("Error fetching candidate files:", fileError)
+              setCandidateFiles([])
+            }
+            
+            return // Exit early if API call successful
+          }
+        } catch (apiError) {
+          console.error("Error fetching real API data:", apiError)
+          // Continue with mock data if API fails
+        }
+      }
+      
+      // Fallback to mock data
       const mockCandidate: CandidateDetailData = {
         candidateId: candidateId,
         firstName: "Nguyễn Văn",
@@ -315,6 +501,9 @@ export function CandidateDetailClient() {
         setNewStatus(currentApplication.applicationStatus)
         setSelectedApplicationId(currentApplication.applicationId)
       }
+      
+      // Set empty candidate files for mock data
+      setCandidateFiles([])
     } catch (error) {
       console.error("Error fetching data:", error)
       router.push("/recruitment/candidate/list")
@@ -377,6 +566,23 @@ export function CandidateDetailClient() {
     }
   }
 
+  const getFileIconFromMimeType = (mimeType: string) => {
+    if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />
+    if (mimeType.includes('image')) return <Image className="h-5 w-5 text-blue-500" />
+    if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />
+    if (mimeType.includes('word') || mimeType.includes('document')) return <File className="h-5 w-5 text-blue-600" />
+    return <FileType className="h-5 w-5 text-gray-500" />
+  }
+
+  const formatFileSize = (sizeInBytes: string) => {
+    const bytes = parseInt(sizeInBytes)
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
   const handleFileClick = (file: CertificateFile) => {
     // Open file in new tab
     window.open(file.url, '_blank')
@@ -388,6 +594,22 @@ export function CandidateDetailClient() {
     const link = document.createElement('a')
     link.href = file.url
     link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleCandidateFileClick = (file: CandidateFile) => {
+    // Open file in new tab
+    window.open(file.fileUrl, '_blank')
+  }
+
+  const handleCandidateFileDownload = (file: CandidateFile, event: React.MouseEvent) => {
+    event.stopPropagation()
+    // Trigger download
+    const link = document.createElement('a')
+    link.href = file.fileUrl
+    link.download = file.originalName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -465,15 +687,7 @@ export function CandidateDetailClient() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {candidate.resumeUrl && (
-            <Button 
-              variant="outline"
-              onClick={() => window.open(candidate.resumeUrl, '_blank')}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Tải CV
-            </Button>
-          )}
+          
           <Button 
             variant="outline"
             onClick={() => window.open(candidate.resumeUrl, '_blank')}
@@ -512,19 +726,19 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Địa chỉ:</strong> {candidate.address || "N/A"}
+                    <strong>Địa chỉ:</strong> {safeValue(candidate.address)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Ngày sinh:</strong> {candidate.birthDate ? formatDate(candidate.birthDate) : "N/A"}
+                    <strong>Ngày sinh:</strong> {candidate.birthDate ? formatDate(candidate.birthDate) : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Giới tính:</strong> {candidate.gender === true ? "Nam" : candidate.gender === false ? "Nữ" : "N/A"}
+                    <strong>Giới tính:</strong> {candidate.gender === true ? "Nam" : candidate.gender === false ? "Nữ" : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -601,25 +815,25 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Công ty hiện tại:</strong> {candidate.currentCompany || "N/A"}
+                    <strong>Công ty hiện tại:</strong> {safeValue(candidate.currentCompany)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Vị trí hiện tại:</strong> {candidate.currentJobTitle || "N/A"}
+                    <strong>Vị trí hiện tại:</strong> {safeValue(candidate.currentJobTitle)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Mức lương mong muốn:</strong> {formatSalary(candidate.expectedSalary)}
+                    <strong>Mức lương mong muốn:</strong> {candidate.expectedSalary ? formatSalary(candidate.expectedSalary) : "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Loại công việc:</strong> {candidate.preferredEmploymentType || "N/A"}
+                    <strong>Loại công việc:</strong> {safeValue(candidate.preferredEmploymentType)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -681,25 +895,25 @@ export function CandidateDetailClient() {
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Trình độ:</strong> {candidate.educationLevel || "N/A"}
+                    <strong>Trình độ:</strong> {safeValue(candidate.educationLevel)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Chuyên ngành:</strong> {candidate.fieldOfStudy || "N/A"}
+                    <strong>Chuyên ngành:</strong> {safeValue(candidate.fieldOfStudy)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Trường:</strong> {candidate.university || "N/A"}
+                    <strong>Trường:</strong> {safeValue(candidate.university)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Năm tốt nghiệp:</strong> {candidate.graduationYear || "N/A"}
+                    <strong>Năm tốt nghiệp:</strong> {candidate.graduationYear ? candidate.graduationYear.toString() : "-"}
                   </span>
                 </div>
               </div>
@@ -789,6 +1003,105 @@ export function CandidateDetailClient() {
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Candidate Files from API */}
+          {candidateFiles && candidateFiles.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Tài liệu ứng viên
+                </CardTitle>
+                <CardDescription>
+                  Danh sách các tài liệu được tải lên bởi ứng viên
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Horizontal scrollable file list */}
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
+                      {candidateFiles.map((file) => (
+                        <div
+                          key={file.fileId}
+                          className="flex-shrink-0 w-64 border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
+                          onClick={() => handleCandidateFileClick(file)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              {getFileIconFromMimeType(file.mimeType)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate" title={file.originalName}>
+                                {file.originalName}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.fileSize)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(file.createdAt)}
+                                </span>
+                              </div>
+                              {file.metadata?.subject && (
+                                <div className="text-xs text-muted-foreground mt-1 truncate" title={file.metadata.subject}>
+                                  Subject: {file.metadata.subject}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => handleCandidateFileDownload(file, e)}
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Tải
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleCandidateFileClick(file)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Xem
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File type summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                    {Object.entries(candidateFiles.reduce((acc, file) => {
+                      const type = file.mimeType.split('/')[0]
+                      acc[type] = (acc[type] || 0) + 1
+                      return acc
+                    }, {} as Record<string, number>)).map(([type, count]) => (
+                      <div key={type} className="text-center">
+                        <div className="flex justify-center mb-2">
+                          {type === 'application' ? (
+                            <FileText className="h-5 w-5 text-red-500" />
+                          ) : type === 'image' ? (
+                            <Image className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <FileType className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className="text-sm font-medium">{count} file</div>
+                        <div className="text-xs text-muted-foreground capitalize">{type}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>

@@ -348,6 +348,30 @@ export interface CvTestResult {
   };
 }
 
+// Candidate File Types
+export interface CandidateFile {
+  fileId: number;
+  originalName: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize: string;
+  fileType: string;
+  referenceId: number;
+  status: string;
+  description: string | null;
+  metadata: {
+    source: string;
+    messageId: string;
+    senderEmail: string;
+    subject: string;
+    downloadToken: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 // Recruitment Management API
 export const recruitmentAPI = {
   // Job Posting Management
@@ -446,6 +470,12 @@ export const recruitmentAPI = {
     );
   },
 
+  async getCandidateFiles(candidateId: number): Promise<CandidateFile[]> {
+    return api.get(
+      `/api/v1/recruitment-service/files/candidate/${candidateId}`
+    );
+  },
+
   // Application Management
   async getApplications(
     params: GetApplicationsParams = {}
@@ -453,8 +483,14 @@ export const recruitmentAPI = {
     return api.get("/api/v1/recruitment-service/applications", params);
   },
 
-  async getApplicationById(applicationId: number): Promise<Application> {
+  async getApplicationById(
+    applicationId: number
+  ): Promise<{ application: any; candidate: any }> {
     return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
+  },
+
+  async getApplicationsByJobId(jobId: number): Promise<any> {
+    return api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
   },
 
   async createApplication(
