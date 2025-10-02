@@ -489,7 +489,7 @@ export const recruitmentAPI = {
     return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
   },
 
-  async getApplicationsByJobId(jobId: number): Promise<{ 
+  async getApplicationsByJobId(jobId: number): Promise<{
     data: Array<{
       applicationId: number;
       candidateId: number;
@@ -499,7 +499,7 @@ export const recruitmentAPI = {
       status: string;
       createdAt: string;
       score: number | null;
-    }>
+    }>;
   }> {
     return api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
   },
@@ -530,15 +530,15 @@ export const recruitmentAPI = {
   async getInterviews(
     params: GetInterviewsParams = {}
   ): Promise<GetInterviewsResponse> {
-    return api.get("/api/v1/recruitment-service/interviews", params);
+    return api.get("/api/v1/recruitment-service/interview", params);
   },
 
   async getInterviewById(interviewId: number): Promise<Interview> {
-    return api.get(`/api/v1/recruitment-service/interviews/${interviewId}`);
+    return api.get(`/api/v1/recruitment-service/interview/${interviewId}`);
   },
 
   async createInterview(data: CreateInterviewRequest): Promise<Interview> {
-    return api.post("/api/v1/recruitment-service/interviews", data);
+    return api.post("/api/v1/recruitment-service/interview", data);
   },
 
   async updateInterview(
@@ -546,7 +546,7 @@ export const recruitmentAPI = {
     data: UpdateInterviewRequest
   ): Promise<Interview> {
     return api.patch(
-      `/api/v1/recruitment-service/interviews/${interviewId}`,
+      `/api/v1/recruitment-service/interview/${interviewId}`,
       data
     );
   },

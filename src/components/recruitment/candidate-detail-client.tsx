@@ -40,6 +40,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
+import CreateInterviewModal from "./create-interview-modal"
 
 interface CertificateFile {
   id: string;
@@ -1202,10 +1203,15 @@ export function CandidateDetailClient() {
               <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Calendar className="mr-2 h-4 w-4" />
-                Lên lịch phỏng vấn
-              </Button>
+              <CreateInterviewModal 
+                candidateId={candidate.candidateId} 
+                trigger={
+                  <Button variant="outline" className="w-full justify-start">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Lên lịch phỏng vấn
+                  </Button>
+                }
+              />
               <Button variant="outline" className="w-full justify-start">
                 <Mail className="mr-2 h-4 w-4" />
                 Gửi email
