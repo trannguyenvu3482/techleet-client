@@ -22,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import dayjs from "dayjs";
 type CalendarEvent = {
   id: string;
   title: string;
@@ -54,7 +54,16 @@ const formSchema = z.object({
   interviewerIds: z.array(z.number()).min(1, "Chọn ít nhất 1 người phỏng vấn"),
   scheduledAt: z.string().min(1),
   durationMinutes: z.number().int().min(15).max(480),
+  interviewType: z.enum(["online", "offline"]),
   location: z.string().optional(),
+}).refine((data) => {
+  if (data.interviewType === "offline") {
+    return data.location && data.location.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Địa điểm không được để trống khi chọn phỏng vấn offline",
+  path: ["location"],
 });
 
 export default function InterviewCalendarClient() {
@@ -70,12 +79,12 @@ export default function InterviewCalendarClient() {
     setLoading(true);
     try {
       const res = await recruitmentAPI.getInterviews({ limit: 500, sortBy: "scheduledAt", sortOrder: "ASC" });
+      console.log(res.data);
       const mapped: CalendarEvent[] = res.data.map((iv) => {
         const start = iv.scheduledAt;
-        const endDate = new Date(iv.scheduledAt);
-        endDate.setMinutes(endDate.getMinutes() + (iv.duration || 30));
+        const endDate = dayjs(iv.scheduledAt).add(iv.duration || 30, "minutes");
         const { bg, border } = getStatusColor(iv.status);
-        const title = `${iv.application?.candidate ? `${iv.application.candidate.firstName} ${iv.application.candidate.lastName}` : "Interview"}${iv.meetingUrl ? " • Online" : ""}`;
+        const title = `${iv.application?.candidate ? `${iv.application.candidate.firstName} ${iv.application.candidate.lastName}` : "Interview"}${iv.meetingUrl ? " • Online" : iv.location ? " • Offline" : ""}`;
         return {
           id: String(iv.interviewId),
           title,
@@ -88,6 +97,7 @@ export default function InterviewCalendarClient() {
       });
       setEvents(mapped);
     } catch (e) {
+      console.log(e);
       toast.error("Không thể tải lịch phỏng vấn");
     } finally {
       setLoading(false);
@@ -235,10 +245,12 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
       scheduledAt: defaults?.start || new Date().toISOString(),
       durationMinutes: 60,
       interviewerIds: [],
+      interviewType: "online" as const,
     },
   });
 
   const interviewerIds = watch("interviewerIds");
+  const interviewType = watch("interviewType");
 
   // Load data
   useEffect(() => {
@@ -267,21 +279,18 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
-      // Generate meeting link automatically
-      const meetingLink = generateMeetingLink();
-
       const interviewData = {
         candidate_id: data.candidateId,
         job_id: data.jobId,
         interviewer_ids: data.interviewerIds,
         scheduled_at: data.scheduledAt,
         duration_minutes: data.durationMinutes,
-        meeting_link: meetingLink,
-        location: data.location,
+        meeting_link: data.interviewType === "online" ? generateMeetingLink() : "",
+        location: data.interviewType === "offline" ? data.location : "",
         status: "scheduled" as const,
       };
 
-      await api.post("/interview", interviewData);
+      await recruitmentAPI.createInterview(interviewData)
       toast.success("Đã tạo lịch phỏng vấn");
       reset();
       onSuccess();
@@ -347,7 +356,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
           <div className="space-y-2">
             <Select onValueChange={(value) => addInterviewer(Number(value))}>
               <SelectTrigger>
-                <SelectValue placeholder="Chọn thêm người phỏng vấn" />
+                <SelectValue placeholder="Thêm người phỏng vấn..." />
               </SelectTrigger>
               <SelectContent>
                 {interviewers.filter(emp => !interviewerIds.includes(emp.employeeId)).map((interviewer) => (
@@ -396,24 +405,44 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         </div>
 
         <div>
-          <Label>Địa điểm</Label>
-          <Select onValueChange={(value) => setValue("location", value)}>
+          <Label>Hình thức phỏng vấn *</Label>
+          <Select onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}>
             <SelectTrigger>
-              <SelectValue placeholder="Chọn địa điểm" />
+              <SelectValue placeholder="Chọn hình thức" />
             </SelectTrigger>
             <SelectContent>
-              {headquarters.map((hq) => (
-                <SelectItem key={hq.headquarterId} value={hq.headquarterName}>
-                  {hq.headquarterName}
-                </SelectItem>
-              ))}
+              <SelectItem value="online">Online (Meeting)</SelectItem>
+              <SelectItem value="offline">Offline (Tại văn phòng)</SelectItem>
             </SelectContent>
           </Select>
+          {errors.interviewType && <p className="text-sm text-red-500">{errors.interviewType.message}</p>}
         </div>
+
+          {interviewType === "offline" && (
+            <div>
+              <Label>Địa điểm *</Label>
+              <Select onValueChange={(value) => setValue("location", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn địa điểm" />
+                </SelectTrigger>
+                <SelectContent>
+                  {headquarters.map((hq) => (
+                    <SelectItem key={hq.headquarterId} value={hq.headquarterName}>
+                      {hq.headquarterName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.location && <p className="text-sm text-red-500">{errors.location.message}</p>}
+            </div>
+          )}
       </div>
 
-      <div className="bg-green-50 p-3 rounded text-green-800 text-sm">
-        <strong>Lưu ý:</strong> Link meeting sẽ được tự động tạo sau khi lưu.
+      <div className="bg-blue-50 p-3 rounded text-blue-800 text-sm">
+        <strong>Lưu ý:</strong> 
+        {interviewType === "online" 
+          ? " Link meeting sẽ được tự động tạo sau khi lưu." 
+          : " Hãy đảm bảo địa điểm đã được chọn cho buổi phỏng vấn offline."}
       </div>
 
       <div className="flex justify-end gap-2">

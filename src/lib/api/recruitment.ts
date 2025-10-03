@@ -256,13 +256,14 @@ export interface Interview {
 }
 
 export interface CreateInterviewRequest {
-  applicationId: number;
-  interviewerUserId: number;
-  scheduledAt: string;
-  duration: number;
+  candidate_id: number;
+  job_id: number;
+  interviewer_ids: number[];
+  scheduled_at: string;
+  duration_minutes: number;
   location?: string;
-  meetingUrl?: string;
-  notes?: string;
+  meeting_link?: string;
+  status?: string;
 }
 
 export interface UpdateInterviewRequest {
