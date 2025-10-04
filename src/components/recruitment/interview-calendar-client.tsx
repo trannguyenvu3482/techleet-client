@@ -251,7 +251,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
   // Generate meeting link
   const generateMeetingLink = () => {
     const randomId = Math.random().toString(36).substring(2, 15);
-    return `https://meet.google.com/${randomId}`;
+    return `https://meet.jit.si/${randomId}`;
   };
 
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors }, reset } = useForm({
@@ -294,6 +294,19 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
     loadData();
   }, []);
 
+  // Populate form when editing
+  useEffect(() => {
+    if (interview) {
+      setValue("candidateId", (interview as any).candidate_id || 0);
+      setValue("jobId", (interview as any).job_id || 0);
+      setValue("interviewerIds", (interview as any).interviewer_ids || []);
+      setValue("scheduledAt", interview.scheduledAt);
+      setValue("durationMinutes", interview.duration);
+      setValue("interviewType", interview.meetingUrl ? "online" : "offline");
+      setValue("location", interview.location || "");
+    }
+  }, [interview, setValue]);
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       const interviewData = {
@@ -302,17 +315,25 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         interviewer_ids: data.interviewerIds,
         scheduled_at: data.scheduledAt,
         duration_minutes: data.durationMinutes,
-        meeting_link: data.interviewType === "online" ? generateMeetingLink() : "",
+        meeting_link: data.interviewType === "online" ? (interview?.meetingUrl || generateMeetingLink()) : "",
         location: data.interviewType === "offline" ? data.location : "",
-        status: "scheduled" as const,
+        status: interview?.status || "scheduled" as const,
       };
 
-      await recruitmentAPI.createInterview(interviewData);
-      toast.success("Đã tạo lịch phỏng vấn");
+      if (interview) {
+        // Update existing interview
+        await recruitmentAPI.updateInterview(interview.interviewId, interviewData);
+        toast.success("Đã cập nhật lịch phỏng vấn");
+      } else {
+        // Create new interview
+        await recruitmentAPI.createInterview(interviewData);
+        toast.success("Đã tạo lịch phỏng vấn");
+      }
+      
       reset();
       onSuccess();
     } catch (e: any) {
-      const errorMsg = e.message || "Tạo lịch thất bại";
+      const errorMsg = e.message || (interview ? "Cập nhật thất bại" : "Tạo lịch thất bại");
       toast.error(errorMsg);
     }
   };
@@ -476,24 +497,49 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
   );
 }
 
-function Row({ label, value }: { label: string; value?: string | number | null }) {
+function Row({ label, value,renderComponent }: { label: string; value?: string | number | null,renderComponent?: React.ReactNode }) {
   return (
     <div className="grid grid-cols-3 gap-2 items-start py-2">
       <div className="text-sm text-muted-foreground col-span-1">{label}</div>
-      <div className="col-span-2 break-words">{value ?? "-"}</div>
+      {!renderComponent ? <div className="col-span-2 break-words">{value ?? "-"}</div> : renderComponent}
+      
     </div>
   );
 }
 
+// Type for API response
+interface InterviewApiResponse {
+  interview_id: number;
+  scheduled_at: string;
+  duration_minutes: number;
+  meeting_link: string;
+  location: string;
+  status: "scheduled" | "completed" | "cancelled" | "rescheduled";
+  candidate: {
+    candidate_id: number;
+    first_name: string;
+    last_name: string;
+  };
+  job: {
+    job_id: number;
+    title: string;
+  };
+  interviewers: Array<{
+    employeeId: number;
+    firstName: string;
+    lastName: string;
+  }>;
+}
+
 function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { interviewId: number; onEdit: (iv: Interview) => void; onDelete: () => void; onUpdated: () => void; }) {
-  const [interview, setInterview] = useState<Interview | null>(null);
+  const [interview, setInterview] = useState<InterviewApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await recruitmentAPI.getInterviewById(interviewId);
-      setInterview(data);
+      setInterview(data as unknown as InterviewApiResponse);
     } catch (e) {
       toast.error("Không tải được chi tiết");
     } finally {
@@ -506,7 +552,7 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
   const updateStatus = async (status: Interview["status"]) => {
     if (!interview) return;
     try {
-      await recruitmentAPI.updateInterview(interview.interviewId, { status });
+      await recruitmentAPI.updateInterview(interview.interview_id, { status });
       toast.success("Đã cập nhật trạng thái");
       onUpdated();
       load();
@@ -523,26 +569,73 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="font-medium text-lg">Interview #{interview.interviewId}</div>
+        <div className="font-medium text-lg">Interview #{interview.interview_id}</div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => onEdit(interview)}>Sửa</Button>
-          <Button variant="destructive" onClick={onDelete}>Xoá</Button>
+          <Button variant="secondary" onClick={() => {
+            // Convert API response to Interview type for editing
+            const interviewForEdit: any = {
+              interviewId: interview.interview_id,
+              applicationId: 0, // Not available in API response
+              interviewerUserId: interview.interviewers[0]?.employeeId || 0,
+              scheduledAt: interview.scheduled_at,
+              duration: interview.duration_minutes,
+              location: interview.location,
+              meetingUrl: interview.meeting_link,
+              status: interview.status,
+              createdAt: "",
+              updatedAt: "",
+              candidate_id: interview.candidate.candidate_id,
+              job_id: interview.job.job_id,
+              interviewer_ids: interview.interviewers.map(i => i.employeeId),
+            };
+            onEdit(interviewForEdit);
+          }}>Sửa</Button>
+          <Button variant="destructive" onClick={onDelete}>Xóa</Button>
         </div>
       </div>
       <Separator />
       <div>
-        <Row label="Ứng viên" value={interview.application?.candidate ? `${interview.application.candidate.firstName} ${interview.application.candidate.lastName}` : "-"} />
-        <Row label="Thời gian" value={new Date(interview.scheduledAt).toLocaleString()} />
-        <Row label="Thời lượng" value={`${interview.duration} phút`} />
+        <Row label="Ứng viên" value={interview.candidate ? `${interview.candidate.first_name} ${interview.candidate.last_name}` : "-"} renderComponent={interview.candidate ? (
+          <a 
+            href={`/recruitment/candidate/detail/${interview.candidate.candidate_id}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {interview.candidate.first_name} {interview.candidate.last_name}
+          </a>
+        ) : "-"} />
+        <Row label="Công việc" value={interview.job ? interview.job.title : "-"} renderComponent={interview.job ? (
+          <a 
+            href={`/recruitment/jobs/detail/${interview.job.job_id}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {interview.job.title}
+          </a>
+        ) : "-"} />
+        <Row label="Thời gian" value={dayjs(interview.scheduled_at).format("DD/MM/YYYY HH:mm")} />
+        <Row label="Thời lượng" value={`${interview.duration_minutes} phút`} />
         <Row label="Địa điểm" value={interview.location || "-"} />
-        <Row label="Meeting URL" value={interview.meetingUrl || "-"} />
+        <Row label="Meeting URL" value={interview.meeting_link || "-"} renderComponent={interview.meeting_link ? (
+          <a 
+            href={interview.meeting_link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {interview.meeting_link}
+          </a>
+        ) : "-"} />
         <Row label="Trạng thái" value={interview.status} />
-        <Row label="Đánh giá" value={interview.rating ?? "-"} />
+        <Row label="Người phỏng vấn" value={interview.interviewers ? interview.interviewers.map(i => `${i.firstName} ${i.lastName}`).join(", ") : "-"} />
       </div>
+      
       <div className="flex gap-2">
         <Button onClick={() => updateStatus("scheduled")} variant="outline">Đặt lịch</Button>
         <Button onClick={() => updateStatus("completed")} variant="outline">Hoàn thành</Button>
-        <Button onClick={() => updateStatus("cancelled")} variant="outline">Huỷ</Button>
+        <Button onClick={() => updateStatus("cancelled")} variant="outline">Hủy</Button>
         <Button onClick={() => updateStatus("rescheduled")} variant="outline">Dời lịch</Button>
       </div>
     </div>
