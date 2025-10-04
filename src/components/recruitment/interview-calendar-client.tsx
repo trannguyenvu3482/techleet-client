@@ -1,28 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { recruitmentAPI, type Interview } from "@/lib/api";
-import { companyAPI, type Headquarter } from "@/lib/api/company";
-import { employeeAPI } from "@/lib/api/employees";
-import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { recruitmentAPI, type Interview } from "@/lib/api";
+import { companyAPI, type Headquarter } from "@/lib/api/company";
+import { employeeAPI } from "@/lib/api/employees";
+import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { zodResolver } from "@hookform/resolvers/zod";
 import dayjs from "dayjs";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 type CalendarEvent = {
   id: string;
   title: string;
@@ -53,7 +52,10 @@ const formSchema = z.object({
   jobId: z.number().int().positive(),
   interviewerIds: z.array(z.number()).min(1, "Chọn ít nhất 1 người phỏng vấn"),
   scheduledAt: z.string().min(1),
-  durationMinutes: z.number().int().min(15).max(480),
+  durationMinutes: z.preprocess((val) => {
+    if (typeof val === "string") return parseInt(val, 10);
+    return val;
+  }, z.number().int().min(15).max(480)),
   interviewType: z.enum(["online", "offline"]),
   location: z.string().optional(),
 }).refine((data) => {
@@ -79,18 +81,33 @@ export default function InterviewCalendarClient() {
     setLoading(true);
     try {
       const res = await recruitmentAPI.getInterviews({ limit: 500, sortBy: "scheduledAt", sortOrder: "ASC" });
-      console.log(res.data);
-      const mapped: CalendarEvent[] = res.data.map((iv) => {
-        const start = iv.scheduledAt;
-        const endDate = dayjs(iv.scheduledAt).add(iv.duration || 30, "minutes");
+      const mapped: CalendarEvent[] = res.data.map((iv: any) => {
+        const start = iv.scheduled_at;
+        const endDate = dayjs(iv.scheduled_at).add(iv.duration_minutes || 30, "minutes");
         const { bg, border } = getStatusColor(iv.status);
-        const title = `${iv.application?.candidate ? `${iv.application.candidate.firstName} ${iv.application.candidate.lastName}` : "Interview"}${iv.meetingUrl ? " • Online" : iv.location ? " • Offline" : ""}`;
+        const title = `Interview #${iv.interview_id} ${iv.meeting_link ? " • Online" : iv.location ? " • Offline" : ""}`;
         return {
-          id: String(iv.interviewId),
+          id: String(iv.interview_id),
           title,
           start,
           end: endDate.toISOString(),
-          extendedProps: { interview: iv },
+          extendedProps: { 
+            interview: {
+              interviewId: iv.interview_id,
+              applicationId: iv.job_id, 
+              interviewerUserId: iv.interviewer_ids?.[0] || 0,
+              scheduledAt: iv.scheduled_at,
+              duration: iv.duration_minutes,
+              location: iv.location,
+              meetingUrl: iv.meeting_link,
+              status: iv.status,
+              createdAt: iv.createdAt,
+              updatedAt: iv.updatedAt,
+              candidate_id: iv.candidate_id,
+              job_id: iv.job_id,
+              interviewer_ids: iv.interviewer_ids,
+            }
+          },
           backgroundColor: bg,
           borderColor: border,
         };
@@ -119,7 +136,7 @@ export default function InterviewCalendarClient() {
   }, [loadEvents]);
 
   const handleSelect = useCallback((arg: DateSelectArg) => {
-    setFormDefaults({ start: arg.startStr, end: arg.endStr });
+    setFormDefaults({ start: dayjs(arg.startStr).toISOString(), end: dayjs(arg.endStr).toISOString() });
     setIsFormOpen(true);
   }, []);
 
@@ -176,6 +193,7 @@ export default function InterviewCalendarClient() {
             eventClick={handleEventClick}
             select={handleSelect}
             height="auto"
+            timeZone="Asia/Ho_Chi_Minh"
           />
         </CardContent>
       </Card>
@@ -230,14 +248,13 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
   const [interviewers, setInterviewers] = useState<Array<{employeeId: number; firstName: string; lastName: string}>>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [loadingData, setLoadingData] = useState(false);
-
   // Generate meeting link
   const generateMeetingLink = () => {
     const randomId = Math.random().toString(36).substring(2, 15);
     return `https://meet.google.com/${randomId}`;
   };
 
-  const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors }, reset } = useForm<z.infer<typeof formSchema>>({
+  const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors }, reset } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       candidateId: 0,
@@ -290,7 +307,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         status: "scheduled" as const,
       };
 
-      await recruitmentAPI.createInterview(interviewData)
+      await recruitmentAPI.createInterview(interviewData);
       toast.success("Đã tạo lịch phỏng vấn");
       reset();
       onSuccess();
@@ -392,15 +409,21 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
           <Input 
             type="datetime-local" 
             {...register("scheduledAt")}
-            value={new Date(watch("scheduledAt")).toISOString().slice(0, 16)}
-            onChange={(e) => setValue("scheduledAt", new Date(e.target.value).toISOString())}
+            value={dayjs(watch("scheduledAt")).format("YYYY-MM-DDTHH:mm")}
+            onChange={(e) => setValue("scheduledAt", dayjs(e.target.value).toISOString())}
           />
           {errors.scheduledAt && <p className="text-sm text-red-500">{errors.scheduledAt.message}</p>}
         </div>
 
         <div>
           <Label>Thời lượng (phút) *</Label>
-          <Input type="number" {...register("durationMinutes")} placeholder="60" min="15" max="480"/>
+          <Input 
+            type="number" 
+            {...register("durationMinutes")} 
+            placeholder="60" 
+            min="15" 
+            max="480"
+          />
           {errors.durationMinutes && <p className="text-sm text-red-500">{errors.durationMinutes.message}</p>}
         </div>
 
