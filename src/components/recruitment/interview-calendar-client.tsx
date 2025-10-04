@@ -259,7 +259,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
     defaultValues: {
       candidateId: 0,
       jobId: 0,
-      scheduledAt: defaults?.start || new Date().toISOString(),
+      scheduledAt: defaults?.start ? dayjs(defaults.start).toISOString() : new Date().toISOString(),
       durationMinutes: 60,
       interviewerIds: [],
       interviewType: "online" as const,
@@ -313,7 +313,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         candidate_id: data.candidateId,
         job_id: data.jobId,
         interviewer_ids: data.interviewerIds,
-        scheduled_at: data.scheduledAt,
+        scheduled_at: dayjs(data.scheduledAt).add(7, "hours").toISOString(),
         duration_minutes: data.durationMinutes,
         meeting_link: data.interviewType === "online" ? (interview?.meetingUrl || generateMeetingLink()) : "",
         location: data.interviewType === "offline" ? data.location : "",
