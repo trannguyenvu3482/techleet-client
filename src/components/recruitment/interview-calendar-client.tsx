@@ -602,7 +602,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
 
         <div>
           <Label>Hình thức phỏng vấn *</Label>
-          <Select defaultValue={interview?.meetingUrl ? "online" : "offline"} onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}>
+          <Select defaultValue={interview?.location ? "offline" : "online"} onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn hình thức" />
             </SelectTrigger>

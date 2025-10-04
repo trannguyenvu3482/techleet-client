@@ -68,7 +68,7 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
   // Generate meeting link
   const generateMeetingLink = () => {
     const randomId = Math.random().toString(36).substring(2, 15);
-    return `https://meet.google.com/${randomId}`;
+    return `https://meet.jit.si/${randomId}`;
   };
 
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors }, reset } = useForm({
