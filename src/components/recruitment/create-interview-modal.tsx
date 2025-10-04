@@ -93,7 +93,8 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
         setJobs(jobsRes.data);
         setInterviewers(employeesRes.data);
         setHeadquarters(headersRes.data);
-      } catch (e) {
+      } catch (error) {
+        console.log(error);
         toast.error("Không thể tải dữ liệu");
       } finally {
         setLoadingData(false);
@@ -122,8 +123,8 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
       
       // Emit event to refresh calendar if it exists
       window.dispatchEvent(new CustomEvent('interview-created'));
-    } catch (e: any) {
-      const errorMsg = e.message || "Tạo lịch thất bại";
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "Tạo lịch thất bại";
       toast.error(errorMsg);
     }
   };

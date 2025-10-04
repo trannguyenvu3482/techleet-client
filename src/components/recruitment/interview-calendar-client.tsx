@@ -32,6 +32,20 @@ type CalendarEvent = {
   borderColor?: string;
 };
 
+type RawInterviewData = {
+  interview_id: number;
+  candidate_id: number;
+  job_id: number;
+  interviewer_ids: number[];
+  scheduled_at: string;
+  duration_minutes: number;
+  location?: string;
+  meeting_link?: string;
+  status: Interview["status"];
+  createdAt: string;
+  updatedAt: string;
+};
+
 function getStatusColor(status: Interview["status"]) {
   switch (status) {
     case "scheduled":
@@ -81,7 +95,7 @@ export default function InterviewCalendarClient() {
     setLoading(true);
     try {
       const res = await recruitmentAPI.getInterviews({ limit: 500, sortBy: "scheduledAt", sortOrder: "ASC" });
-      const mapped: CalendarEvent[] = res.data.map((iv: any) => {
+      const mapped: CalendarEvent[] = (res.data as unknown as RawInterviewData[]).map((iv) => {
         const start = iv.scheduled_at;
         const endDate = dayjs(iv.scheduled_at).add(iv.duration_minutes || 30, "minutes");
         const { bg, border } = getStatusColor(iv.status);
@@ -113,8 +127,8 @@ export default function InterviewCalendarClient() {
         };
       });
       setEvents(mapped);
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       toast.error("Không thể tải lịch phỏng vấn");
     } finally {
       setLoading(false);
@@ -157,7 +171,7 @@ export default function InterviewCalendarClient() {
       await recruitmentAPI.deleteInterview(id);
       toast.success("Đã xoá cuộc phỏng vấn");
       onCreatedOrUpdated();
-    } catch (e) {
+    } catch (error) {
       toast.error("Xoá thất bại");
     }
   }, [onCreatedOrUpdated]);
@@ -242,7 +256,7 @@ type InterviewFormProps = {
   onSuccess: () => void;
 };
 
-function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFormProps) {
+function InterviewForm({ defaults, interview: _interview, onCancel, onSuccess }: InterviewFormProps) {
   const [candidates, setCandidates] = useState<Array<{candidateId: number; firstName: string; lastName: string}>>([]);
   const [jobs, setJobs] = useState<Array<{jobPostingId: number; title: string}>>([]);
   const [interviewers, setInterviewers] = useState<Array<{employeeId: number; firstName: string; lastName: string}>>([]);
@@ -285,7 +299,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         setJobs(jobsRes.data);
         setInterviewers(employeesRes.data);
         setHeadquarters(headquartersRes.data);
-      } catch (e) {
+      } catch (error) {
         toast.error("Không thể tải dữ liệu");
       } finally {
         setLoadingData(false);
@@ -311,8 +325,8 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
       toast.success("Đã tạo lịch phỏng vấn");
       reset();
       onSuccess();
-    } catch (e: any) {
-      const errorMsg = e.message || "Tạo lịch thất bại";
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "Tạo lịch thất bại";
       toast.error(errorMsg);
     }
   };
@@ -494,7 +508,7 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
     try {
       const data = await recruitmentAPI.getInterviewById(interviewId);
       setInterview(data);
-    } catch (e) {
+    } catch (error) {
       toast.error("Không tải được chi tiết");
     } finally {
       setLoading(false);
@@ -510,7 +524,7 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
       toast.success("Đã cập nhật trạng thái");
       onUpdated();
       load();
-    } catch (e) {
+    } catch (error) {
       toast.error("Cập nhật thất bại");
     }
   };
