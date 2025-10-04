@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { recruitmentAPI, type Interview } from "@/lib/api";
 import { companyAPI, type Headquarter } from "@/lib/api/company";
 import { employeeAPI } from "@/lib/api/employees";
-import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import type { DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -66,6 +66,13 @@ const formSchema = z.object({
 }, {
   message: "Địa điểm không được để trống khi chọn phỏng vấn offline",
   path: ["location"],
+}).refine((data) => {
+  const scheduledTime = dayjs(data.scheduledAt);
+  const now = dayjs();
+  return scheduledTime.isAfter(now);
+}, {
+  message: "Không thể đặt lịch phỏng vấn trong quá khứ",
+  path: ["scheduledAt"],
 });
 
 export default function InterviewCalendarClient() {
@@ -145,6 +152,77 @@ export default function InterviewCalendarClient() {
     setSelectedInterviewId(id);
   }, []);
 
+  const handleEventDrop = useCallback(async (dropInfo: EventDropArg) => {
+    const eventId = Number(dropInfo.event.id);
+    const newStart = dropInfo.event.start;
+    const newEnd = dropInfo.event.end;
+    
+    if (!newStart || !newEnd) return;
+    
+    // Check if new time is in the past
+    const now = new Date();
+    if (newStart < now) {
+      dropInfo.revert();
+      toast.error("Không thể đặt lịch phỏng vấn trong quá khứ");
+      return;
+    }
+    
+    try {
+      // Calculate new duration
+      const durationMinutes = Math.round((newEnd.getTime() - newStart.getTime()) / (1000 * 60));
+      
+      // Update interview via API
+      await recruitmentAPI.updateInterview(eventId, {
+        scheduled_at: newStart.toISOString(),
+        duration_minutes: durationMinutes,
+      });
+      
+      toast.success("Đã cập nhật lịch phỏng vấn");
+      
+      // Refresh events to get updated data
+      loadEvents();
+    } catch (e) {
+      // Revert the event position on error
+      dropInfo.revert();
+      toast.error("Cập nhật lịch thất bại");
+    }
+  }, [loadEvents]);
+
+  const handleEventResize = useCallback(async (resizeInfo: any) => {
+    const eventId = Number(resizeInfo.event.id);
+    const newStart = resizeInfo.event.start;
+    const newEnd = resizeInfo.event.end;
+    
+    if (!newStart || !newEnd) return;
+    
+    // Check if new time is in the past
+    const now = new Date();
+    if (newStart < now) {
+      resizeInfo.revert();
+      toast.error("Không thể đặt lịch phỏng vấn trong quá khứ");
+      return;
+    }
+    
+    try {
+      // Calculate new duration
+      const durationMinutes = Math.round((newEnd.getTime() - newStart.getTime()) / (1000 * 60));
+      
+      // Update interview via API
+      await recruitmentAPI.updateInterview(eventId, {
+        duration_minutes: durationMinutes,
+      });
+      
+      toast.success("Đã cập nhật thời lượng phỏng vấn");
+      
+      // Refresh events to get updated data
+      loadEvents();
+    } catch (e) {
+      // Revert the resize on error
+      resizeInfo.revert();
+      toast.error("Cập nhật thời lượng thất bại");
+    }
+  }, [loadEvents]);
+
   const onCreatedOrUpdated = useCallback(() => {
     setIsFormOpen(false);
     setSelectedInterviewId(null);
@@ -188,6 +266,9 @@ export default function InterviewCalendarClient() {
             initialView="dayGridMonth"
             selectable
             selectMirror
+            editable={true}
+            eventDrop={handleEventDrop}
+            eventResize={handleEventResize}
             headerToolbar={headerToolbar}
             events={events}
             eventClick={handleEventClick}
@@ -334,11 +415,20 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
+      // Check if scheduled time is in the past
+      const scheduledTime = dayjs(data.scheduledAt);
+      const now = dayjs();
+      
+      if (scheduledTime.isBefore(now)) {
+        toast.error("Không thể đặt lịch phỏng vấn trong quá khứ");
+        return;
+      }
+      
       const interviewData = {
         candidate_id: data.candidateId,
         job_id: data.jobId,
         interviewer_ids: data.interviewerIds,
-        scheduled_at: dayjs(data.scheduledAt).toISOString(),
+        scheduled_at: scheduledTime.toISOString(),
         duration_minutes: data.durationMinutes,
         meeting_link: data.interviewType === "online" ? (interview?.meetingUrl || generateMeetingLink()) : "",
         location: data.interviewType === "offline" ? data.location : "",
