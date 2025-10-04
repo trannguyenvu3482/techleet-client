@@ -269,7 +269,7 @@ export default function InterviewCalendarClient() {
     <div className="p-4 space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Lịch phỏng vấn TechLeet</CardTitle>
+          <CardTitle>Lịch phỏng vấn</CardTitle>
           <div className="flex items-center gap-2">
             <Button onClick={() => setIsFormOpen(true)}>Tạo lịch</Button>
             <Button variant="secondary" onClick={loadEvents} disabled={loading}>Làm mới</Button>
