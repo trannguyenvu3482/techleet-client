@@ -235,9 +235,11 @@ export interface GetApplicationsResponse {
 export interface Interview {
   interviewId: number;
   applicationId: number;
+  candidate_id: number;
   interviewerUserId: number;
   scheduledAt: string;
   duration: number;
+  job_id: number;
   location?: string;
   meetingUrl?: string;
   notes?: string;
@@ -267,15 +269,16 @@ export interface CreateInterviewRequest {
 }
 
 export interface UpdateInterviewRequest {
-  interviewerUserId?: number;
-  scheduledAt?: string;
-  duration?: number;
+  candidate_id?: number;
+  job_id?: number;
+  interviewer_ids?: number[];
+  scheduled_at?: string;
+  duration_minutes?: number;
+  meeting_link?: string;
   location?: string;
-  meetingUrl?: string;
-  notes?: string;
-  feedback?: string;
-  rating?: number;
   status?: "scheduled" | "completed" | "cancelled" | "rescheduled";
+  scores?: number[];
+  comments?: string[];
 }
 
 export interface GetInterviewsParams extends Record<string, unknown> {
@@ -546,14 +549,14 @@ export const recruitmentAPI = {
     interviewId: number,
     data: UpdateInterviewRequest
   ): Promise<Interview> {
-    return api.patch(
+    return api.put(
       `/api/v1/recruitment-service/interview/${interviewId}`,
       data
     );
   },
 
   async deleteInterview(interviewId: number): Promise<void> {
-    return api.delete(`/api/v1/recruitment-service/interviews/${interviewId}`);
+    return api.delete(`/api/v1/recruitment-service/interview/${interviewId}`);
   },
 
   async completeInterview(
