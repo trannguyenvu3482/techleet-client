@@ -193,7 +193,6 @@ export default function InterviewCalendarClient() {
             eventClick={handleEventClick}
             select={handleSelect}
             height="auto"
-            timeZone="Asia/Ho_Chi_Minh"
           />
         </CardContent>
       </Card>
@@ -220,10 +219,35 @@ export default function InterviewCalendarClient() {
           {selectedInterviewId && (
             <InterviewDetail
               interviewId={selectedInterviewId}
-              onEdit={(iv) => {
-                setFormDefaults({ start: iv.scheduledAt });
-                setEditingInterview(iv);
-                setIsFormOpen(true);
+              onEdit={async (interviewId) => {
+                try {
+                  // Fetch fresh data from API
+                  const interviewData = await recruitmentAPI.getInterviewById(interviewId);
+                  
+                  // Convert API response to Interview type for form
+                  const apiData = interviewData as any;
+                  const interviewForEdit: any = {
+                    interviewId: apiData.interview_id,
+                    applicationId: 0,
+                    interviewerUserId: apiData.interviewers[0]?.employeeId || 0,
+                    scheduledAt: apiData.scheduled_at,
+                    duration: apiData.duration_minutes,
+                    location: apiData.location,
+                    meetingUrl: apiData.meeting_link,
+                    status: apiData.status,
+                    createdAt: "",
+                    updatedAt: "",
+                    candidate_id: apiData.candidate.candidate_id,
+                    job_id: apiData.job.job_id,
+                    interviewer_ids: apiData.interviewers.map((i: any) => i.employeeId),
+                  };
+                  
+                  setFormDefaults({ start: apiData.scheduled_at });
+                  setEditingInterview(interviewForEdit);
+                  setIsFormOpen(true);
+                } catch (e) {
+                  toast.error("Không thể tải dữ liệu để chỉnh sửa");
+                }
               }}
               onDelete={() => onDelete(selectedInterviewId)}
               onUpdated={onCreatedOrUpdated}
@@ -249,6 +273,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   // Generate meeting link
+  console.log(interview);
   const generateMeetingLink = () => {
     const randomId = Math.random().toString(36).substring(2, 15);
     return `https://meet.jit.si/${randomId}`;
@@ -313,7 +338,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
         candidate_id: data.candidateId,
         job_id: data.jobId,
         interviewer_ids: data.interviewerIds,
-        scheduled_at: dayjs(data.scheduledAt).add(7, "hours").toISOString(),
+        scheduled_at: dayjs(data.scheduledAt).toISOString(),
         duration_minutes: data.durationMinutes,
         meeting_link: data.interviewType === "online" ? (interview?.meetingUrl || generateMeetingLink()) : "",
         location: data.interviewType === "offline" ? data.location : "",
@@ -357,7 +382,11 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>Ứng viên *</Label>
-          <Select onValueChange={(value) => setValue("candidateId", Number(value))}>
+          <Select defaultValue={
+            candidates.find(candidate => candidate.candidateId === interview?.candidate_id)?.candidateId ? 
+            String(candidates.find(candidate => candidate.candidateId === interview?.candidate_id)?.candidateId) :
+            undefined} 
+            onValueChange={(value) => setValue("candidateId", Number(value))}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn ứng viên" />
             </SelectTrigger>
@@ -374,7 +403,8 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
 
         <div>
           <Label>Công việc *</Label>
-          <Select onValueChange={(value) => setValue("jobId", Number(value))}>
+          <Select defaultValue={jobs.find(job => job.jobPostingId === interview?.job_id)?.jobPostingId?
+          String(jobs.find(job => job.jobPostingId === interview?.job_id)?.jobPostingId):undefined} onValueChange={(value) => setValue("jobId", Number(value))}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn công việc" />
             </SelectTrigger>
@@ -450,7 +480,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
 
         <div>
           <Label>Hình thức phỏng vấn *</Label>
-          <Select onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}>
+          <Select defaultValue={interview?.meetingUrl ? "online" : "offline"} onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn hình thức" />
             </SelectTrigger>
@@ -465,7 +495,7 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
           {interviewType === "offline" && (
             <div>
               <Label>Địa điểm *</Label>
-              <Select onValueChange={(value) => setValue("location", value)}>
+              <Select defaultValue={interview?.location} onValueChange={(value) => setValue("location", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn địa điểm" />
                 </SelectTrigger>
@@ -531,7 +561,7 @@ interface InterviewApiResponse {
   }>;
 }
 
-function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { interviewId: number; onEdit: (iv: Interview) => void; onDelete: () => void; onUpdated: () => void; }) {
+function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { interviewId: number; onEdit: (interviewId: number) => void; onDelete: () => void; onUpdated: () => void; }) {
   const [interview, setInterview] = useState<InterviewApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -571,25 +601,7 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
       <div className="flex items-center justify-between">
         <div className="font-medium text-lg">Interview #{interview.interview_id}</div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => {
-            // Convert API response to Interview type for editing
-            const interviewForEdit: any = {
-              interviewId: interview.interview_id,
-              applicationId: 0, // Not available in API response
-              interviewerUserId: interview.interviewers[0]?.employeeId || 0,
-              scheduledAt: interview.scheduled_at,
-              duration: interview.duration_minutes,
-              location: interview.location,
-              meetingUrl: interview.meeting_link,
-              status: interview.status,
-              createdAt: "",
-              updatedAt: "",
-              candidate_id: interview.candidate.candidate_id,
-              job_id: interview.job.job_id,
-              interviewer_ids: interview.interviewers.map(i => i.employeeId),
-            };
-            onEdit(interviewForEdit);
-          }}>Sửa</Button>
+          <Button variant="secondary" onClick={() => onEdit(interview.interview_id)}>Sửa</Button>
           <Button variant="destructive" onClick={onDelete}>Xóa</Button>
         </div>
       </div>
@@ -632,12 +644,7 @@ function InterviewDetail({ interviewId, onEdit, onDelete, onUpdated }: { intervi
         <Row label="Người phỏng vấn" value={interview.interviewers ? interview.interviewers.map(i => `${i.firstName} ${i.lastName}`).join(", ") : "-"} />
       </div>
       
-      <div className="flex gap-2">
-        <Button onClick={() => updateStatus("scheduled")} variant="outline">Đặt lịch</Button>
-        <Button onClick={() => updateStatus("completed")} variant="outline">Hoàn thành</Button>
-        <Button onClick={() => updateStatus("cancelled")} variant="outline">Hủy</Button>
-        <Button onClick={() => updateStatus("rescheduled")} variant="outline">Dời lịch</Button>
-      </div>
+      
     </div>
   );
 }
