@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { api } from "./client";
 import { PaginatedResponse } from "@/types/api";
 
@@ -241,6 +242,7 @@ export interface Interview {
   duration: number;
   job_id: number;
   location?: string;
+  scheduled_at?: string;
   meetingUrl?: string;
   notes?: string;
   feedback?: string;
@@ -539,6 +541,21 @@ export const recruitmentAPI = {
 
   async getInterviewById(interviewId: number): Promise<Interview> {
     return api.get(`/api/v1/recruitment-service/interview/${interviewId}`);
+  },
+
+  async getInterviewByCandidateId(
+    candidateId: number
+  ): Promise<Interview | null | undefined> {
+    try {
+      const result = (await api.get(
+        `/api/v1/recruitment-service/interview/candidate/${candidateId}`
+      )) as Interview[];
+      return result.find((item) => {
+        return dayjs().isBefore(item.scheduled_at);
+      });
+    } catch (error) {
+      return null;
+    }
   },
 
   async createInterview(data: CreateInterviewRequest): Promise<Interview> {
