@@ -40,7 +40,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
-import CreateInterviewModal from "./create-interview-modal"
+import CreateInterviewModal from "@/app/(home)/recruitment/candidate/detail/[candidateId]/create-interview-modal"
 
 interface CertificateFile {
   id: string;
@@ -120,6 +120,7 @@ export function CandidateDetailClient() {
   const [isEditingStatus, setIsEditingStatus] = useState(false)
   const [newStatus, setNewStatus] = useState<string>("")
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null)
+  const [hasFutureInterview, setHasFutureInterview] = useState(false)
 
   // Get applicationId from URL params if available
   const applicationId = searchParams.get("applicationId")
@@ -445,6 +446,21 @@ export function CandidateDetailClient() {
       
       // Set empty candidate files for mock data
       setCandidateFiles([])
+      
+      // Check if candidate has future interview
+      try {
+        const interviewData = await recruitmentAPI.getInterviewByCandidateId(candidateId);
+        if (interviewData) {
+          const scheduledTime = new Date(interviewData.scheduledAt);
+          const now = new Date();
+          setHasFutureInterview(scheduledTime > now);
+        } else {
+          setHasFutureInterview(false);
+        }
+      } catch (error) {
+        console.log("Error checking future interview:", error);
+        setHasFutureInterview(false);
+      }
     } catch (error) {
       console.error("Error fetching data:", error)
       router.push("/recruitment/candidate/list")
@@ -1208,7 +1224,7 @@ export function CandidateDetailClient() {
                 trigger={
                   <Button variant="outline" className="w-full justify-start">
                     <Calendar className="mr-2 h-4 w-4" />
-                    Lên lịch phỏng vấn
+                    {hasFutureInterview ? "Chỉnh sửa lịch phỏng vấn" : "Lên lịch phỏng vấn"}
                   </Button>
                 }
               />
