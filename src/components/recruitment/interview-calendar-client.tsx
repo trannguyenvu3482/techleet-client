@@ -159,8 +159,16 @@ export default function InterviewCalendarClient() {
     
     if (!newStart || !newEnd) return;
     
-    // Check if new time is in the past
+    // Check if current interview time is in the past
+    const originalStart = dropInfo.oldEvent.start;
     const now = new Date();
+    if (originalStart && originalStart < now) {
+      dropInfo.revert();
+      toast.error("Không thể cập nhật lịch phỏng vấn đã diễn ra");
+      return;
+    }
+    
+    // Check if new time is in the past
     if (newStart < now) {
       dropInfo.revert();
       toast.error("Không thể đặt lịch phỏng vấn trong quá khứ");
@@ -195,8 +203,16 @@ export default function InterviewCalendarClient() {
     
     if (!newStart || !newEnd) return;
     
-    // Check if new time is in the past
+    // Check if current interview time is in the past
+    const originalStart = resizeInfo.oldEvent.start;
     const now = new Date();
+    if (originalStart && originalStart < now) {
+      resizeInfo.revert();
+      toast.error("Không thể cập nhật lịch phỏng vấn đã diễn ra");
+      return;
+    }
+    
+    // Check if new time is in the past
     if (newStart < now) {
       resizeInfo.revert();
       toast.error("Không thể đặt lịch phỏng vấn trong quá khứ");
@@ -304,6 +320,15 @@ export default function InterviewCalendarClient() {
                 try {
                   // Fetch fresh data from API
                   const interviewData = await recruitmentAPI.getInterviewById(interviewId);
+                  
+                  // Check if interview is in the past
+                  const scheduledTime = dayjs((interviewData as any).scheduled_at);
+                  const now = dayjs();
+                  
+                  if (scheduledTime.isBefore(now)) {
+                    toast.error("Không thể chỉnh sửa lịch phỏng vấn đã diễn ra");
+                    return;
+                  }
                   
                   // Convert API response to Interview type for form
                   const apiData = interviewData as any;
@@ -436,6 +461,13 @@ function InterviewForm({ defaults, interview, onCancel, onSuccess }: InterviewFo
       };
 
       if (interview) {
+        // Check if current interview is in the past
+        const currentScheduledTime = dayjs(interview.scheduledAt);
+        if (currentScheduledTime.isBefore(now)) {
+          toast.error("Không thể cập nhật lịch phỏng vấn đã diễn ra");
+          return;
+        }
+        
         // Update existing interview
         await recruitmentAPI.updateInterview(interview.interviewId, interviewData);
         toast.success("Đã cập nhật lịch phỏng vấn");
