@@ -309,6 +309,7 @@ export interface CvTestRequest {
   jobPostingId: number;
   mockApplicationId?: number;
   applicationId?: number;
+  modelConfig?: 'gemini' | 'chatgpt' | 'deepseek';
 }
 
 export interface CvTestResult {

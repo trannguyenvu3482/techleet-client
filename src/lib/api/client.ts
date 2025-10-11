@@ -11,7 +11,7 @@ class ApiClient {
   private baseURL: string;
   private defaultTimeout: number;
 
-  constructor(baseURL?: string, timeout = 10000) {
+  constructor(baseURL?: string, timeout = 60000) {
     this.baseURL =
       baseURL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3030";
     this.defaultTimeout = timeout;

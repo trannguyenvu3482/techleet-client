@@ -62,6 +62,10 @@ export const sidebarData = {
           title: "Lịch phỏng vấn",
           url: "/recruitment/interviews",
         },
+        {
+          title: "So sánh Model",
+          url: "/recruitment/model-comparison",
+        },
       ],
     },
     {
