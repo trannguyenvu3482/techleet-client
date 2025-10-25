@@ -1,23 +1,12 @@
-"use client";
+"use client"
 
-import { CvTestingClient } from "@/components/recruitment/cv-testing-client";
-import { useRequireAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { CvTestingClient } from "@/components/recruitment/cv-testing-client"
+import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function CvTestingPage() {
-  const { isLoading } = useRequireAuth();
-
-  useEffect(() => {
-    document.title = "Kiểm thử CV Screening | TechLeet Admin";
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  return <CvTestingClient />;
+  return (
+    <PageWrapper title="Kiểm thử CV Screening">
+      <CvTestingClient />
+    </PageWrapper>
+  )
 }

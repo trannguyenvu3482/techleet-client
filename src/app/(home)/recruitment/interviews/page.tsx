@@ -1,12 +1,14 @@
-import { Metadata } from "next";
-import InterviewCalendarClient from "@/components/recruitment/interview-calendar-client";
+"use client"
 
-export const metadata: Metadata = {
-  title: "Interview Calendar",
-};
+import InterviewCalendarClient from "@/components/recruitment/interview-calendar-client"
+import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function Page() {
-  return <InterviewCalendarClient />;
+  return (
+    <PageWrapper title="Interview Calendar">
+      <InterviewCalendarClient />
+    </PageWrapper>
+  )
 }
 
 

@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect } from "react"
 import { DashboardContent } from "@/components/dashboard/dashboard-content"
+import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function DashboardPage() {
-  useEffect(() => {
-    document.title = "Dashboard | TechLeet Admin"
-  }, [])
-
-  return <DashboardContent />
+  return (
+    <PageWrapper title="Dashboard" requireAuth={false}>
+      <DashboardContent />
+    </PageWrapper>
+  )
 }

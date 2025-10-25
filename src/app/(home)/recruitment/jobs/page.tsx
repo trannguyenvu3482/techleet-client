@@ -1,24 +1,12 @@
-"use client";
+"use client"
 
-import { JobManagementClient } from "@/components/recruitment/job-management-client";
-import { useRequireAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
-
+import { JobManagementClient } from "@/components/recruitment/job-management-client"
+import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function JobsPage() {
-  const { isLoading } = useRequireAuth();
-
-  useEffect(() => {
-    document.title = "Quản lý tuyển dụng | TechLeet Admin";
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  return <JobManagementClient />;
+  return (
+    <PageWrapper title="Quản lý tuyển dụng">
+      <JobManagementClient />
+    </PageWrapper>
+  )
 }

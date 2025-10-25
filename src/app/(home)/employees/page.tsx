@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect } from "react"
 import { EmployeeManagement } from "@/components/employees/employee-management"
+import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function EmployeesPage() {
-  useEffect(() => {
-    document.title = "Quản lý nhân sự | TechLeet Admin"
-  }, [])
-
-  return <EmployeeManagement />
+  return (
+    <PageWrapper title="Quản lý nhân sự">
+      <EmployeeManagement />
+    </PageWrapper>
+  )
 }
