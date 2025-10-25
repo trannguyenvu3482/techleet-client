@@ -1,7 +1,6 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import { AdminChatBot } from "@/components/chatbot/admin-chatbot";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -70,7 +69,6 @@ export default function HomeLayout({
           <div className="flex flex-1 flex-col p-4 pt-0 w-full">{children}</div>
         </SidebarInset>
       </SidebarProvider>
-      <AdminChatBot />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { CustomChatbot } from "@/components/chatbot/custom-chatbot";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -32,6 +33,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster richColors />
+          <CustomChatbot />
         </ThemeProvider>
       </body>
     </html>
