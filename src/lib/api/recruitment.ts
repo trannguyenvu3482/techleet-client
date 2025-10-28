@@ -296,7 +296,10 @@ export const examinationAPI = {
     const res = await api.get(
       `api/v1/recruitment-service/question/examinations/${examinationId}`
     );
-    return (res as any).data as ExaminationDetail;
+    console.log("Raw API response for examination:", res);
+    // The response might already be the data object, or nested in a data property
+    const data = (res as any).data || res;
+    return data as ExaminationDetail;
   },
 
   async updateExamScore(
@@ -307,6 +310,16 @@ export const examinationAPI = {
     await api.put(
       `api/v1/recruitment-service/question/examinations/score/${examQuestionId}`,
       { score, reason }
+    );
+  },
+
+  async submitExamination(
+    examinationId: number,
+    answers: Record<string, { answerText: string }>
+  ): Promise<void> {
+    await api.post(
+      `api/v1/recruitment-service/question/examinations/${examinationId}/submit`,
+      { answers }
     );
   },
 };
