@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, JobPosting, UpdateJobPostingRequest } from "@/lib/api/recruitment"
+import { Checkbox } from "@/components/ui/checkbox"
+import { recruitmentAPI, JobPosting, UpdateJobPostingRequest, questionAPI, QuestionSet } from "@/lib/api/recruitment"
 
 export function JobEditClient() {
   const params = useParams()
@@ -18,6 +19,8 @@ export function JobEditClient() {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [questionSets, setQuestionSets] = useState<QuestionSet[]>([])
+  const [loadingQuestionSets, setLoadingQuestionSets] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -37,7 +40,9 @@ export function JobEditClient() {
     departmentId: "",
     positionId: "",
     hiringManagerId: "",
-    status: ""
+    status: "",
+    isTest: false,
+    questionSetId: ""
   })
 
   const fetchJob = useCallback(async (jobId: number) => {
@@ -64,7 +69,9 @@ export function JobEditClient() {
         departmentId: jobData.departmentId.toString(),
         positionId: jobData.positionId.toString(),
         hiringManagerId: jobData.hiringManagerId.toString(),
-        status: jobData.status
+        status: jobData.status,
+        isTest: jobData.isTest || false,
+        questionSetId: jobData.questionSetId?.toString() || ""
       })
     } catch (error) {
       console.error("Error fetching job:", error)
@@ -74,10 +81,23 @@ export function JobEditClient() {
     }
   }, [router])
 
+  const fetchQuestionSets = async () => {
+    try {
+      setLoadingQuestionSets(true)
+      const response = await questionAPI.getQuestionSets({ page: 0, limit: 100 })
+      setQuestionSets(response.data)
+    } catch (error) {
+      console.error("Error fetching question sets:", error)
+    } finally {
+      setLoadingQuestionSets(false)
+    }
+  }
+
   useEffect(() => {
     if (params.id) {
       fetchJob(Number(params.id))
     }
+    fetchQuestionSets()
   }, [params.id, fetchJob])
 
   const handleInputChange = (field: string, value: string) => {
@@ -112,7 +132,9 @@ export function JobEditClient() {
         departmentId: Number(formData.departmentId),
         positionId: Number(formData.positionId),
         hiringManagerId: Number(formData.hiringManagerId),
-        status: formData.status
+        status: formData.status,
+        isTest: formData.isTest,
+        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined
       }
 
       await recruitmentAPI.updateJobPosting(job.jobPostingId, updateData)
@@ -406,7 +428,7 @@ export function JobEditClient() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
                 <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
                   <SelectTrigger>
@@ -419,9 +441,9 @@ export function JobEditClient() {
                     <SelectItem value="4">Manager 4</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="status">Trạng thái</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                   <SelectTrigger>
@@ -434,7 +456,56 @@ export function JobEditClient() {
                     <SelectItem value="cancelled">Đã hủy</SelectItem>
                   </SelectContent>
                 </Select>
+              </div> */}
+            </CardContent>
+          </Card>
+
+          {/* Test & Assessment */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kiểm tra và Đánh giá</CardTitle>
+              <CardDescription>
+                Cấu hình kiểm tra và bộ câu hỏi cho vị trí tuyển dụng
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isTest"
+                  checked={formData.isTest}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isTest: checked === true }))}
+                />
+                <Label htmlFor="isTest" className="cursor-pointer">
+                  Yêu cầu kiểm tra (Test required)
+                </Label>
               </div>
+
+              {formData.isTest && (
+                <div className="space-y-2">
+                  <Label htmlFor="questionSetId">Bộ câu hỏi</Label>
+                  <Select
+                    value={formData.questionSetId}
+                    onValueChange={(value) => handleInputChange("questionSetId", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn bộ câu hỏi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingQuestionSets ? (
+                        <div className="p-2 text-center">Đang tải...</div>
+                      ) : questionSets.length === 0 ? (
+                        <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
+                      ) : (
+                        questionSets.map((set) => (
+                          <SelectItem key={set.setId} value={set.setId.toString()}>
+                            {set.title} {set.description && `- ${set.description}`}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

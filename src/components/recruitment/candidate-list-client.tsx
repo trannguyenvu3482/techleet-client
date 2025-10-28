@@ -29,7 +29,8 @@ import {
   Star,
   Mail
 } from "lucide-react"
-import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
+import { recruitmentAPI, JobPosting, examinationAPI } from "@/lib/api/recruitment"
+import Link from "next/link"
 
 interface CandidateListItem {
   candidateId: number;
@@ -51,6 +52,8 @@ export function CandidateListClient() {
   const [jobIdFilter, setJobIdFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"createdAt" | "overscore">("overscore")
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC")
+  const [currentJobIsTest, setCurrentJobIsTest] = useState<boolean>(false)
+  const [applicationsWithExams, setApplicationsWithExams] = useState<Record<number, boolean>>({})
   
   // Get jobId from URL params or search
   const urlJobId = searchParams.get("jobId")
@@ -230,6 +233,14 @@ export function CandidateListClient() {
           const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
           console.log("jobId",jobId)
           if (jobId) {
+            // Fetch job detail to detect isTest
+            try {
+              const jobData = await recruitmentAPI.getJobPostingById(Number(jobId))
+              setCurrentJobIsTest(!!jobData.isTest)
+            } catch (e) {
+              console.error("Error fetching job detail:", e)
+              setCurrentJobIsTest(false)
+            }
             const response = await recruitmentAPI.getApplicationsByJobId(Number(jobId))
             console.log("response",response)
             
@@ -245,6 +256,26 @@ export function CandidateListClient() {
                 applicationId: app.applicationId,
                 jobTitle: undefined // Will be filled by job filter logic
               }))
+
+              // Fetch exams for these applications (to toggle action button)
+              try {
+                const uniqueAppIds = Array.from(new Set(realCandidates.map(c => c.applicationId).filter(Boolean))) as number[]
+                const results = await Promise.all(uniqueAppIds.map(async (id) => {
+                  try {
+                    const exams = await examinationAPI.getExaminationsToDo(id)
+                    return [id, Array.isArray(exams) && exams.length > 0] as [number, boolean]
+                  } catch (e) {
+                    console.error("exam fetch error", e)
+                    return [id, false] as [number, boolean]
+                  }
+                }))
+                const map: Record<number, boolean> = {}
+                results.forEach(([id, has]) => { map[id] = has })
+                setApplicationsWithExams(map)
+              } catch (e) {
+                console.error("error building exam map", e)
+                setApplicationsWithExams({})
+              }
             }
           }
         } catch (apiError) {
@@ -375,7 +406,7 @@ export function CandidateListClient() {
   }
 
   const handleRowClick = (candidate: CandidateListItem) => {
-    const url = `/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}` : ''}`
+    const url = `/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}&jobId=${jobIdFilter}` : ''}`
     window.location.href = url
   }
 
@@ -532,12 +563,13 @@ export function CandidateListClient() {
                   </TableHead>
                 )}
                 <TableHead>Ngày tạo</TableHead>
+                {isJobSpecific && currentJobIsTest && <TableHead>Thao tác</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCandidates.length === 0 ? (
+            {filteredCandidates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isJobSpecific ? 6 : 5} className="text-center py-8">
+                  <TableCell colSpan={isJobSpecific ? (currentJobIsTest ? 7 : 6) : 5} className="text-center py-8">
                     <div className="text-muted-foreground">
                       Không tìm thấy ứng viên nào
                     </div>
@@ -581,6 +613,23 @@ export function CandidateListClient() {
                         {formatDate(candidate.createdAt)}
                       </div>
                     </TableCell>
+                    {isJobSpecific && currentJobIsTest && (
+                      <TableCell>
+                        {candidate.applicationId ? (
+                          applicationsWithExams[candidate.applicationId] ? (
+                            <Link href={`/recruitment/candidate/exams?applicationId=${candidate.applicationId}`} onClick={(e) => e.stopPropagation()}>
+                              <Button size="sm" variant="outline">
+                                Bài thi
+                              </Button>
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Chưa có bài thi</span>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

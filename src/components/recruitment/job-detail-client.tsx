@@ -7,19 +7,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2, ArrowLeft, Calendar, MapPin, DollarSign, Building, Users, Clock, FileText } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
+import { recruitmentAPI, JobPosting, questionAPI, QuestionSet } from "@/lib/api/recruitment"
 
 export function JobDetailClient() {
   const params = useParams()
   const router = useRouter()
   const [job, setJob] = useState<JobPosting | null>(null)
   const [loading, setLoading] = useState(true)
+  const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
 
   const fetchJob = useCallback(async (jobId: number) => {
     try {
       setLoading(true)
       const jobData = await recruitmentAPI.getJobPostingById(jobId)
       setJob(jobData)
+      
+      // Fetch question set if needed
+      if (jobData.questionSetId) {
+        try {
+          const response = await questionAPI.getQuestionSets({ page: 0, limit: 100 })
+          const set = response.data.find(s => s.setId === jobData.questionSetId)
+          setQuestionSet(set || null)
+        } catch (error) {
+          console.error("Error fetching question set:", error)
+        }
+      }
     } catch (error) {
       console.error("Error fetching job:", error)
       router.push("/recruitment/jobs")
@@ -212,6 +224,29 @@ export function JobDetailClient() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Test & Assessment */}
+          {job.isTest && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Kiểm tra và Đánh giá</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Yêu cầu kiểm tra:</span>
+                    <Badge variant="default">Có</Badge>
+                  </div>
+                  {questionSet && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Bộ câu hỏi:</span>
+                      <Badge variant="secondary">{questionSet.title}</Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}

@@ -628,12 +628,19 @@ export function CandidateDetailClient() {
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/recruitment/candidate/list">
+          <Link href={`/recruitment/candidate/list${searchParams.get("jobId") ? `?jobId=${searchParams.get("jobId")}` : ""}`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại
             </Button>
           </Link>
+          {candidate.currentApplication?.jobPosting?.isTest && (
+            <Link href={`/recruitment/candidate/exams?applicationId=${searchParams.get("applicationId") || candidate.currentApplication?.applicationId}`}>
+              <Button size="sm" variant="secondary">
+                Xem bài thi
+              </Button>
+            </Link>
+          )}
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {`${candidate.firstName} ${candidate.lastName}`}

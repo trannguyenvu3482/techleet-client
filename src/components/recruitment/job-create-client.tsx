@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,13 +8,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { recruitmentAPI, CreateJobPostingRequest } from "@/lib/api/recruitment"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { recruitmentAPI, CreateJobPostingRequest, questionAPI, QuestionSet } from "@/lib/api/recruitment"
 
 export function JobCreateClient() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [questionSets, setQuestionSets] = useState<QuestionSet[]>([])
+  const [loadingQuestionSets, setLoadingQuestionSets] = useState(false)
+  const [showQuestionSetDialog, setShowQuestionSetDialog] = useState(false)
+  const [newQuestionSetName, setNewQuestionSetName] = useState("")
+  const [newQuestionSetDescription, setNewQuestionSetDescription] = useState("")
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -33,14 +40,47 @@ export function JobCreateClient() {
     location: "",
     departmentId: "",
     positionId: "",
-    hiringManagerId: ""
+    hiringManagerId: "",
+    isTest: false,
+    questionSetId: ""
   })
+
+  useEffect(() => {
+    fetchQuestionSets()
+  }, [])
+
+  const fetchQuestionSets = async () => {
+    try {
+      setLoadingQuestionSets(true)
+      const response = await questionAPI.getQuestionSets({ limit: 100 })
+      setQuestionSets(response.data)
+    } catch (error) {
+      console.error("Error fetching question sets:", error)
+    } finally {
+      setLoadingQuestionSets(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleCreateQuestionSet = async () => {
+    try {
+      await questionAPI.createQuestionSet({
+        title: newQuestionSetName,
+        description: newQuestionSetDescription
+      })
+      setNewQuestionSetName("")
+      setNewQuestionSetDescription("")
+      setShowQuestionSetDialog(false)
+      await fetchQuestionSets()
+    } catch (error) {
+      console.error("Error creating question set:", error)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +106,9 @@ export function JobCreateClient() {
         location: formData.location,
         departmentId: Number(formData.departmentId),
         positionId: Number(formData.positionId),
-        hiringManagerId: Number(formData.hiringManagerId)
+        hiringManagerId: Number(formData.hiringManagerId),
+        isTest: formData.isTest,
+        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined
       }
 
       const newJob = await recruitmentAPI.createJobPosting(createData)
@@ -344,7 +386,7 @@ export function JobCreateClient() {
                 </Select>
               </div>
 
-                             <div className="space-y-2">
+                             {/* <div className="space-y-2">
                  <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
                  <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
                    <SelectTrigger>
@@ -357,7 +399,66 @@ export function JobCreateClient() {
                      <SelectItem value="4">Manager 4</SelectItem>
                    </SelectContent>
                  </Select>
-               </div>
+               </div> */}
+            </CardContent>
+          </Card>
+
+          {/* Test & Assessment */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kiểm tra và Đánh giá</CardTitle>
+              <CardDescription>
+                Cấu hình kiểm tra và bộ câu hỏi cho vị trí tuyển dụng
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isTest"
+                  checked={formData.isTest}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isTest: checked === true }))}
+                />
+                <Label htmlFor="isTest" className="cursor-pointer">
+                  Yêu cầu kiểm tra (Test required)
+                </Label>
+              </div>
+
+              {formData.isTest && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="questionSetId">Bộ câu hỏi</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => router.push("/recruitment/questions")}
+                    >
+                      Tạo bộ câu hỏi mới
+                    </Button>
+                  </div>
+                  <Select
+                    value={formData.questionSetId}
+                    onValueChange={(value) => handleInputChange("questionSetId", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn bộ câu hỏi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingQuestionSets ? (
+                        <div className="p-2 text-center">Đang tải...</div>
+                      ) : questionSets.length === 0 ? (
+                        <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
+                      ) : (
+                        questionSets.map((set) => (
+                          <SelectItem key={set.setId} value={set.setId.toString()}>
+                            {set.title} {set.description && `- ${set.description}`}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
