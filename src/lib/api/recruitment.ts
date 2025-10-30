@@ -186,11 +186,25 @@ export interface Application {
     | "interview"
     | "rejected"
     | "accepted";
+  status?:
+    | "submitted"
+    | "screening"
+    | "screening_passed"
+    | "screening_failed"
+    | "interviewing"
+    | "offer"
+    | "hired"
+    | "rejected"
+    | "withdrawn";
   appliedAt: string;
   updatedAt: string;
   candidate?: Candidate;
   jobPosting?: JobPosting;
   score?: number;
+  screeningScore?: number;
+  screeningStatus?: string;
+  screeningCompletedAt?: string;
+  daysSinceApplied?: number;
 }
 
 export interface CreateApplicationRequest {
@@ -531,6 +545,15 @@ export const recruitmentAPI = {
     return api.delete(
       `/api/v1/recruitment-service/applications/${applicationId}`
     );
+  },
+
+  async getInterviewRequests(params?: {
+    page?: number;
+    limit?: number;
+    jobPostingId?: number;
+    minScreeningScore?: number;
+  }): Promise<GetApplicationsResponse> {
+    return api.get("/api/v1/recruitment-service/applications/interview-requests", params);
   },
 
   // Interview Management
