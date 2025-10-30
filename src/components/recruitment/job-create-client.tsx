@@ -13,6 +13,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { recruitmentAPI, CreateJobPostingRequest, questionAPI, QuestionSet } from "@/lib/api/recruitment"
+import { toast } from "sonner"
 
 export function JobCreateClient() {
   const router = useRouter()
@@ -42,7 +43,8 @@ export function JobCreateClient() {
     positionId: "",
     hiringManagerId: "",
     isTest: false,
-    questionSetId: ""
+    questionSetId: "",
+    quantityQuestion: "10"
   })
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export function JobCreateClient() {
       setQuestionSets(response.data)
     } catch (error) {
       console.error("Error fetching question sets:", error)
+      toast.error("Không thể tải danh sách bộ câu hỏi")
     } finally {
       setLoadingQuestionSets(false)
     }
@@ -77,14 +80,33 @@ export function JobCreateClient() {
       setNewQuestionSetName("")
       setNewQuestionSetDescription("")
       setShowQuestionSetDialog(false)
+      toast.success("Tạo bộ câu hỏi thành công!")
       await fetchQuestionSets()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating question set:", error)
+      const errorMessages = error?.response?.data?.message || error?.message
+      
+      // Handle array of errors (validation errors)
+      if (Array.isArray(errorMessages)) {
+        errorMessages.forEach((msg: string) => {
+          toast.error(msg)
+        })
+      } else if (errorMessages) {
+        toast.error(errorMessages)
+      } else {
+        toast.error("Không thể tạo bộ câu hỏi. Vui lòng thử lại!")
+      }
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate that questionSetId is selected when isTest is true
+    if (formData.isTest && !formData.questionSetId) {
+      toast.error("Vui lòng chọn bộ câu hỏi khi bật yêu cầu kiểm tra!")
+      return
+    }
 
     try {
       setSaving(true)
@@ -108,13 +130,27 @@ export function JobCreateClient() {
         positionId: Number(formData.positionId),
         hiringManagerId: Number(formData.hiringManagerId),
         isTest: formData.isTest,
-        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined
+        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined,
+        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined
       }
 
       const newJob = await recruitmentAPI.createJobPosting(createData)
+      toast.success("Tạo vị trí tuyển dụng thành công!")
       router.push(`/recruitment/jobs/detail/${newJob.jobPostingId}`)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating job:", error)
+      const errorMessages = error?.response?.data?.message || error?.message
+      
+      // Handle array of errors (validation errors)
+      if (Array.isArray(errorMessages)) {
+        errorMessages.forEach((msg: string) => {
+          toast.error(msg)
+        })
+      } else if (errorMessages) {
+        toast.error(errorMessages)
+      } else {
+        toast.error("Không thể tạo vị trí tuyển dụng. Vui lòng thử lại!")
+      }
     } finally {
       setSaving(false)
     }
@@ -424,40 +460,54 @@ export function JobCreateClient() {
               </div>
 
               {formData.isTest && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="questionSetId">Bộ câu hỏi</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      type="button"
-                      onClick={() => router.push("/recruitment/questions")}
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="questionSetId">Bộ câu hỏi *</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => router.push("/recruitment/questions")}
+                      >
+                        Tạo bộ câu hỏi mới
+                      </Button>
+                    </div>
+                    <Select
+                      value={formData.questionSetId}
+                      onValueChange={(value) => handleInputChange("questionSetId", value)}
                     >
-                      Tạo bộ câu hỏi mới
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn bộ câu hỏi" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingQuestionSets ? (
+                          <div className="p-2 text-center">Đang tải...</div>
+                        ) : questionSets.length === 0 ? (
+                          <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
+                        ) : (
+                          questionSets.map((set) => (
+                            <SelectItem key={set.setId} value={set.setId.toString()}>
+                              {set.title} {set.description && `- ${set.description}`}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select
-                    value={formData.questionSetId}
-                    onValueChange={(value) => handleInputChange("questionSetId", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn bộ câu hỏi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingQuestionSets ? (
-                        <div className="p-2 text-center">Đang tải...</div>
-                      ) : questionSets.length === 0 ? (
-                        <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
-                      ) : (
-                        questionSets.map((set) => (
-                          <SelectItem key={set.setId} value={set.setId.toString()}>
-                            {set.title} {set.description && `- ${set.description}`}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="quantityQuestion">Số câu hỏi *</Label>
+                    <Input
+                      id="quantityQuestion"
+                      type="number"
+                      value={formData.quantityQuestion}
+                      onChange={(e) => handleInputChange("quantityQuestion", e.target.value)}
+                      placeholder="10"
+                      min="1"
+                    />
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

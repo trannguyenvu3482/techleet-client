@@ -32,6 +32,7 @@ export interface JobPosting {
   updatedAt: string;
   isTest?: boolean;
   questionSetId?: number;
+  quantityQuestion?: number;
 }
 
 export interface CreateJobPostingRequest {
@@ -55,6 +56,7 @@ export interface CreateJobPostingRequest {
   hiringManagerId: number;
   isTest?: boolean;
   questionSetId?: number;
+  quantityQuestion?: number;
 }
 
 export interface UpdateJobPostingRequest {
@@ -79,6 +81,7 @@ export interface UpdateJobPostingRequest {
   status?: string;
   isTest?: boolean;
   questionSetId?: number;
+  quantityQuestion?: number;
 }
 
 export interface GetJobPostingsParams extends Record<string, unknown> {

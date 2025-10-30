@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Checkbox } from "@/components/ui/checkbox"
 import { recruitmentAPI, JobPosting, UpdateJobPostingRequest, questionAPI, QuestionSet } from "@/lib/api/recruitment"
+import { toast } from "sonner"
 
 export function JobEditClient() {
   const params = useParams()
@@ -42,7 +43,8 @@ export function JobEditClient() {
     hiringManagerId: "",
     status: "",
     isTest: false,
-    questionSetId: ""
+    questionSetId: "",
+    quantityQuestion: "10"
   })
 
   const fetchJob = useCallback(async (jobId: number) => {
@@ -71,10 +73,12 @@ export function JobEditClient() {
         hiringManagerId: jobData.hiringManagerId.toString(),
         status: jobData.status,
         isTest: jobData.isTest || false,
-        questionSetId: jobData.questionSetId?.toString() || ""
+        questionSetId: jobData.questionSetId?.toString() || "",
+        quantityQuestion: jobData.quantityQuestion?.toString() || "10"
       })
     } catch (error) {
       console.error("Error fetching job:", error)
+      toast.error("Không thể tải thông tin vị trí tuyển dụng")
       router.push("/recruitment/jobs")
     } finally {
       setLoading(false)
@@ -88,6 +92,7 @@ export function JobEditClient() {
       setQuestionSets(response.data)
     } catch (error) {
       console.error("Error fetching question sets:", error)
+      toast.error("Không thể tải danh sách bộ câu hỏi")
     } finally {
       setLoadingQuestionSets(false)
     }
@@ -110,6 +115,12 @@ export function JobEditClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!job) return
+
+    // Validate that questionSetId is selected when isTest is true
+    if (formData.isTest && !formData.questionSetId) {
+      toast.error("Vui lòng chọn bộ câu hỏi khi bật yêu cầu kiểm tra!")
+      return
+    }
 
     try {
       setSaving(true)
@@ -134,13 +145,27 @@ export function JobEditClient() {
         hiringManagerId: Number(formData.hiringManagerId),
         status: formData.status,
         isTest: formData.isTest,
-        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined
+        questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined,
+        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined
       }
 
       await recruitmentAPI.updateJobPosting(job.jobPostingId, updateData)
+      toast.success("Cập nhật vị trí tuyển dụng thành công!")
       router.push(`/recruitment/jobs/detail/${job.jobPostingId}`)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating job:", error)
+      const errorMessages = error?.response?.data?.message || error?.message
+      
+      // Handle array of errors (validation errors)
+      if (Array.isArray(errorMessages)) {
+        errorMessages.forEach((msg: string) => {
+          toast.error(msg)
+        })
+      } else if (errorMessages) {
+        toast.error(errorMessages)
+      } else {
+        toast.error("Không thể cập nhật vị trí tuyển dụng. Vui lòng thử lại!")
+      }
     } finally {
       setSaving(false)
     }
@@ -481,30 +506,44 @@ export function JobEditClient() {
               </div>
 
               {formData.isTest && (
-                <div className="space-y-2">
-                  <Label htmlFor="questionSetId">Bộ câu hỏi</Label>
-                  <Select
-                    value={formData.questionSetId}
-                    onValueChange={(value) => handleInputChange("questionSetId", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn bộ câu hỏi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingQuestionSets ? (
-                        <div className="p-2 text-center">Đang tải...</div>
-                      ) : questionSets.length === 0 ? (
-                        <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
-                      ) : (
-                        questionSets.map((set) => (
-                          <SelectItem key={set.setId} value={set.setId.toString()}>
-                            {set.title} {set.description && `- ${set.description}`}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="questionSetId">Bộ câu hỏi *</Label>
+                    <Select
+                      value={formData.questionSetId}
+                      onValueChange={(value) => handleInputChange("questionSetId", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn bộ câu hỏi" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingQuestionSets ? (
+                          <div className="p-2 text-center">Đang tải...</div>
+                        ) : questionSets.length === 0 ? (
+                          <div className="p-2 text-center">Chưa có bộ câu hỏi</div>
+                        ) : (
+                          questionSets.map((set) => (
+                            <SelectItem key={set.setId} value={set.setId.toString()}>
+                              {set.title} {set.description && `- ${set.description}`}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="quantityQuestion">Số câu hỏi *</Label>
+                    <Input
+                      id="quantityQuestion"
+                      type="number"
+                      value={formData.quantityQuestion}
+                      onChange={(e) => handleInputChange("quantityQuestion", e.target.value)}
+                      placeholder="10"
+                      min="1"
+                    />
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

@@ -32,7 +32,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster richColors />
+          <Toaster 
+            richColors 
+            position="top-center" 
+            expand={false}
+            closeButton={true}
+          />
           <CustomChatbot />
         </ThemeProvider>
       </body>
