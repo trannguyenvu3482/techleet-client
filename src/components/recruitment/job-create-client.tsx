@@ -44,7 +44,8 @@ export function JobCreateClient() {
     hiringManagerId: "",
     isTest: false,
     questionSetId: "",
-    quantityQuestion: "10"
+    quantityQuestion: "10",
+    minScore: ""
   })
 
   useEffect(() => {
@@ -131,7 +132,8 @@ export function JobCreateClient() {
         hiringManagerId: Number(formData.hiringManagerId),
         isTest: formData.isTest,
         questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined,
-        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined
+        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined,
+        minScore: formData.minScore ? Number(formData.minScore) : undefined
       }
 
       const newJob = await recruitmentAPI.createJobPosting(createData)
@@ -505,6 +507,19 @@ export function JobCreateClient() {
                       onChange={(e) => handleInputChange("quantityQuestion", e.target.value)}
                       placeholder="10"
                       min="1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="minScore">Điểm tối thiểu (0-10)</Label>
+                    <Input
+                      id="minScore"
+                      type="number"
+                      value={formData.minScore}
+                      onChange={(e) => handleInputChange("minScore", e.target.value)}
+                      placeholder="7"
+                      min="0"
+                      max="10"
                     />
                   </div>
                 </>

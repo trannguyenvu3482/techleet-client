@@ -33,6 +33,7 @@ export interface JobPosting {
   isTest?: boolean;
   questionSetId?: number;
   quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface CreateJobPostingRequest {
@@ -57,6 +58,7 @@ export interface CreateJobPostingRequest {
   isTest?: boolean;
   questionSetId?: number;
   quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface UpdateJobPostingRequest {
@@ -82,6 +84,7 @@ export interface UpdateJobPostingRequest {
   isTest?: boolean;
   questionSetId?: number;
   quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface GetJobPostingsParams extends Record<string, unknown> {
@@ -323,6 +326,14 @@ export const examinationAPI = {
     await api.post(
       `api/v1/recruitment-service/question/examinations/${examinationId}/submit`,
       { answers }
+    );
+  },
+
+  async revaluateExamination(
+    examinationId: number
+  ): Promise<ExaminationDetail> {
+    return api.post(
+      `api/v1/recruitment-service/question/examinations/${examinationId}/revaluate`
     );
   },
 };

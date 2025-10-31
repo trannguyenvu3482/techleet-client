@@ -16,6 +16,7 @@ export function CandidateExamClient() {
   const [exam, setExam] = useState<ExaminationDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState<number>(60 * 60) // 60 minutes in seconds
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [started, setStarted] = useState(false)
@@ -108,7 +109,14 @@ export function CandidateExamClient() {
   }
 
   const handleSubmit = async () => {
-    if (!exam || !examinationId || submitting) return
+    if (!exam || !examinationId || submitting || submitted) return
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Bạn có chắc chắn muốn nộp bài thi không? Sau khi nộp, bạn sẽ không thể chỉnh sửa câu trả lời."
+    )
+
+    if (!confirmed) return
 
     try {
       setSubmitting(true)
@@ -124,21 +132,24 @@ export function CandidateExamClient() {
         }
       })
 
-      // Call API to submit exam
-      await examinationAPI.submitExamination(examinationId, submitData)
+      // Call API to submit exam - don't await, just fire and forget
+      examinationAPI.submitExamination(examinationId, submitData).catch(error => {
+        console.error("Error submitting exam:", error)
+      })
 
       // Clear saved data
       localStorage.removeItem(`exam_${examinationId}_answers`)
       localStorage.removeItem(`exam_${examinationId}_start`)
       localStorage.removeItem(`exam_${examinationId}_end`)
 
-      alert("Bài thi đã được nộp thành công!")
-      router.push("/exam/success")
+      setSubmitted(true)
+      
+      // Navigate immediately without waiting for API response
+      router.replace("/exam/success")
     } catch (error) {
-      console.error("Error submitting exam:", error)
-      alert("Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.")
-    } finally {
+      console.error("Error preparing submit:", error)
       setSubmitting(false)
+      alert("Có lỗi xảy ra khi chuẩn bị nộp bài. Vui lòng thử lại.")
     }
   }
 

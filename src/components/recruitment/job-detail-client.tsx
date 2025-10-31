@@ -243,6 +243,18 @@ export function JobDetailClient() {
                       <Badge variant="secondary">{questionSet.title}</Badge>
                     </div>
                   )}
+                  {job.quantityQuestion && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Số câu hỏi:</span>
+                      <Badge variant="secondary">{job.quantityQuestion} câu</Badge>
+                    </div>
+                  )}
+                  {job.minScore !== null && job.minScore !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Điểm tối thiểu:</span>
+                      <Badge variant="secondary">{job.minScore}/10</Badge>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

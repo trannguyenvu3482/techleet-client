@@ -74,6 +74,13 @@ export function CandidateExamsClient() {
             examinationAPI.updateExamScore(update.examQuestionId, update.score)
           )
         )
+
+        // Revaluate examination after updating all scores
+        try {
+          await examinationAPI.revaluateExamination(exam.examinationId)
+        } catch (error) {
+          console.error("Error revaluating examination:", error)
+        }
         
         // Reload exams after update
         const data = await examinationAPI.getExaminationsToDo(applicationId!)

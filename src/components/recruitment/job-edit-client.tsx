@@ -44,7 +44,8 @@ export function JobEditClient() {
     status: "",
     isTest: false,
     questionSetId: "",
-    quantityQuestion: "10"
+    quantityQuestion: "10",
+    minScore: ""
   })
 
   const fetchJob = useCallback(async (jobId: number) => {
@@ -74,7 +75,8 @@ export function JobEditClient() {
         status: jobData.status,
         isTest: jobData.isTest || false,
         questionSetId: jobData.questionSetId?.toString() || "",
-        quantityQuestion: jobData.quantityQuestion?.toString() || "10"
+        quantityQuestion: jobData.quantityQuestion?.toString() || "10",
+        minScore: jobData.minScore?.toString() || ""
       })
     } catch (error) {
       console.error("Error fetching job:", error)
@@ -146,7 +148,8 @@ export function JobEditClient() {
         status: formData.status,
         isTest: formData.isTest,
         questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined,
-        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined
+        quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined,
+        minScore: formData.minScore ? Number(formData.minScore) : undefined
       }
 
       await recruitmentAPI.updateJobPosting(job.jobPostingId, updateData)
@@ -541,6 +544,19 @@ export function JobEditClient() {
                       onChange={(e) => handleInputChange("quantityQuestion", e.target.value)}
                       placeholder="10"
                       min="1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="minScore">Điểm tối thiểu (0-10)</Label>
+                    <Input
+                      id="minScore"
+                      type="number"
+                      value={formData.minScore}
+                      onChange={(e) => handleInputChange("minScore", e.target.value)}
+                      placeholder="7"
+                      min="0"
+                      max="10"
                     />
                   </div>
                 </>
