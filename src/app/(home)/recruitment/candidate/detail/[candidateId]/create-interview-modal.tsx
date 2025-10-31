@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Interview, recruitmentAPI } from "@/lib/api";
+import { Interview, recruitmentAPI, type Interview as InterviewType } from "@/lib/api";
 import { companyAPI, type Headquarter } from "@/lib/api/company";
 import { employeeAPI } from "@/lib/api/employees";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ interface CreateInterviewModalProps {
 export default function CreateInterviewModal({ candidateId, trigger }: CreateInterviewModalProps) {
   const [open, setOpen] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [existingInterview, setExistingInterview] = useState<any>(null);
+  const [existingInterview, setExistingInterview] = useState<InterviewType | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [candidates, setCandidates] = useState<Array<{candidateId: number; firstName: string; lastName: string}>>([]);
   const [jobs, setJobs] = useState<Array<{jobPostingId: number; title: string}>>([]);
@@ -101,7 +101,6 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
           setIsEditMode(false);
         }
       } catch (error) {
-        console.log("Error checking existing interview:", error);
         setExistingInterview(null);
         setIsEditMode(false);
       }
@@ -133,14 +132,13 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
         if (existingInterview) {
           setValue("candidateId", existingInterview.candidate_id || candidateId);
           setValue("jobId", existingInterview.job_id || 0);
-          setValue("interviewerIds", existingInterview.interviewer_ids || []);
-          setValue("scheduledAt", existingInterview.scheduled_at);
-          setValue("durationMinutes", existingInterview.duration_minutes);
-          setValue("interviewType", existingInterview.meeting_link ? "online" : "offline");
+          setValue("interviewerIds", ('interviewer_ids' in existingInterview && Array.isArray(existingInterview.interviewer_ids) ? existingInterview.interviewer_ids : []) as number[]);
+          setValue("scheduledAt", existingInterview.scheduled_at || existingInterview.scheduledAt);
+          setValue("durationMinutes", ('duration_minutes' in existingInterview ? existingInterview.duration_minutes : existingInterview.duration) || 60);
+          setValue("interviewType", ('meeting_link' in existingInterview ? existingInterview.meeting_link : existingInterview.meetingUrl) ? "online" : "offline");
           setValue("location", existingInterview.location || "");
         }
       } catch (error) {
-        console.log(error);
         toast.error("Không thể tải dữ liệu");
       } finally {
         setLoadingData(false);
@@ -149,7 +147,7 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
     loadData();
   }, [open, existingInterview, candidateId, setValue]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       const interviewData = {
         candidate_id: data.candidateId,

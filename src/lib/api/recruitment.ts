@@ -626,6 +626,58 @@ export const recruitmentAPI = {
     );
   },
 
+  async updateInterviewNotes(
+    interviewId: number,
+    notes: string
+  ): Promise<Interview> {
+    return api.patch(
+      `/api/v1/recruitment-service/interview/${interviewId}/notes`,
+      { notes }
+    );
+  },
+
+  async getInterviewNotesData(interviewId: number): Promise<{
+    interview: {
+      interview_id: number;
+      scheduled_at: string;
+      duration_minutes: number;
+      meeting_link: string;
+      location: string;
+      status: string;
+      notes: string | null;
+    };
+    application: {
+      application_id: number;
+      resume_url: string | null;
+      screening_score: number | null;
+      screening_status: string | null;
+    };
+    candidate: {
+      candidate_id: number;
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone_number: string | null;
+      years_of_experience: number | null;
+      skills: string | null;
+      summary: string | null;
+    };
+    job: {
+      job_id: number;
+      title: string;
+    };
+    interviewers: Array<{
+      employeeId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+    }>;
+  }> {
+    return api.get(
+      `/api/v1/recruitment-service/interview/${interviewId}/notes-data`
+    );
+  },
+
   // CV Screening Management
   async testCvScreening(data: CvTestRequest): Promise<CvTestResult> {
     return api.post(

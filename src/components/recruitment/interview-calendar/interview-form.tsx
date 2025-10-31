@@ -30,7 +30,7 @@ export function InterviewForm({ defaults, interview, onCancel, onSuccess }: Inte
       jobId: defaults?.application?.jobPostingId || interview?.job_id || 0,
       scheduledAt: defaults?.start ? dayjs(defaults.start).toISOString() : interview?.scheduledAt || new Date().toISOString(),
       durationMinutes: interview?.duration || 60,
-      interviewerIds: (interview as any)?.interviewer_ids || [],
+      interviewerIds: (interview && 'interviewer_ids' in interview ? interview.interviewer_ids : []) as number[] || [],
       interviewType: interview?.meetingUrl ? "online" as const : "online" as const,
     },
   });
@@ -68,9 +68,9 @@ export function InterviewForm({ defaults, interview, onCancel, onSuccess }: Inte
       setValue("jobId", defaults.application.jobPostingId);
       setValue("scheduledAt", defaults.start || dayjs().add(3, 'days').hour(10).minute(0).toISOString());
     } else if (interview) {
-      setValue("candidateId", (interview as any).candidate_id || 0);
-      setValue("jobId", (interview as any).job_id || 0);
-      setValue("interviewerIds", (interview as any).interviewer_ids || []);
+      setValue("candidateId", interview.candidate_id || 0);
+      setValue("jobId", interview.job_id || 0);
+      setValue("interviewerIds", ('interviewer_ids' in interview ? interview.interviewer_ids : []) as number[] || []);
       setValue("scheduledAt", interview.scheduledAt);
       setValue("durationMinutes", interview.duration);
       setValue("interviewType", interview.meetingUrl ? "online" : "offline");
@@ -115,8 +115,8 @@ export function InterviewForm({ defaults, interview, onCancel, onSuccess }: Inte
       
       reset();
       onSuccess();
-    } catch (e: any) {
-      const errorMsg = e.message || (interview ? "Cập nhật thất bại" : "Tạo lịch thất bại");
+    } catch (e) {
+      const errorMsg = (e instanceof Error ? e.message : String(e)) || (interview ? "Cập nhật thất bại" : "Tạo lịch thất bại");
       toast.error(errorMsg);
     }
   };
