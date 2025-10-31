@@ -30,6 +30,10 @@ export interface JobPosting {
   applicationCount: number;
   createdAt: string;
   updatedAt: string;
+  isTest?: boolean;
+  questionSetId?: number;
+  quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface CreateJobPostingRequest {
@@ -51,6 +55,10 @@ export interface CreateJobPostingRequest {
   departmentId: number;
   positionId: number;
   hiringManagerId: number;
+  isTest?: boolean;
+  questionSetId?: number;
+  quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface UpdateJobPostingRequest {
@@ -73,6 +81,10 @@ export interface UpdateJobPostingRequest {
   positionId?: number;
   hiringManagerId?: number;
   status?: string;
+  isTest?: boolean;
+  questionSetId?: number;
+  quantityQuestion?: number;
+  minScore?: number;
 }
 
 export interface GetJobPostingsParams extends Record<string, unknown> {
@@ -246,6 +258,100 @@ export interface GetApplicationsResponse {
   totalPages: number;
 }
 
+// Examination Types
+export interface Examination {
+  examinationId: number;
+  applicationId: number;
+  sourceSetId?: number;
+  status?: string;
+  submittedAt?: string | null;
+  totalScore?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  examQuestions?: ExamQuestion[];
+  [key: string]: unknown;
+}
+
+export interface ExamQuestion {
+  examinationQuestionId: number;
+  examinationId: number;
+  questionId: number;
+  answerText?: string | null;
+  score?: number | null;
+  reason?: string | null;
+  question?: {
+    questionId: number;
+    content: string;
+    sampleAnswer?: string;
+    difficulty: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ExaminationDetail extends Examination {
+  questions?: unknown[];
+}
+
+export const examinationAPI = {
+  async getExaminationsToDo(applicationId: number): Promise<Examination[]> {
+    const res = await api.get(
+      `api/v1/recruitment-service/question/examinations/todo/${applicationId}`
+    );
+    console.log("Raw API response:", res);
+    // Response is already an array, return directly
+    if (Array.isArray(res)) {
+      return res;
+    }
+    // If wrapped in a data property
+    const data = (res as any).data;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getExaminationDetail(
+    examinationId: number
+  ): Promise<ExaminationDetail> {
+    const res = await api.get(
+      `api/v1/recruitment-service/question/examinations/${examinationId}`
+    );
+    console.log("Raw API response for examination:", res);
+    // The response might already be the data object, or nested in a data property
+    const data = (res as any).data || res;
+    return data as ExaminationDetail;
+  },
+
+  async updateExamScore(
+    examQuestionId: number,
+    score: number,
+    reason?: string
+  ): Promise<void> {
+    await api.put(
+      `api/v1/recruitment-service/question/examinations/score/${examQuestionId}`,
+      { score, reason }
+    );
+  },
+
+  async submitExamination(
+    examinationId: number,
+    answers: Record<string, { answerText: string }>
+  ): Promise<void> {
+    await api.post(
+      `api/v1/recruitment-service/question/examinations/${examinationId}/submit`,
+      { answers }
+    );
+  },
+
+  async revaluateExamination(
+    examinationId: number
+  ): Promise<ExaminationDetail> {
+    return api.post(
+      `api/v1/recruitment-service/question/examinations/${examinationId}/revaluate`
+    );
+  },
+};
+
 // Interview Types
 export interface Interview {
   interviewId: number;
@@ -323,7 +429,7 @@ export interface CvTestRequest {
   jobPostingId: number;
   mockApplicationId?: number;
   applicationId?: number;
-  modelConfig?: 'gemini' | 'chatgpt' | 'deepseek';
+  modelConfig?: "gemini" | "chatgpt" | "deepseek";
 }
 
 export interface CvTestResult {
@@ -655,5 +761,146 @@ export const recruitmentAPI = {
       jobTitle: app.jobPosting?.title || "Unknown Position",
       appliedDate: app.appliedAt,
     }));
+  },
+};
+
+// Question Types
+export interface Question {
+  questionId: number;
+  content: string;
+  sampleAnswer: string;
+  difficulty: "easy" | "medium" | "hard";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateQuestionRequest {
+  content: string;
+  sampleAnswer: string;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+export interface UpdateQuestionRequest {
+  content?: string;
+  sampleAnswer?: string;
+  difficulty?: "easy" | "medium" | "hard";
+}
+
+export interface QuestionSetItem {
+  setItemId: number;
+  question: Question;
+}
+
+export interface QuestionSet {
+  setId: number;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  questionSetItems?: QuestionSetItem[];
+}
+
+export interface CreateQuestionSetRequest {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateQuestionSetRequest {
+  title?: string;
+  description?: string;
+}
+
+export interface GetQuestionsResponse {
+  data: Question[];
+  total: number;
+}
+
+export interface GetQuestionSetsResponse {
+  data: QuestionSet[];
+  total: number;
+}
+
+export const questionAPI = {
+  async getQuestions(filter?: {
+    page?: number;
+    limit?: number;
+    text?: string;
+    difficulty?: string;
+    startDate?: string;
+    endDate?: string;
+    sortBy?: string;
+    sortOrder?: "ASC" | "DESC";
+  }): Promise<GetQuestionsResponse> {
+    return api.get("/api/v1/recruitment-service/question/questions", filter);
+  },
+
+  async createQuestion(data: CreateQuestionRequest): Promise<Question> {
+    return api.post("/api/v1/recruitment-service/question/questions", data);
+  },
+
+  async updateQuestion(
+    questionId: number,
+    data: UpdateQuestionRequest
+  ): Promise<Question> {
+    return api.put(
+      `/api/v1/recruitment-service/question/questions/${questionId}`,
+      data
+    );
+  },
+
+  async deleteQuestion(questionId: number): Promise<void> {
+    return api.delete(
+      `/api/v1/recruitment-service/question/questions/${questionId}`
+    );
+  },
+
+  async getQuestionSets(filter?: {
+    page?: number;
+    limit?: number;
+    text?: string;
+    sortBy?: string;
+    sortOrder?: "ASC" | "DESC";
+  }): Promise<GetQuestionSetsResponse> {
+    return api.get(
+      "/api/v1/recruitment-service/question/question-sets",
+      filter
+    );
+  },
+
+  async createQuestionSet(
+    data: CreateQuestionSetRequest
+  ): Promise<QuestionSet> {
+    return api.post("/api/v1/recruitment-service/question/question-sets", data);
+  },
+
+  async updateQuestionSet(
+    setId: number,
+    data: UpdateQuestionSetRequest
+  ): Promise<QuestionSet> {
+    return api.put(
+      `/api/v1/recruitment-service/question/question-sets/${setId}`,
+      data
+    );
+  },
+
+  async deleteQuestionSet(setId: number): Promise<void> {
+    return api.delete(
+      `/api/v1/recruitment-service/question/question-sets/${setId}`
+    );
+  },
+
+  async addQuestionToSet(
+    setId: number,
+    questionId: number
+  ): Promise<QuestionSetItem> {
+    return api.post(
+      `/api/v1/recruitment-service/question/question-sets/${setId}/items/${questionId}`
+    );
+  },
+
+  async removeQuestionFromSet(itemId: number): Promise<void> {
+    return api.delete(
+      `/api/v1/recruitment-service/question/question-sets/items/${itemId}`
+    );
   },
 };
