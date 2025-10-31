@@ -74,9 +74,14 @@ interface ApiCandidateResponse extends Candidate {
   githubUrl?: string;
 }
 
-interface ApiApplicationResponse extends Omit<Application, 'score'> {
+interface ApiApplicationResponse {
+  applicationId: number;
+  candidateId: number;
+  jobPostingId: number;
+  coverLetter?: string;
   status: "pending" | "reviewing" | "approved" | "rejected";
   appliedDate: string;
+  updatedAt: string;
   score: number | null;
 }
 
@@ -143,7 +148,7 @@ export function CandidateDetailClient() {
           const response = await recruitmentAPI.getApplicationById(Number(applicationId))
           
           if (response) {
-            const {candidate:apiCandidate, application} = response as {candidate: ApiCandidateResponse, application: ApiApplicationResponse}
+            const {candidate:apiCandidate, application} = response as unknown as {candidate: ApiCandidateResponse, application: ApiApplicationResponse}
             
             // Transform API data to match our interface
             const transformedCandidate: CandidateDetailData = {
