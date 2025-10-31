@@ -27,7 +27,7 @@ class ApiClient {
         return parsed.state?.token || null
       }
     } catch (error) {
-      console.error('Failed to get auth token:', error)
+      // Failed to get auth token - silently return null
     }
     return null
   }
