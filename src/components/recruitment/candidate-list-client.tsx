@@ -53,7 +53,7 @@ export function CandidateListClient() {
   const [sortBy, setSortBy] = useState<"createdAt" | "overscore">("overscore")
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC")
   const [currentJobIsTest, setCurrentJobIsTest] = useState<boolean>(false)
-  const [applicationsWithExams, setApplicationsWithExams] = useState<Record<number, boolean>>({})
+  const [applicationsWithExams, setApplicationsWithExams] = useState<Record<number, 'pending' | 'completed' | null>>({})
   
   // Get jobId from URL params or search
   const urlJobId = searchParams.get("jobId")
@@ -74,155 +74,11 @@ export function CandidateListClient() {
       
       // Mock data for testing when API is not available
       const mockCandidates: CandidateListItem[] = [
-        {
-          candidateId: 1,
-          fullname: "Nguyễn Văn An",
-          email: "nguyenvanan@email.com",
-          status: "screening",
-          createdAt: "2024-01-15T10:30:00Z",
-          overscore: 85,
-          applicationId: 101,
-          jobTitle: "Frontend Developer"
-        },
-        {
-          candidateId: 2,
-          fullname: "Trần Thị Bình",
-          email: "tranthibinh@email.com",
-          status: "interviewing",
-          createdAt: "2024-01-14T14:20:00Z",
-          overscore: 92,
-          applicationId: 102,
-          jobTitle: "Backend Developer"
-        },
-        {
-          candidateId: 3,
-          fullname: "Lê Văn Cường",
-          email: "levancuong@email.com",
-          status: "submitted",
-          createdAt: "2024-01-16T09:15:00Z",
-          overscore: null,
-          applicationId: 103,
-          jobTitle: "Full Stack Developer"
-        },
-        {
-          candidateId: 4,
-          fullname: "Phạm Thị Dung",
-          email: "phamthidung@email.com",
-          status: "offer",
-          createdAt: "2024-01-13T16:45:00Z",
-          overscore: 78,
-          applicationId: 104,
-          jobTitle: "UI/UX Designer"
-        },
-        {
-          candidateId: 5,
-          fullname: "Hoàng Văn Em",
-          email: "hoangvanem@email.com",
-          status: "rejected",
-          createdAt: "2024-01-12T11:30:00Z",
-          overscore: 45,
-          applicationId: 105,
-          jobTitle: "DevOps Engineer"
-        },
-        {
-          candidateId: 6,
-          fullname: "Võ Thị Phương",
-          email: "vothiphuong@email.com",
-          status: "hired",
-          createdAt: "2024-01-11T08:20:00Z",
-          overscore: 95,
-          applicationId: 106,
-          jobTitle: "Product Manager"
-        },
-        {
-          candidateId: 7,
-          fullname: "Đỗ Minh Tuấn",
-          email: "dominhtuan@email.com",
-          status: "withdrawn",
-          createdAt: "2024-01-10T15:45:00Z",
-          overscore: 60,
-          applicationId: 107,
-          jobTitle: "Data Analyst"
-        },
-        {
-          candidateId: 8,
-          fullname: "Bùi Thị Lan",
-          email: "buithilan@email.com",
-          status: "active",
-          createdAt: "2024-01-09T12:30:00Z",
-          overscore: null,
-          applicationId: undefined,
-          jobTitle: undefined
-        },
-        {
-          candidateId: 9,
-          fullname: "Nguyễn Đức Minh",
-          email: "nguyenducminh@email.com",
-          status: "inactive",
-          createdAt: "2024-01-08T09:15:00Z",
-          overscore: null,
-          applicationId: undefined,
-          jobTitle: undefined
-        }
+        
       ]
 
       const mockJobs: JobPosting[] = [
-        {
-          jobPostingId: 1,
-          title: "Frontend Developer",
-          description: "React, TypeScript developer",
-          requirements: "3+ years experience",
-          benefits: "Competitive salary",
-          salaryMin: "15000000",
-          salaryMax: "25000000",
-          vacancies: 2,
-          applicationDeadline: "2024-02-15",
-          status: "published",
-          location: "Ho Chi Minh City",
-          employmentType: "Full-time",
-          experienceLevel: "Mid-level",
-          skills: "React, TypeScript, JavaScript",
-          minExperience: 3,
-          maxExperience: 5,
-          educationLevel: "Bachelor",
-          departmentId: 1,
-          positionId: 1,
-          hiringManagerId: 1,
-          salaryRange: "15-25M VND",
-          isJobActive: true,
-          daysUntilDeadline: 30,
-          applicationCount: 15,
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-01T00:00:00Z"
-        },
-        {
-          jobPostingId: 2,
-          title: "Backend Developer",
-          description: "Node.js, Python developer",
-          requirements: "2+ years experience",
-          benefits: "Flexible working",
-          salaryMin: "18000000",
-          salaryMax: "30000000",
-          vacancies: 1,
-          applicationDeadline: "2024-02-20",
-          status: "published",
-          location: "Ha Noi",
-          employmentType: "Full-time",
-          experienceLevel: "Senior",
-          skills: "Node.js, Python, PostgreSQL",
-          minExperience: 2,
-          maxExperience: 6,
-          educationLevel: "Bachelor",
-          departmentId: 2,
-          positionId: 2,
-          hiringManagerId: 2,
-          salaryRange: "18-30M VND",
-          isJobActive: true,
-          daysUntilDeadline: 35,
-          applicationCount: 8,
-          createdAt: "2024-01-02T00:00:00Z",
-          updatedAt: "2024-01-02T00:00:00Z"
-        }
+        
       ]
 
       // Fetch real data from API if jobId is specified
@@ -263,14 +119,24 @@ export function CandidateListClient() {
                 const results = await Promise.all(uniqueAppIds.map(async (id) => {
                   try {
                     const exams = await examinationAPI.getExaminationsToDo(id)
-                    return [id, Array.isArray(exams) && exams.length > 0] as [number, boolean]
+                    if (Array.isArray(exams) && exams.length > 0) {
+                      const exam = exams[0] // Lấy exam đầu tiên
+                      const status = exam.status
+                      if (status === 'pending') {
+                        return [id, 'pending'] as [number, 'pending']
+                      } else if (status === 'completed') {
+                        return [id, 'completed'] as [number, 'completed']
+                      }
+                      return [id, null] as [number, null]
+                    }
+                    return [id, null] as [number, null]
                   } catch (e) {
                     console.error("exam fetch error", e)
-                    return [id, false] as [number, boolean]
+                    return [id, null] as [number, null]
                   }
                 }))
-                const map: Record<number, boolean> = {}
-                results.forEach(([id, has]) => { map[id] = has })
+                const map: Record<number, 'pending' | 'completed' | null> = {}
+                results.forEach(([id, status]) => { map[id] = status })
                 setApplicationsWithExams(map)
               } catch (e) {
                 console.error("error building exam map", e)
@@ -353,6 +219,14 @@ export function CandidateListClient() {
         return <Badge variant="secondary">Đã nộp</Badge>
       case "screening":
         return <Badge variant="default">Đang sàng lọc</Badge>
+      case "screening_passed":
+        return <Badge variant="default">Đã qua sàng lọc</Badge>
+      case "screening_failed":
+        return <Badge variant="destructive">Rớt sàng lọc</Badge>
+      case "passed_exam":
+        return <Badge variant="default">Đã đậu bài thi</Badge>
+      case "failed_exam":
+        return <Badge variant="destructive">Rớt bài thi</Badge>
       case "interviewing":
         return <Badge variant="default">Phỏng vấn</Badge>
       case "offer":
@@ -616,14 +490,16 @@ export function CandidateListClient() {
                     {isJobSpecific && currentJobIsTest && (
                       <TableCell>
                         {candidate.applicationId ? (
-                          applicationsWithExams[candidate.applicationId] ? (
+                          applicationsWithExams[candidate.applicationId] === 'pending' ? (
+                            <span className="text-muted-foreground text-sm">Chưa làm bài</span>
+                          ) : applicationsWithExams[candidate.applicationId] === 'completed' ? (
                             <Link href={`/recruitment/candidate/exams?applicationId=${candidate.applicationId}`} onClick={(e) => e.stopPropagation()}>
                               <Button size="sm" variant="outline">
-                                Bài thi
+                                Đã làm bài
                               </Button>
                             </Link>
                           ) : (
-                            <span className="text-muted-foreground text-sm">Chưa có bài thi</span>
+                            <span className="text-muted-foreground text-sm">-</span>
                           )
                         ) : (
                           <span className="text-muted-foreground text-sm">-</span>
