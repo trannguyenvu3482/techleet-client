@@ -18,6 +18,13 @@ export function CvPreview({ resumeUrl }: CvPreviewProps) {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    
+    // Set loading to false after a delay to allow document to render
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, [resumeUrl]);
 
   const getFileUrl = () => {
@@ -81,13 +88,6 @@ export function CvPreview({ resumeUrl }: CvPreviewProps) {
               header: {
                 disableHeader: true,
               },
-            }}
-            onDocumentLoad={() => {
-              setLoading(false);
-            }}
-            onError={(error) => {
-              setError("Failed to load CV preview");
-              setLoading(false);
             }}
             style={{ height: "500px" }}
           />

@@ -135,7 +135,7 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
           setValue("interviewerIds", ('interviewer_ids' in existingInterview && Array.isArray(existingInterview.interviewer_ids) ? existingInterview.interviewer_ids : []) as number[]);
           setValue("scheduledAt", existingInterview.scheduled_at || existingInterview.scheduledAt);
           setValue("durationMinutes", ('duration_minutes' in existingInterview ? existingInterview.duration_minutes : existingInterview.duration) || 60);
-          setValue("interviewType", ('meeting_link' in existingInterview ? existingInterview.meeting_link : existingInterview.meetingUrl) ? "online" : "offline");
+          setValue("interviewType", (existingInterview?.meetingUrl ? "online" : "offline"));
           setValue("location", existingInterview.location || "");
         }
       } catch (error) {
@@ -155,14 +155,14 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
         interviewer_ids: data.interviewerIds,
         scheduled_at: data.scheduledAt,
         duration_minutes: data.durationMinutes,
-        meeting_link: data.interviewType === "online" ? (existingInterview?.meeting_link || generateMeetingLink()) : "",
+        meeting_link: data.interviewType === "online" ? (existingInterview?.meetingUrl || generateMeetingLink()) : "",
         location: data.interviewType === "offline" ? data.location : "",
         status: existingInterview?.status || "scheduled" as const,
       };
 
       if (isEditMode && existingInterview) {
         // Update existing interview
-        await recruitmentAPI.updateInterview(existingInterview.interview_id, interviewData);
+        await recruitmentAPI.updateInterview(existingInterview.interviewId, interviewData);
         toast.success("Đã cập nhật lịch phỏng vấn");
       } else {
         // Create new interview
@@ -304,7 +304,7 @@ export default function CreateInterviewModal({ candidateId, trigger }: CreateInt
                 <Label>Hình thức phỏng vấn *</Label>
                 <Select 
                   onValueChange={(value) => setValue("interviewType", value as "online" | "offline")}
-                  defaultValue={existingInterview ? (existingInterview.meeting_link ? "online" : "offline") : undefined}
+                  defaultValue={existingInterview ? (existingInterview.meetingUrl ? "online" : "offline") : undefined}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn hình thức" />

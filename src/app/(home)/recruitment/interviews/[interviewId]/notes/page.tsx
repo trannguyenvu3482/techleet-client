@@ -1,15 +1,18 @@
-"use client";
-
 import { InterviewNotesPage } from "@/components/recruitment/interview-notes/interview-notes-page";
 
-export default function InterviewNotesRoute({
+interface InterviewNotesPageProps {
+  params: Promise<{
+    interviewId: string;
+  }>;
+}
+
+export default async function InterviewNotesRoute({
   params,
-}: {
-  params: { interviewId: string };
-}) {
-  const interviewId = parseInt(params.interviewId);
+}: InterviewNotesPageProps) {
+  const { interviewId } = await params;
+  const interviewIdNum = parseInt(interviewId);
   
-  if (isNaN(interviewId)) {
+  if (isNaN(interviewIdNum)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-lg text-muted-foreground">Invalid interview ID</p>
@@ -17,6 +20,6 @@ export default function InterviewNotesRoute({
     );
   }
 
-  return <InterviewNotesPage interviewId={interviewId} />;
+  return <InterviewNotesPage interviewId={interviewIdNum} />;
 }
 
