@@ -49,7 +49,8 @@ export function CandidateExamClient() {
           const start = new Date(savedStartTime)
           const now = new Date()
           const elapsed = Math.floor((now.getTime() - start.getTime()) / 1000)
-          const remaining = Math.max(0, timeRemaining - elapsed)
+          const initialTimeRemaining = 60 * 60
+          const remaining = Math.max(0, initialTimeRemaining - elapsed)
           setTimeRemaining(remaining)
           setStartTime(start)
           setStarted(true)
@@ -66,7 +67,7 @@ export function CandidateExamClient() {
 
   // Countdown timer
   useEffect(() => {
-    if (!started || timeRemaining <= 0) return
+    if (!started) return
 
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
@@ -217,7 +218,7 @@ export function CandidateExamClient() {
               </ul>
             </div>
             <p>
-              <strong>Lưu ý:</strong> Thời gian làm bài sẽ bắt đầu khi bạn nhấn nút "Bắt đầu làm bài".
+              <strong>Lưu ý:</strong> Thời gian làm bài sẽ bắt đầu khi bạn nhấn nút &quot;Bắt đầu làm bài&quot;.
               Nếu bạn thoát trang, thời gian sẽ vẫn đếm ngược.
             </p>
             <Button onClick={handleStartExam} className="w-full" size="lg">

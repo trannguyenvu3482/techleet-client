@@ -60,7 +60,11 @@ export function CandidateExamDetailClient() {
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Điểm</span>
-                  <div className="font-medium">{exam.score ?? "-"}</div>
+                  <div className="font-medium">
+                    {exam.totalScore !== null && exam.totalScore !== undefined 
+                      ? exam.totalScore.toString() 
+                      : '-'}
+                  </div>
                 </div>
               </div>
 
