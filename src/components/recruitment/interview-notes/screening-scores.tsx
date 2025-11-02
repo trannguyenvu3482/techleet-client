@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Award, TrendingUp } from "lucide-react";
 
 interface ScreeningScoresProps {
-  overallScore: number;
+  overallScore: number | string | null;
   status?: string | null;
 }
 
@@ -25,8 +25,11 @@ export function ScreeningScores({
   overallScore,
   status,
 }: ScreeningScoresProps) {
-  const scoreColor = getScoreColor(overallScore);
-  const scoreBgColor = getScoreBgColor(overallScore);
+  // Ensure overallScore is a number
+  const score = typeof overallScore === 'number' ? overallScore : parseFloat(String(overallScore || 0));
+  
+  const scoreColor = getScoreColor(score);
+  const scoreBgColor = getScoreBgColor(score);
 
   return (
     <Card>
@@ -43,7 +46,7 @@ export function ScreeningScores({
             className={`p-6 rounded-lg border-2 ${scoreBgColor} text-center`}
           >
             <div className={`text-5xl font-bold ${scoreColor} mb-2`}>
-              {overallScore.toFixed(1)}
+              {score.toFixed(1)}
             </div>
             <div className="text-sm font-medium text-muted-foreground">
               Overall Score

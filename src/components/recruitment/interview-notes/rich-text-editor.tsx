@@ -31,6 +31,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialContent,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none focus:outline-none min-h-[400px] px-4 py-2",
