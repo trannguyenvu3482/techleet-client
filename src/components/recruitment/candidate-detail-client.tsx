@@ -36,11 +36,16 @@ import {
   Image,
   File,
   FileSpreadsheet,
-  FileType
+  FileType,
+  CheckCircle2,
+  XCircle
 } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
 import CreateInterviewModal from "@/app/(home)/recruitment/candidate/detail/[candidateId]/create-interview-modal"
+import { ApproveOfferDialog } from "@/components/recruitment/interview-notes/approve-offer-dialog"
+import { RejectApplicationDialog } from "@/components/recruitment/interview-notes/reject-application-dialog"
+import { toast } from "sonner"
 
 interface CertificateFile {
   id: string;
@@ -126,6 +131,9 @@ export function CandidateDetailClient() {
   const [newStatus, setNewStatus] = useState<string>("")
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null)
   const [hasFutureInterview, setHasFutureInterview] = useState(false)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [currentApplicationStatus, setCurrentApplicationStatus] = useState<string | null>(null)
 
   // Get applicationId from URL params if available
   const applicationId = searchParams.get("applicationId")
@@ -222,6 +230,7 @@ export function CandidateDetailClient() {
             
             setNewStatus(application.status)
             setSelectedApplicationId(application.applicationId)
+            setCurrentApplicationStatus(application.status)
             
             // Fetch candidate files
             try {
@@ -599,11 +608,20 @@ export function CandidateDetailClient() {
     }
   }
 
+  const handleSuccess = async () => {
+    await fetchData()
+  }
+
+  const canApproveReject = 
+    currentApplicationStatus === 'interviewing' && 
+    selectedApplicationId !== null
+
   const handleApplicationSelect = (applicationId: number) => {
     const application = applications.find(app => app.applicationId === applicationId)
     if (application) {
       setSelectedApplicationId(applicationId)
       setNewStatus(application.applicationStatus)
+      setCurrentApplicationStatus(application.applicationStatus)
       // Update URL with selected application
       const url = new URL(window.location.href)
       url.searchParams.set("applicationId", applicationId.toString())
@@ -1179,6 +1197,33 @@ export function CandidateDetailClient() {
                       </Button>
                     )}
                   </div>
+
+                  {/* Approve/Reject Section */}
+                  {canApproveReject && !isEditingStatus && (
+                    <div className="pt-4 border-t">
+                      <label className="text-sm font-medium mb-2 block">Quyết định sau phỏng vấn</label>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => setApproveDialogOpen(true)}
+                          className="flex-1"
+                          variant="default"
+                          size="sm"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Duyệt
+                        </Button>
+                        <Button
+                          onClick={() => setRejectDialogOpen(true)}
+                          className="flex-1"
+                          variant="destructive"
+                          size="sm"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Từ chối
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-4">
@@ -1252,6 +1297,24 @@ export function CandidateDetailClient() {
           </Card>
         </div>
       </div>
+
+      {/* Approve/Reject Dialogs */}
+      {selectedApplicationId && (
+        <>
+          <ApproveOfferDialog
+            open={approveDialogOpen}
+            onOpenChange={setApproveDialogOpen}
+            applicationId={selectedApplicationId}
+            onSuccess={handleSuccess}
+          />
+          <RejectApplicationDialog
+            open={rejectDialogOpen}
+            onOpenChange={setRejectDialogOpen}
+            applicationId={selectedApplicationId}
+            onSuccess={handleSuccess}
+          />
+        </>
+      )}
     </div>
   )
 }

@@ -653,6 +653,32 @@ export const recruitmentAPI = {
     );
   },
 
+  async approveApplicationAfterInterview(
+    applicationId: number,
+    data: {
+      offeredSalary: number;
+      expectedStartDate: string;
+      offerExpiryDate?: string;
+    }
+  ): Promise<Application> {
+    return api.post(
+      `/api/v1/recruitment-service/applications/${applicationId}/approve`,
+      data
+    );
+  },
+
+  async rejectApplicationAfterInterview(
+    applicationId: number,
+    data?: {
+      rejectionReason?: string;
+    }
+  ): Promise<Application> {
+    return api.post(
+      `/api/v1/recruitment-service/applications/${applicationId}/reject`,
+      data || {}
+    );
+  },
+
   async getInterviewRequests(params?: {
     page?: number;
     limit?: number;
