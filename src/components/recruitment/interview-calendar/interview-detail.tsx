@@ -6,6 +6,7 @@ import { recruitmentAPI, type Interview } from "@/lib/api";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CheckCircle2 } from "lucide-react";
 import type { InterviewApiResponse } from "./types";
 
 function Row({ label, value, renderComponent }: { label: string; value?: string | number | null; renderComponent?: React.ReactNode }) {
@@ -127,6 +128,20 @@ export function InterviewDetail({
         <Row label="Trạng thái" value={interview.status} />
         <Row label="Người phỏng vấn" value={interview.interviewers ? interview.interviewers.map(i => `${i.firstName} ${i.lastName}`).join(", ") : "-"} />
       </div>
+      
+      {/* Mark as Completed Button */}
+      {interview.status !== 'completed' && (
+        <div className="pt-4 border-t">
+          <Button
+            onClick={() => updateStatus('completed')}
+            className="w-full"
+            variant="default"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            Đánh dấu đã hoàn thành
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

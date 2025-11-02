@@ -107,6 +107,27 @@ export function InterviewNotesPage({ interviewId }: InterviewNotesPageProps) {
     }
   };
 
+  const handleMarkAsCompleted = async () => {
+    if (!data) return;
+    try {
+      await recruitmentAPI.updateInterview(interviewId, { status: 'completed' });
+      toast.success("Đã đánh dấu interview hoàn thành");
+      const notesData = await recruitmentAPI.getInterviewNotesData(interviewId);
+      setData(notesData);
+      
+      // Refresh application status
+      try {
+        const application = await recruitmentAPI.getApplicationById(data.application.application_id);
+        setApplicationStatus(application.application.status || null);
+      } catch (err) {
+        console.error("Failed to refresh application status:", err);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Có lỗi xảy ra";
+      toast.error(errorMessage);
+    }
+  };
+
   const handleSuccess = async () => {
     if (data) {
       try {
@@ -168,6 +189,18 @@ export function InterviewNotesPage({ interviewId }: InterviewNotesPageProps) {
                   {isOnline ? " • Online" : data.interview.location ? ` • ${data.interview.location}` : ""}
                 </p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {data.interview.status !== 'completed' && (
+                <Button
+                  onClick={handleMarkAsCompleted}
+                  variant="default"
+                  size="sm"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Đánh dấu hoàn thành
+                </Button>
+              )}
             </div>
           </div>
         </div>
