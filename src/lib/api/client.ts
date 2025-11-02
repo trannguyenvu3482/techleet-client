@@ -34,9 +34,12 @@ class ApiClient {
 
   private clearAuthAndRedirect(): void {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth-storage')
-      // Use window.location to avoid Next.js router issues
-      window.location.href = '/sign-in'
+      // Only redirect if we're not already on the sign-in page
+      if (window.location.pathname !== '/sign-in') {
+        localStorage.removeItem('auth-storage')
+        // Use window.location to avoid Next.js router issues
+        window.location.href = '/sign-in'
+      }
     }
   }
 
@@ -127,8 +130,12 @@ class ApiClient {
 
       if (!response.ok) {
         // Handle 401 Unauthorized - clear auth and redirect
+        // But don't redirect if the request was to the login endpoint itself
         if (response.status === 401) {
-          this.clearAuthAndRedirect();
+          const isLoginEndpoint = endpoint.includes('/auth/login');
+          if (!isLoginEndpoint) {
+            this.clearAuthAndRedirect();
+          }
         }
 
         // Handle API error responses - check if it's a standardized error format

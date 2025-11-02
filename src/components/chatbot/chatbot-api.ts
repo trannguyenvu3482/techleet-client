@@ -1,53 +1,29 @@
 import { ChatRequest, ChatResponse, ChatSession } from './chatbot-types';
+import { api } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030';
+type ChatResponseData = ChatResponse['data'];
 
 export class ChatbotAPI {
-  private static async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   static async createSession(userId: number): Promise<ChatSession> {
-    const response = await this.request<{data: ChatSession}>('/api/v1/recruitment-service/chatbot-agent/session', {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
+    const response = await api.post<ChatSession>('/api/v1/recruitment-service/chatbot-agent/session', {
+      userId,
     });
-    return response.data;
+    return response;
   }
 
   static async getSession(sessionId: string): Promise<ChatSession> {
-    const response = await this.request<{data: ChatSession}>(`/api/v1/recruitment-service/chatbot-agent/session/${sessionId}`);
-    return response.data;
+    const response = await api.get<ChatSession>(`/api/v1/recruitment-service/chatbot-agent/session/${sessionId}`);
+    return response;
   }
 
-  static async sendMessage(request: ChatRequest): Promise<ChatResponse> {
-    return this.request<ChatResponse>('/api/v1/recruitment-service/chatbot-agent/chat', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  static async sendMessage(request: ChatRequest): Promise<ChatResponseData> {
+    return api.post<ChatResponseData>('/api/v1/recruitment-service/chatbot-agent/chat', request);
   }
 
   static async triggerIndexing(entityTypes?: string[], forceReindex?: boolean): Promise<void> {
-    return this.request<void>('/api/v1/recruitment-service/chatbot-agent/index/trigger', {
-      method: 'POST',
-      body: JSON.stringify({ entityTypes, forceReindex }),
+    return api.post<void>('/api/v1/recruitment-service/chatbot-agent/index/trigger', {
+      entityTypes,
+      forceReindex,
     });
   }
 }

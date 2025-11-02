@@ -18,6 +18,9 @@ export function CustomChatbot() {
   const initializeSession = useCallback(async () => {
     if (!user?.employeeId) return;
 
+    // Wait a bit to ensure token is fully persisted to localStorage
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
       const session = await ChatbotAPI.createSession(user.employeeId);
       setState(prev => ({
@@ -27,6 +30,10 @@ export function CustomChatbot() {
       }));
     } catch (error) {
       console.error('Failed to initialize chat session:', error);
+      // Don't set error state if it's a 401 - user might not be authenticated yet
+      if (error instanceof Error && error.message.includes('401')) {
+        return;
+      }
       setState(prev => ({
         ...prev,
         error: 'Không thể khởi tạo phiên chat. Vui lòng thử lại.',
@@ -69,15 +76,15 @@ export function CustomChatbot() {
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.data.reply,
-        timestamp: new Date(response.timestamp),
+        content: response.reply,
+        timestamp: new Date(),
       };
 
       setState(prev => ({
         ...prev,
         isLoading: false,
         messages: [...prev.messages, assistantMessage],
-        sessionId: response.data.sessionId,
+        sessionId: response.sessionId || state.sessionId,
       }));
     } catch (error) {
       console.error('Failed to send message:', error);
