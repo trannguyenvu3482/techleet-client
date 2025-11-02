@@ -53,7 +53,6 @@ export function LoginForm({
       router.push('/')
 
     } catch (error) {
-      console.error('Login error:', error)
       toast.error(error instanceof Error ? error.message : 'Đăng nhập thất bại')
     } finally {
       setLoading(false)

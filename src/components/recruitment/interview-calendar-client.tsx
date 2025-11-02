@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { recruitmentAPI, type Interview, type Application } from "@/lib/api";
 import type { EventClickArg, EventDropArg } from "@fullcalendar/core";
+import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -19,7 +20,7 @@ import { InterviewDetail } from "./interview-calendar/interview-detail";
 import { InterviewRequestsList } from "./interview-calendar/interview-requests-list";
 import { InterviewRequestsBadge } from "./interview-calendar/interview-requests-badge";
 import { getStatusColor } from "./interview-calendar/utils";
-import type { CalendarEvent } from "./interview-calendar/types";
+import type { CalendarEvent, InterviewApiResponse } from "./interview-calendar/types";
 
 export default function InterviewCalendarClient() {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -36,30 +37,32 @@ export default function InterviewCalendarClient() {
     try {
       const res = await recruitmentAPI.getInterviews({ limit: 500, sortBy: "scheduledAt", sortOrder: "ASC" });
       const mapped: CalendarEvent[] = res.data.map((iv: any) => {
-        const start = iv.scheduled_at;
-        const endDate = dayjs(iv.scheduled_at).add(iv.duration_minutes || 30, "minutes");
+        const start = iv.scheduled_at || iv.scheduledAt;
+        const duration = (iv as any).duration_minutes || iv.duration || 30;
+        const endDate = dayjs(start).add(duration, "minutes");
         const { bg, border } = getStatusColor(iv.status);
-        const title = `Interview #${iv.interview_id} ${iv.meeting_link ? " • Online" : iv.location ? " • Offline" : ""}`;
+        const interviewId = (iv as any).interview_id || iv.interviewId;
+        const title = `Interview #${interviewId} ${(iv as any).meeting_link || iv.meetingUrl ? " • Online" : iv.location ? " • Offline" : ""}`;
         return {
-          id: String(iv.interview_id),
+          id: String(interviewId),
           title,
           start,
           end: endDate.toISOString(),
           extendedProps: { 
             interview: {
-              interviewId: iv.interview_id,
-              applicationId: iv.job_id, 
-              interviewerUserId: iv.interviewer_ids?.[0] || 0,
-              scheduledAt: iv.scheduled_at,
-              duration: iv.duration_minutes,
+              interviewId,
+              applicationId: iv.job_id || 0, 
+              interviewerUserId: ((iv as any).interviewer_ids && Array.isArray((iv as any).interviewer_ids) ? (iv as any).interviewer_ids[0] : 0) || iv.interviewerUserId || 0,
+              scheduledAt: start,
+              duration,
               location: iv.location,
-              meetingUrl: iv.meeting_link,
+              meetingUrl: (iv as any).meeting_link || iv.meetingUrl,
               status: iv.status,
-              createdAt: iv.createdAt,
-              updatedAt: iv.updatedAt,
-              candidate_id: iv.candidate_id,
-              job_id: iv.job_id,
-              interviewer_ids: iv.interviewer_ids,
+              createdAt: iv.createdAt || "",
+              updatedAt: iv.updatedAt || "",
+              candidate_id: iv.candidate_id || 0,
+              job_id: iv.job_id || 0,
+              interviewer_ids: ((iv as any).interviewer_ids && Array.isArray((iv as any).interviewer_ids) ? (iv as any).interviewer_ids : []) as number[],
             }
           },
           backgroundColor: bg,
@@ -68,7 +71,6 @@ export default function InterviewCalendarClient() {
       });
       setEvents(mapped);
     } catch (e) {
-      console.log(e);
       toast.error("Không thể tải lịch phỏng vấn");
     } finally {
       setLoading(false);
@@ -130,7 +132,7 @@ export default function InterviewCalendarClient() {
     }
   }, [loadEvents]);
 
-  const handleEventResize = useCallback(async (resizeInfo: any) => {
+  const handleEventResize = useCallback(async (resizeInfo: EventResizeDoneArg) => {
     const eventId = Number(resizeInfo.event.id);
     const newStart = resizeInfo.event.start;
     const newEnd = resizeInfo.event.end;
@@ -280,7 +282,7 @@ export default function InterviewCalendarClient() {
                 try {
                   const interviewData = await recruitmentAPI.getInterviewById(interviewId);
                   
-                  const scheduledTime = dayjs((interviewData as any).scheduled_at);
+                  const scheduledTime = dayjs(interviewData.scheduled_at || interviewData.scheduledAt);
                   const now = dayjs();
                   
                   if (scheduledTime.isBefore(now)) {
@@ -289,23 +291,22 @@ export default function InterviewCalendarClient() {
                   }
                   
                   const apiData = interviewData as any;
-                  const interviewForEdit: any = {
-                    interviewId: apiData.interview_id,
+                  const interviewForEdit: Interview = {
+                    interviewId: Number(apiData.interview_id || apiData.interviewId || 0),
                     applicationId: 0,
-                    interviewerUserId: apiData.interviewers[0]?.employeeId || 0,
-                    scheduledAt: apiData.scheduled_at,
-                    duration: apiData.duration_minutes,
-                    location: apiData.location,
-                    meetingUrl: apiData.meeting_link,
+                    interviewerUserId: Number((apiData.interviewers && Array.isArray(apiData.interviewers) && apiData.interviewers.length > 0) ? apiData.interviewers[0].employeeId : 0),
+                    scheduledAt: String(apiData.scheduled_at || apiData.scheduledAt || ""),
+                    duration: Number(apiData.duration_minutes || apiData.duration || 60),
+                    location: apiData.location as string | undefined,
+                    meetingUrl: apiData.meeting_link || apiData.meetingUrl,
                     status: apiData.status,
-                    createdAt: "",
-                    updatedAt: "",
-                    candidate_id: apiData.candidate.candidate_id,
-                    job_id: apiData.job.job_id,
-                    interviewer_ids: apiData.interviewers.map((i: any) => i.employeeId),
+                    createdAt: String(apiData.createdAt || ""),
+                    updatedAt: String(apiData.updatedAt || ""),
+                    candidate_id: Number((apiData.candidate && apiData.candidate.candidate_id) || apiData.candidate_id || 0),
+                    job_id: Number((apiData.job && apiData.job.job_id) || apiData.job_id || 0),
                   };
                   
-                  setFormDefaults({ start: apiData.scheduled_at });
+                  setFormDefaults({ start: interviewData.scheduled_at || interviewData.scheduledAt });
                   setEditingInterview(interviewForEdit);
                   setIsFormOpen(true);
                 } catch (e) {

@@ -46,7 +46,6 @@ export function EmployeeClient() {
       setEmployees(response.data)
       setTotal(response.total)
     } catch (error) {
-      console.error('Error fetching employees:', error)
       toast.error('Không thể tải danh sách nhân viên')
     } finally {
       setLoading(false)
@@ -70,7 +69,6 @@ export function EmployeeClient() {
       setTotal(prev => prev + 1)
       toast.success('Tạo nhân viên thành công!')
     } catch (error) {
-      console.error('Error creating employee:', error)
       toast.error('Không thể tạo nhân viên')
       throw error
     } finally {
@@ -80,13 +78,11 @@ export function EmployeeClient() {
 
   const handleEditEmployee = (employee: Employee) => {
     // TODO: Implement edit functionality
-    console.log('Edit employee:', employee)
     toast.info('Chức năng chỉnh sửa sẽ được triển khai sau')
   }
 
   const handleDeleteEmployee = (employeeId: number) => {
     // TODO: Implement delete functionality
-    console.log('Delete employee:', employeeId)
     toast.info('Chức năng xóa sẽ được triển khai sau')
   }
 

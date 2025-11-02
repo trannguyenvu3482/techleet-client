@@ -98,7 +98,6 @@ export function DocumentClient() {
       setTotalDocuments(filteredDocs.length)
       setTotalPages(Math.ceil(filteredDocs.length / 5))
     } catch (error) {
-      console.error('Failed to fetch documents:', error)
       toast.error('Không thể tải danh sách tài liệu')
     } finally {
       setLoading(false)
@@ -111,7 +110,6 @@ export function DocumentClient() {
       await new Promise(resolve => setTimeout(resolve, 200))
       setCategories(mockCategories)
     } catch (error) {
-      console.error('Failed to fetch categories:', error)
       toast.error('Không thể tải danh mục tài liệu')
     }
   }, [])
@@ -129,7 +127,6 @@ export function DocumentClient() {
       // Simulate download
       toast.success(`Tải xuống "${document.title}" thành công`)
     } catch (error) {
-      console.error('Failed to download document:', error)
       toast.error('Không thể tải xuống tài liệu')
     }
   }
@@ -154,7 +151,6 @@ export function DocumentClient() {
         fetchDocuments()
       }
     } catch (error) {
-      console.error('Failed to toggle pin:', error)
       toast.error('Không thể thay đổi trạng thái ghim')
     }
   }
@@ -175,7 +171,6 @@ export function DocumentClient() {
       toast.success('Xóa tài liệu thành công')
       fetchDocuments()
     } catch (error) {
-      console.error('Failed to delete document:', error)
       toast.error('Không thể xóa tài liệu')
     }
   }

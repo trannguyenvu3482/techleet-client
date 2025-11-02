@@ -11,6 +11,7 @@ import { Plus, Search, Trash2, Calendar, MapPin, DollarSign, ChevronLeft, Chevro
 import Link from "next/link"
 import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export function JobsListClient() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
@@ -44,7 +45,7 @@ export function JobsListClient() {
       setTotalPages(response.totalPages)
       setTotal(response.total)
     } catch (error) {
-      console.error("Error fetching jobs:", error)
+      toast.error("Không thể tải danh sách việc làm")
     } finally {
       setLoading(false)
     }
@@ -97,7 +98,7 @@ export function JobsListClient() {
         await recruitmentAPI.deleteJobPosting(jobId)
         fetchJobs()
       } catch (error) {
-        console.error("Error deleting job:", error)
+        toast.error("Không thể xóa vị trí tuyển dụng")
       }
     }
   }

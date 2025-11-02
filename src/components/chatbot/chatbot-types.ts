@@ -8,8 +8,8 @@ export interface ChatMessage {
 
 export interface ToolCall {
   toolName: string;
-  parameters: any;
-  result?: any;
+  parameters: Record<string, unknown>;
+  result?: unknown;
 }
 
 export interface ChatSession {
@@ -37,6 +37,20 @@ export interface ChatRequest {
   sessionId?: string;
 }
 
+export interface ChatResponseSource {
+  type: string;
+  title: string;
+  url?: string;
+  content?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChatResponseToolCall {
+  toolName: string;
+  parameters: Record<string, unknown>;
+  result?: unknown;
+}
+
 export interface ChatResponse {
   statusCode: number;
   timestamp: string;
@@ -44,8 +58,8 @@ export interface ChatResponse {
   data: {
     reply: string;
     sessionId: string;
-    sources: any[];
-    toolCalls: any[];
+    sources: ChatResponseSource[];
+    toolCalls: ChatResponseToolCall[];
   };
 }
 
