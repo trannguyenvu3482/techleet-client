@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Trash2, Calendar, MapPin, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, Search, Trash2, Calendar, MapPin, DollarSign, ChevronLeft, ChevronRight, Users } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
 import { useRouter } from "next/navigation"
@@ -259,6 +259,7 @@ export function JobsListClient() {
                   <TableHead>Mức lương</TableHead>
                   <TableHead>Hạn nộp</TableHead>
                   <TableHead>Trạng thái</TableHead>
+                  <TableHead>Ứng tuyển</TableHead>
                   <TableHead>Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -311,11 +312,28 @@ export function JobsListClient() {
                       {getStatusBadge(job.status)}
                     </TableCell>
                     <TableCell>
+                      <div 
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/recruitment/jobs/detail/${job.jobPostingId}?tab=applications`)
+                        }}
+                      >
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          {job.applicationCount || 0}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => handleDeleteJob(job.jobPostingId)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteJob(job.jobPostingId)
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

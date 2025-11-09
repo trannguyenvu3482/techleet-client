@@ -5,9 +5,19 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Edit, Trash2, ArrowLeft, Calendar, MapPin, DollarSign, Building, Users, Clock, FileText } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, JobPosting, questionAPI, QuestionSet } from "@/lib/api/recruitment"
+import { JobApplicationsList } from "./job-applications-list"
 
 export function JobDetailClient() {
   const params = useParams()
@@ -15,6 +25,7 @@ export function JobDetailClient() {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [loading, setLoading] = useState(true)
   const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
+  const [activeTab, setActiveTab] = useState("info")
 
   const fetchJob = useCallback(async (jobId: number) => {
     try {
@@ -45,6 +56,14 @@ export function JobDetailClient() {
       fetchJob(Number(params.id))
     }
   }, [params.id, fetchJob])
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const tab = urlParams.get('tab')
+    if (tab === 'applications') {
+      setActiveTab('applications')
+    }
+  }, [])
 
   const handleDeleteJob = async () => {
     if (!job) return
@@ -100,8 +119,25 @@ export function JobDetailClient() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/recruitment/jobs">Tuyển dụng</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/recruitment/jobs">Danh sách việc làm</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{job.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href="/recruitment/jobs">
             <Button variant="outline" size="sm">
@@ -110,19 +146,13 @@ export function JobDetailClient() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{job.title}</h1>
             <p className="text-muted-foreground">
               Chi tiết vị trí tuyển dụng
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/recruitment/candidate/list?jobId=${job.jobPostingId}`}>
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Xem CV đã nộp
-            </Button>
-          </Link>
           <Link href={`/recruitment/jobs/edit/${job.jobPostingId}`}>
             <Button>
               <Edit className="mr-2 h-4 w-4" />
@@ -136,9 +166,24 @@ export function JobDetailClient() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Main Content */}
-        <div className="md:col-span-2 space-y-6">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="info">Thông tin</TabsTrigger>
+          <TabsTrigger value="applications">
+            Ứng tuyển
+            {job.applicationCount !== undefined && job.applicationCount > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {job.applicationCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="info" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Main Content */}
+            <div className="md:col-span-2 space-y-6">
           {/* Job Overview */}
           <Card>
             <CardHeader>
@@ -259,83 +304,89 @@ export function JobDetailClient() {
               </CardContent>
             </Card>
           )}
-        </div>
+            </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Job Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Thống kê</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Trạng thái</span>
-                {getStatusBadge(job.status)}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Kinh nghiệm</span>
-                <span className="text-sm font-medium">{job.experienceLevel}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Ngày tạo</span>
-                <span className="text-sm text-muted-foreground">
-                  {formatDate(job.createdAt)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Cập nhật lần cuối</span>
-                <span className="text-sm text-muted-foreground">
-                  {formatDate(job.updatedAt)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Job Stats */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thống kê</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Trạng thái</span>
+                    {getStatusBadge(job.status)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Kinh nghiệm</span>
+                    <span className="text-sm font-medium">{job.experienceLevel}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Ngày tạo</span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(job.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Cập nhật lần cuối</span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(job.updatedAt)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Quick Actions */}
-          <Card  hidden={job.status === "closed"}>
-            <CardHeader>
-              <CardTitle>Trạng thái</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-2">
-              {job.status === "draft" && (
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={async () => {
-                    try {
-                      await recruitmentAPI.publishJobPosting(job.jobPostingId)
-                      fetchJob(job.jobPostingId)
-                    } catch (error) {
-                      console.error("Error publishing job:", error)
-                    }
-                  }}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Xuất bản
-                </Button>
-              )}
-              {job.status === "published" && (
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={async () => {
-                    try {
-                      await recruitmentAPI.closeJobPosting(job.jobPostingId)
-                      fetchJob(job.jobPostingId)
-                    } catch (error) {
-                      console.error("Error closing job:", error)
-                    }
-                  }}
-                >
-                  <Clock className="mr-2 h-4 w-4" />
-                  Đóng tuyển dụng
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              {/* Quick Actions */}
+              <Card hidden={job.status === "closed"}>
+                <CardHeader>
+                  <CardTitle>Trạng thái</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-2">
+                  {job.status === "draft" && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={async () => {
+                        try {
+                          await recruitmentAPI.publishJobPosting(job.jobPostingId)
+                          fetchJob(job.jobPostingId)
+                        } catch (error) {
+                          console.error("Error publishing job:", error)
+                        }
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Xuất bản
+                    </Button>
+                  )}
+                  {job.status === "published" && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={async () => {
+                        try {
+                          await recruitmentAPI.closeJobPosting(job.jobPostingId)
+                          fetchJob(job.jobPostingId)
+                        } catch (error) {
+                          console.error("Error closing job:", error)
+                        }
+                      }}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Đóng tuyển dụng
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="applications" className="space-y-6">
+          <JobApplicationsList jobId={job.jobPostingId} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
