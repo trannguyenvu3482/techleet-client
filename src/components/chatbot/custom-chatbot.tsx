@@ -48,36 +48,49 @@ export function CustomChatbot() {
     }
   }, [user?.employeeId, state.sessionId, initializeSession]);
 
-  const handleSendMessage = useCallback(async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string, confirmation?: { toolName: string; parameters: Record<string, unknown>; confirmed: boolean }) => {
     if (!state.sessionId || !user?.employeeId) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: message,
-      timestamp: new Date(),
-    };
+    if (!confirmation) {
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: message,
+        timestamp: new Date(),
+      };
 
-    setState(prev => ({
-      ...prev,
-      isLoading: true,
-      messages: [...prev.messages, userMessage],
-      error: undefined,
-    }));
+      setState(prev => ({
+        ...prev,
+        isLoading: true,
+        messages: [...prev.messages, userMessage],
+        error: undefined,
+        pendingConfirmation: undefined,
+      }));
+    }
 
     try {
       const request: ChatRequest = {
-        message,
+        message: confirmation ? '' : message,
         sessionId: state.sessionId,
+        confirmation: confirmation,
       };
 
       const response = await ChatbotAPI.sendMessage(request);
       
+      const toolCalls = response.toolCalls || [];
+      const requiresConfirmation = response.requiresConfirmation || false;
+      const confirmationToolCall = toolCalls.find((tc: any) => tc.requiresConfirmation);
+
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response.reply,
         timestamp: new Date(),
+        toolCalls: toolCalls.map((tc: any) => ({
+          toolName: tc.toolName,
+          parameters: tc.parameters,
+          result: tc.result
+        })),
       };
 
       setState(prev => ({
@@ -85,6 +98,11 @@ export function CustomChatbot() {
         isLoading: false,
         messages: [...prev.messages, assistantMessage],
         sessionId: response.sessionId || state.sessionId,
+        pendingConfirmation: confirmationToolCall ? {
+          toolName: confirmationToolCall.toolName,
+          parameters: confirmationToolCall.parameters,
+          message: confirmationToolCall.confirmationMessage || 'Are you sure?'
+        } : undefined,
       }));
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -92,6 +110,7 @@ export function CustomChatbot() {
         ...prev,
         isLoading: false,
         error: 'Không thể gửi tin nhắn. Vui lòng thử lại.',
+        pendingConfirmation: undefined,
       }));
     }
   }, [state.sessionId, user?.employeeId]);
@@ -120,6 +139,15 @@ export function CustomChatbot() {
         <ChatbotWindow
           state={state}
           onSendMessage={handleSendMessage}
+          onConfirmAction={(confirmed) => {
+            if (state.pendingConfirmation) {
+              handleSendMessage('', {
+                toolName: state.pendingConfirmation.toolName,
+                parameters: state.pendingConfirmation.parameters,
+                confirmed
+              });
+            }
+          }}
           onClose={() => setState(prev => ({ ...prev, isOpen: false }))}
         />
       )}

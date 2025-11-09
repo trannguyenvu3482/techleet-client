@@ -35,6 +35,11 @@ export interface SessionContext {
 export interface ChatRequest {
   message: string;
   sessionId?: string;
+  confirmation?: {
+    toolName: string;
+    parameters: Record<string, unknown>;
+    confirmed: boolean;
+  };
 }
 
 export interface ChatResponseSource {
@@ -49,6 +54,8 @@ export interface ChatResponseToolCall {
   toolName: string;
   parameters: Record<string, unknown>;
   result?: unknown;
+  requiresConfirmation?: boolean;
+  confirmationMessage?: string;
 }
 
 export interface ChatResponse {
@@ -60,6 +67,7 @@ export interface ChatResponse {
     sessionId: string;
     sources: ChatResponseSource[];
     toolCalls: ChatResponseToolCall[];
+    requiresConfirmation?: boolean;
   };
 }
 
@@ -69,4 +77,9 @@ export interface ChatbotState {
   messages: ChatMessage[];
   sessionId?: string;
   error?: string;
+  pendingConfirmation?: {
+    toolName: string;
+    parameters: Record<string, unknown>;
+    message: string;
+  };
 }

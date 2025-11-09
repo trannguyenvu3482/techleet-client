@@ -2,22 +2,31 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { MessageBubble } from './message-bubble';
-import { Send, Loader2, X, MessageCircle } from 'lucide-react';
+import { Send, Loader2, X, MessageCircle, AlertTriangle } from 'lucide-react';
 import { ChatMessage, ChatbotState } from './chatbot-types';
 import { cn } from '@/lib/utils';
 
 interface ChatbotWindowProps {
   state: ChatbotState;
   onSendMessage: (message: string) => void;
+  onConfirmAction?: (confirmed: boolean) => void;
   onClose: () => void;
 }
 
-export function ChatbotWindow({ state, onSendMessage, onClose }: ChatbotWindowProps) {
+export function ChatbotWindow({ state, onSendMessage, onConfirmAction, onClose }: ChatbotWindowProps) {
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -31,6 +40,14 @@ export function ChatbotWindow({ state, onSendMessage, onClose }: ChatbotWindowPr
     }
   }, [state.isOpen]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
+    }
+  }, [inputMessage]);
+
   const handleSendMessage = () => {
     if (inputMessage.trim() && !state.isLoading) {
       onSendMessage(inputMessage.trim());
@@ -38,7 +55,7 @@ export function ChatbotWindow({ state, onSendMessage, onClose }: ChatbotWindowPr
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -124,26 +141,60 @@ export function ChatbotWindow({ state, onSendMessage, onClose }: ChatbotWindowPr
 
       {/* Input */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700 shrink-0">
-        <div className="flex gap-2">
-          <Input
+        <div className="flex gap-2 items-end">
+          <Textarea
             ref={inputRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Nhập tin nhắn của bạn..."
-            disabled={state.isLoading}
-            className="flex-1"
+            onKeyDown={handleKeyDown}
+            placeholder="Nhập tin nhắn của bạn... (Shift+Enter để xuống dòng, Enter để gửi)"
+            disabled={state.isLoading || !!state.pendingConfirmation}
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+            rows={1}
           />
           <Button
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || state.isLoading}
+            disabled={!inputMessage.trim() || state.isLoading || !!state.pendingConfirmation}
             size="icon"
-            className="shrink-0"
+            className="shrink-0 h-10 w-10"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={!!state.pendingConfirmation} onOpenChange={(open) => {
+        if (!open && onConfirmAction) {
+          onConfirmAction(false);
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Xác nhận hành động
+            </DialogTitle>
+            <DialogDescription>
+              {state.pendingConfirmation?.message || 'Are you sure you want to proceed?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onConfirmAction && onConfirmAction(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => onConfirmAction && onConfirmAction(true)}
+            >
+              Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

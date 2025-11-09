@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ToolResultCard } from './tool-result-card';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -117,6 +118,19 @@ export function MessageBubble({ message, isUser = false }: MessageBubbleProps) {
               >
                 {message.content}
               </ReactMarkdown>
+            </div>
+          )}
+          
+          {/* Tool Results */}
+          {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {message.toolCalls.map((toolCall, index) => (
+                <ToolResultCard
+                  key={index}
+                  toolName={toolCall.toolName}
+                  result={toolCall.result}
+                />
+              ))}
             </div>
           )}
         </div>
