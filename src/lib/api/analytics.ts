@@ -68,6 +68,7 @@ export interface GetAnalyticsParams {
   period?: '7d' | '30d' | '90d' | '1y' | 'all';
   departmentId?: number;
   jobId?: number;
+  [key: string]: unknown;
 }
 
 export const analyticsAPI = {
