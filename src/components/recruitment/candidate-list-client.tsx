@@ -14,6 +14,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Select,
   SelectContent,
@@ -27,9 +28,17 @@ import {
   Users,
   Calendar,
   Star,
-  Mail
+  Mail,
+  CheckCircle2,
+  XCircle,
+  LayoutGrid,
+  Table as TableIcon
 } from "lucide-react"
 import { recruitmentAPI, JobPosting, examinationAPI } from "@/lib/api/recruitment"
+import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
+import { CandidateQuickPreview } from "@/components/recruitment/candidate-quick-preview"
+import { StatusBadge } from "@/components/recruitment/status-badge"
+import { toast } from "sonner"
 import Link from "next/link"
 
 interface CandidateListItem {
@@ -54,6 +63,10 @@ export function CandidateListClient() {
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC")
   const [currentJobIsTest, setCurrentJobIsTest] = useState<boolean>(false)
   const [applicationsWithExams, setApplicationsWithExams] = useState<Record<number, 'pending' | 'completed' | null>>({})
+  const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
+  const [viewMode, setViewMode] = useState<"table" | "card">("table")
+  const [previewCandidateId, setPreviewCandidateId] = useState<number | null>(null)
+  const [previewApplicationId, setPreviewApplicationId] = useState<number | null>(null)
   
   // Get jobId from URL params or search
   const urlJobId = searchParams.get("jobId")
@@ -213,38 +226,6 @@ export function CandidateListClient() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return <Badge variant="secondary">Đã nộp</Badge>
-      case "screening":
-        return <Badge variant="default">Đang sàng lọc</Badge>
-      case "screening_passed":
-        return <Badge variant="default">Đã qua sàng lọc</Badge>
-      case "screening_failed":
-        return <Badge variant="destructive">Rớt sàng lọc</Badge>
-      case "passed_exam":
-        return <Badge variant="default">Đã đậu bài thi</Badge>
-      case "failed_exam":
-        return <Badge variant="destructive">Rớt bài thi</Badge>
-      case "interviewing":
-        return <Badge variant="default">Phỏng vấn</Badge>
-      case "offer":
-        return <Badge variant="default">Đề nghị</Badge>
-      case "hired":
-        return <Badge variant="default">Đã tuyển</Badge>
-      case "rejected":
-        return <Badge variant="destructive">Từ chối</Badge>
-      case "withdrawn":
-        return <Badge variant="outline">Rút lui</Badge>
-      case "active":
-        return <Badge variant="default">Hoạt động</Badge>
-      case "inactive":
-        return <Badge variant="outline">Không hoạt động</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN")
@@ -279,9 +260,94 @@ export function CandidateListClient() {
     }
   }
 
-  const handleRowClick = (candidate: CandidateListItem) => {
-    const url = `/recruitment/candidate/detail/${candidate.candidateId}${candidate.applicationId ? `?applicationId=${candidate.applicationId}&jobId=${jobIdFilter}` : ''}`
-    window.location.href = url
+  const handleRowClick = (candidate: CandidateListItem, event?: React.MouseEvent) => {
+    // Check if click is on checkbox or action button
+    if (event) {
+      const target = event.target as HTMLElement
+      if (target.closest('input[type="checkbox"]') || target.closest('button') || target.closest('a')) {
+        return
+      }
+    }
+    
+    // Open quick preview instead of navigating
+    setPreviewCandidateId(candidate.candidateId)
+    if (candidate.applicationId) {
+      setPreviewApplicationId(candidate.applicationId)
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCandidates(filteredCandidates.map(c => c.candidateId))
+    } else {
+      setSelectedCandidates([])
+    }
+  }
+
+  const handleSelectCandidate = (candidateId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedCandidates([...selectedCandidates, candidateId])
+    } else {
+      setSelectedCandidates(selectedCandidates.filter(id => id !== candidateId))
+    }
+  }
+
+  const handleBulkApprove = async () => {
+    if (selectedCandidates.length === 0) return
+    
+    const candidatesWithApplications = filteredCandidates.filter(c => 
+      selectedCandidates.includes(c.candidateId) && c.applicationId
+    )
+    
+    if (candidatesWithApplications.length === 0) {
+      toast.error("Không có ứng viên nào có đơn ứng tuyển để duyệt")
+      return
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn duyệt ${candidatesWithApplications.length} ứng tuyển?`)) return
+
+    try {
+      await Promise.all(
+        candidatesWithApplications.map(c =>
+          recruitmentAPI.updateApplication(c.applicationId!, { applicationStatus: "interview" })
+        )
+      )
+      toast.success(`Đã duyệt ${candidatesWithApplications.length} ứng tuyển`)
+      setSelectedCandidates([])
+      fetchData()
+    } catch (error) {
+      console.error("Error bulk approving:", error)
+      toast.error("Không thể duyệt một số ứng tuyển")
+    }
+  }
+
+  const handleBulkReject = async () => {
+    if (selectedCandidates.length === 0) return
+    
+    const candidatesWithApplications = filteredCandidates.filter(c => 
+      selectedCandidates.includes(c.candidateId) && c.applicationId
+    )
+    
+    if (candidatesWithApplications.length === 0) {
+      toast.error("Không có ứng viên nào có đơn ứng tuyển để từ chối")
+      return
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn từ chối ${candidatesWithApplications.length} ứng tuyển?`)) return
+
+    try {
+      await Promise.all(
+        candidatesWithApplications.map(c =>
+          recruitmentAPI.updateApplication(c.applicationId!, { applicationStatus: "rejected" })
+        )
+      )
+      toast.success(`Đã từ chối ${candidatesWithApplications.length} ứng tuyển`)
+      setSelectedCandidates([])
+      fetchData()
+    } catch (error) {
+      console.error("Error bulk rejecting:", error)
+      toast.error("Không thể từ chối một số ứng tuyển")
+    }
   }
 
   const filteredCandidates = candidates.filter(candidate =>
@@ -297,8 +363,20 @@ export function CandidateListClient() {
     )
   }
 
+  const breadcrumbItems = isJobSpecific 
+    ? [
+        { label: "Danh sách việc làm", href: "/recruitment/jobs" },
+        { label: "Ứng viên theo vị trí" }
+      ]
+    : [
+        { label: "Danh sách ứng viên" }
+      ]
+
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <RecruitmentBreadcrumb items={breadcrumbItems} />
+
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
@@ -312,6 +390,18 @@ export function CandidateListClient() {
             }
           </p>
         </div>
+        {selectedCandidates.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleBulkApprove}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Duyệt ({selectedCandidates.length})
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleBulkReject}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Từ chối ({selectedCandidates.length})
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -403,16 +493,45 @@ export function CandidateListClient() {
       {/* Candidates Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách ứng viên</CardTitle>
-          <CardDescription>
-            {filteredCandidates.length} ứng viên được tìm thấy
-            {isJobSpecific && " cho vị trí này"}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Danh sách ứng viên</CardTitle>
+              <CardDescription>
+                {filteredCandidates.length} ứng viên được tìm thấy
+                {isJobSpecific && " cho vị trí này"}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "table" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+              >
+                <TableIcon className="mr-2 h-4 w-4" />
+                Bảng
+              </Button>
+              <Button
+                variant={viewMode === "card" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("card")}
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Card
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <Table>
+          {viewMode === "table" ? (
+            <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedCandidates.length === filteredCandidates.length && filteredCandidates.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Mã</TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50"
@@ -443,7 +562,7 @@ export function CandidateListClient() {
             <TableBody>
             {filteredCandidates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isJobSpecific ? (currentJobIsTest ? 7 : 6) : 5} className="text-center py-8">
+                  <TableCell colSpan={isJobSpecific ? (currentJobIsTest ? 8 : 7) : 6} className="text-center py-8">
                     <div className="text-muted-foreground">
                       Không tìm thấy ứng viên nào
                     </div>
@@ -454,8 +573,14 @@ export function CandidateListClient() {
                   <TableRow 
                     key={candidate.candidateId}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleRowClick(candidate)}
+                    onClick={(e) => handleRowClick(candidate, e)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedCandidates.includes(candidate.candidateId)}
+                        onCheckedChange={(checked) => handleSelectCandidate(candidate.candidateId, checked as boolean)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {candidate.candidateId}
                     </TableCell>
@@ -469,7 +594,7 @@ export function CandidateListClient() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(candidate.status)}
+                      <StatusBadge status={candidate.status} type="candidate" />
                     </TableCell>
                     {isJobSpecific && (
                       <TableCell>
@@ -511,8 +636,109 @@ export function CandidateListClient() {
               )}
             </TableBody>
           </Table>
+          ) : (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {filteredCandidates.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  Không tìm thấy ứng viên nào
+                </div>
+              ) : (
+                filteredCandidates.map((candidate) => (
+                  <Card
+                    key={candidate.candidateId}
+                    className="cursor-pointer transition-all hover:shadow-lg hover:border-primary relative"
+                    onClick={(e) => handleRowClick(candidate, e)}
+                  >
+                    <div 
+                      className="absolute top-4 right-4 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={selectedCandidates.includes(candidate.candidateId)}
+                        onCheckedChange={(checked) => handleSelectCandidate(candidate.candidateId, checked as boolean)}
+                      />
+                    </div>
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2 overflow-hidden">
+                        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-primary font-semibold">
+                              {candidate.fullname.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <CardTitle className="text-base truncate">
+                              {candidate.fullname}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 mt-1 min-w-0 overflow-hidden">
+                              <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm text-muted-foreground truncate min-w-0">
+                                {candidate.email}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-2">
+                          <StatusBadge status={candidate.status} type="candidate" />
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {isJobSpecific && candidate.overscore !== null && (
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-medium">
+                              Điểm: {formatScore(candidate.overscore)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>Tạo: {formatDate(candidate.createdAt)}</span>
+                        </div>
+                        {isJobSpecific && currentJobIsTest && candidate.applicationId && (
+                          <div className="pt-2 border-t">
+                            {applicationsWithExams[candidate.applicationId] === 'pending' ? (
+                              <span className="text-muted-foreground text-sm">Chưa làm bài</span>
+                            ) : applicationsWithExams[candidate.applicationId] === 'completed' ? (
+                              <Link 
+                                href={`/recruitment/candidate/exams?applicationId=${candidate.applicationId}`} 
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Button size="sm" variant="outline" className="w-full">
+                                  Đã làm bài
+                                </Button>
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Quick Preview */}
+      {previewCandidateId && (
+        <CandidateQuickPreview
+          candidateId={previewCandidateId}
+          applicationId={previewApplicationId || undefined}
+          open={!!previewCandidateId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPreviewCandidateId(null)
+              setPreviewApplicationId(null)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

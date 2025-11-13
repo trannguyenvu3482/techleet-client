@@ -33,15 +33,10 @@ export function JobCreateClient() {
     vacancies: "",
     employmentType: "",
     experienceLevel: "",
-    skills: "",
-    minExperience: "",
-    maxExperience: "",
-    educationLevel: "",
     applicationDeadline: "",
     location: "",
     departmentId: "",
     positionId: "",
-    hiringManagerId: "",
     isTest: false,
     questionSetId: "",
     quantityQuestion: "10",
@@ -121,15 +116,15 @@ export function JobCreateClient() {
         vacancies: Number(formData.vacancies),
         employmentType: formData.employmentType,
         experienceLevel: formData.experienceLevel,
-        skills: formData.skills,
-        minExperience: Number(formData.minExperience),
-        maxExperience: Number(formData.maxExperience),
-        educationLevel: formData.educationLevel,
+        skills: "", // Deprecated - can be included in requirements
+        minExperience: 0, // Deprecated - use experienceLevel instead
+        maxExperience: 10, // Deprecated - use experienceLevel instead
+        educationLevel: "", // Deprecated - can be included in requirements
         applicationDeadline: formData.applicationDeadline,
         location: formData.location,
         departmentId: Number(formData.departmentId),
         positionId: Number(formData.positionId),
-        hiringManagerId: Number(formData.hiringManagerId),
+        hiringManagerId: 0, // Deprecated - not used
         isTest: formData.isTest,
         questionSetId: formData.questionSetId ? Number(formData.questionSetId) : undefined,
         quantityQuestion: formData.quantityQuestion ? Number(formData.quantityQuestion) : undefined,
@@ -314,52 +309,6 @@ export function JobCreateClient() {
                  />
                </div>
 
-               <div className="space-y-2">
-                 <Label htmlFor="skills">Kỹ năng *</Label>
-                 <Input
-                   id="skills"
-                   value={formData.skills}
-                   onChange={(e) => handleInputChange("skills", e.target.value)}
-                   placeholder="React, Node.js, TypeScript, PostgreSQL"
-                   required
-                 />
-               </div>
-
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                   <Label htmlFor="minExperience">Kinh nghiệm tối thiểu (năm) *</Label>
-                   <Input
-                     id="minExperience"
-                     type="number"
-                     value={formData.minExperience}
-                     onChange={(e) => handleInputChange("minExperience", e.target.value)}
-                     placeholder="0"
-                     required
-                   />
-                 </div>
-                 <div className="space-y-2">
-                   <Label htmlFor="maxExperience">Kinh nghiệm tối đa (năm) *</Label>
-                   <Input
-                     id="maxExperience"
-                     type="number"
-                     value={formData.maxExperience}
-                     onChange={(e) => handleInputChange("maxExperience", e.target.value)}
-                     placeholder="10"
-                     required
-                   />
-                 </div>
-               </div>
-
-                              <div className="space-y-2">
-                 <Label htmlFor="educationLevel">Trình độ học vấn *</Label>
-                 <Input
-                   id="educationLevel"
-                   value={formData.educationLevel}
-                   onChange={(e) => handleInputChange("educationLevel", e.target.value)}
-                   placeholder="Bachelor degree in Computer Science"
-                   required
-                 />
-               </div>
 
                <div className="space-y-2">
                  <Label htmlFor="applicationDeadline">Hạn nộp hồ sơ *</Label>
@@ -424,20 +373,6 @@ export function JobCreateClient() {
                 </Select>
               </div>
 
-                             {/* <div className="space-y-2">
-                 <Label htmlFor="hiringManagerId">Người quản lý tuyển dụng *</Label>
-                 <Select value={formData.hiringManagerId} onValueChange={(value) => handleInputChange("hiringManagerId", value)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Chọn người quản lý" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="1">Manager 1</SelectItem>
-                     <SelectItem value="2">Manager 2</SelectItem>
-                     <SelectItem value="3">Manager 3</SelectItem>
-                     <SelectItem value="4">Manager 4</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div> */}
             </CardContent>
           </Card>
 

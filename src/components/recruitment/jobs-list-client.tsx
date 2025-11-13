@@ -69,18 +69,6 @@ export function JobsListClient() {
     fetchJobs()
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">Nháp</Badge>
-      case "published":
-        return <Badge variant="default">Đang tuyển</Badge>
-      case "closed":
-        return <Badge variant="destructive">Đã đóng</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatSalary = (min: string, max: string) => {
     const minNum = parseFloat(min).toLocaleString();
@@ -309,7 +297,7 @@ export function JobsListClient() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(job.status)}
+                      <StatusBadge status={job.status} type="job" />
                     </TableCell>
                     <TableCell>
                       <div 

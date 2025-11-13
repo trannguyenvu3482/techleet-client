@@ -45,6 +45,8 @@ import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api
 import CreateInterviewModal from "@/app/(home)/recruitment/candidate/detail/[candidateId]/create-interview-modal"
 import { ApproveOfferDialog } from "@/components/recruitment/interview-notes/approve-offer-dialog"
 import { RejectApplicationDialog } from "@/components/recruitment/interview-notes/reject-application-dialog"
+import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
+import { StatusBadge } from "@/components/recruitment/status-badge"
 import { toast } from "sonner"
 
 interface CertificateFile {
@@ -489,28 +491,6 @@ export function CandidateDetailClient() {
     }
   }, [candidateId, applicationId, fetchData])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return <Badge variant="secondary">Đã nộp</Badge>
-      case "screening":
-        return <Badge variant="default">Đang sàng lọc</Badge>
-      case "interviewing":
-        return <Badge variant="default">Phỏng vấn</Badge>
-      case "offer":
-        return <Badge variant="default">Đề nghị</Badge>
-      case "hired":
-        return <Badge variant="default">Đã tuyển</Badge>
-      case "rejected":
-        return <Badge variant="destructive">Từ chối</Badge>
-      case "withdrawn":
-        return <Badge variant="outline">Rút lui</Badge>
-      case "new":
-        return <Badge variant="secondary">Mới</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString("vi-VN")
@@ -646,12 +626,22 @@ export function CandidateDetailClient() {
     )
   }
 
+  const jobId = searchParams.get("jobId")
+  const breadcrumbItems = [
+    { label: "Danh sách ứng viên", href: "/recruitment/candidate/list" },
+    ...(jobId ? [{ label: "Ứng viên theo vị trí", href: `/recruitment/candidate/list?jobId=${jobId}` }] : []),
+    { label: `${candidate.firstName} ${candidate.lastName}` },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <RecruitmentBreadcrumb items={breadcrumbItems} />
+
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={`/recruitment/candidate/list${searchParams.get("jobId") ? `?jobId=${searchParams.get("jobId")}` : ""}`}>
+          <Link href={`/recruitment/candidate/list${jobId ? `?jobId=${jobId}` : ""}`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại
@@ -1117,7 +1107,7 @@ export function CandidateDetailClient() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(application.applicationStatus)}
+                          <StatusBadge status={application.applicationStatus} type="application" />
                           {application.score && (
                             <div className={`flex items-center gap-1 ${getScoreColor(application.score)}`}>
                               <Star className="h-4 w-4" />

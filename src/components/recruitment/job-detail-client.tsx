@@ -6,18 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Edit, Trash2, ArrowLeft, Calendar, MapPin, DollarSign, Building, Users, Clock, FileText } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, JobPosting, questionAPI, QuestionSet } from "@/lib/api/recruitment"
 import { JobApplicationsList } from "./job-applications-list"
+import { RecruitmentBreadcrumb } from "./recruitment-breadcrumb"
+import { StatusBadge } from "./status-badge"
 
 export function JobDetailClient() {
   const params = useParams()
@@ -78,18 +72,6 @@ export function JobDetailClient() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">Nháp</Badge>
-      case "published":
-        return <Badge variant="default">Đang tuyển</Badge>
-      case "closed":
-        return <Badge variant="destructive">Đã đóng</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatSalary = (min: string, max: string) => {
     const minNum = parseFloat(min).toLocaleString();
@@ -120,21 +102,10 @@ export function JobDetailClient() {
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/recruitment/jobs">Tuyển dụng</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/recruitment/jobs">Danh sách việc làm</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{job.title}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <RecruitmentBreadcrumb items={[
+        { label: "Danh sách việc làm", href: "/recruitment/jobs" },
+        { label: job.title }
+      ]} />
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -316,7 +287,7 @@ export function JobDetailClient() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Trạng thái</span>
-                    {getStatusBadge(job.status)}
+                    <StatusBadge status={job.status} type="job" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Kinh nghiệm</span>
