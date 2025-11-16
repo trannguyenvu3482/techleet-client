@@ -17,10 +17,6 @@ export interface JobPosting {
   location: string;
   employmentType: string;
   experienceLevel: string;
-  skills: string;
-  minExperience: number;
-  maxExperience: number;
-  educationLevel: string;
   departmentId: number;
   positionId: number;
   hiringManagerId: number;
@@ -48,10 +44,6 @@ export interface CreateJobPostingRequest {
   location: string;
   employmentType: string;
   experienceLevel: string;
-  skills: string;
-  minExperience: number;
-  maxExperience: number;
-  educationLevel: string;
   departmentId: number;
   positionId: number;
   hiringManagerId: number;
@@ -59,6 +51,10 @@ export interface CreateJobPostingRequest {
   questionSetId?: number;
   quantityQuestion?: number;
   minScore?: number;
+  skills?: string;
+  minExperience?: number;
+  maxExperience?: number;
+  educationLevel?: string;
 }
 
 export interface UpdateJobPostingRequest {
@@ -73,10 +69,6 @@ export interface UpdateJobPostingRequest {
   location?: string;
   employmentType?: string;
   experienceLevel?: string;
-  skills?: string;
-  minExperience?: number;
-  maxExperience?: number;
-  educationLevel?: string;
   departmentId?: number;
   positionId?: number;
   hiringManagerId?: number;

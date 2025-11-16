@@ -373,10 +373,6 @@ export function CandidateDetailClient() {
             location: "Ho Chi Minh City",
             employmentType: "Full-time",
             experienceLevel: "Mid-level",
-            skills: "React, TypeScript, JavaScript",
-            minExperience: 3,
-            maxExperience: 5,
-            educationLevel: "Bachelor",
             departmentId: 1,
             positionId: 1,
             hiringManagerId: 1,
@@ -412,10 +408,6 @@ export function CandidateDetailClient() {
             location: "Ha Noi",
             employmentType: "Full-time",
             experienceLevel: "Senior",
-            skills: "Node.js, Python, PostgreSQL",
-            minExperience: 2,
-            maxExperience: 6,
-            educationLevel: "Bachelor",
             departmentId: 2,
             positionId: 2,
             hiringManagerId: 2,
@@ -1141,7 +1133,7 @@ export function CandidateDetailClient() {
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Trạng thái hiện tại</span>
-                    {getStatusBadge(candidate.currentApplication.applicationStatus)}
+                    <StatusBadge status={candidate.currentApplication.applicationStatus} type="application" />
                   </div>
                   
                   <div>

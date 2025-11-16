@@ -252,10 +252,6 @@ export function JobCreateClient() {
         vacancies: Number(formData.vacancies),
         employmentType: formData.employmentType,
         experienceLevel: formData.experienceLevel,
-        skills: "", // Deprecated - can be included in requirements
-        minExperience: 0, // Deprecated - use experienceLevel instead
-        maxExperience: 10, // Deprecated - use experienceLevel instead
-        educationLevel: "", // Deprecated - can be included in requirements
         applicationDeadline: formData.applicationDeadline,
         location: headquarters.find(h => h.headquarterId.toString() === formData.headquarterId)?.address || "",
         departmentId: Number(formData.departmentId),

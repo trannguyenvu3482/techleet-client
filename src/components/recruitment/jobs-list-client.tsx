@@ -12,6 +12,7 @@ import Link from "next/link"
 import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { StatusBadge } from "./status-badge"
 
 export function JobsListClient() {
   const [jobs, setJobs] = useState<JobPosting[]>([])

@@ -60,12 +60,10 @@ export function CandidateQuickPreview({
       if (applicationId) {
         try {
           const applicationData = await recruitmentAPI.getApplicationById(applicationId)
-          setApplication(applicationData)
+          setApplication(applicationData.application)
         } catch (error) {
           console.error("Error fetching application:", error)
         }
-      } else if (candidateData.currentApplication) {
-        setApplication(candidateData.currentApplication)
       }
     } catch (error) {
       console.error("Error fetching candidate:", error)
@@ -83,8 +81,8 @@ export function CandidateQuickPreview({
     })
   }
 
-  const formatScore = (score: number | null) => {
-    if (score === null) return "Chưa có điểm"
+  const formatScore = (score: number | null | undefined) => {
+    if (score === null || score === undefined) return "Chưa có điểm"
     return `${Math.round(score)}%`
   }
 
@@ -127,7 +125,7 @@ export function CandidateQuickPreview({
               {application && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Trạng thái:</span>
-                  <StatusBadge status={application.status} type="application" />
+                  <StatusBadge status={application.status || application.applicationStatus} type="application" />
                 </div>
               )}
 
@@ -141,10 +139,10 @@ export function CandidateQuickPreview({
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">{candidate.email}</span>
                   </div>
-                  {candidate.phone && (
+                  {candidate.phoneNumber && (
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{candidate.phone}</span>
+                      <span className="text-sm">{candidate.phoneNumber}</span>
                     </div>
                   )}
                   {candidate.address && (
@@ -163,7 +161,7 @@ export function CandidateQuickPreview({
                     <CardTitle className="text-base">Thông tin ứng tuyển</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {application.score !== null && (
+                    {(application.score !== null && application.score !== undefined) && (
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                         <span className="text-sm font-medium">
@@ -174,7 +172,7 @@ export function CandidateQuickPreview({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        Ngày nộp: {formatDate(application.createdAt)}
+                        Ngày nộp: {formatDate(application.appliedAt)}
                       </span>
                     </div>
                     {application.jobPosting && (
@@ -188,7 +186,7 @@ export function CandidateQuickPreview({
               )}
 
               {/* Education */}
-              {candidate.education && candidate.education.length > 0 && (
+              {candidate.education && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -197,22 +195,15 @@ export function CandidateQuickPreview({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {candidate.education.map((edu, index) => (
-                        <div key={index} className="text-sm">
-                          <div className="font-medium">{edu.degree}</div>
-                          {edu.school && (
-                            <div className="text-muted-foreground">{edu.school}</div>
-                          )}
-                        </div>
-                      ))}
+                    <div className="text-sm text-muted-foreground">
+                      {candidate.education}
                     </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Experience */}
-              {candidate.experience && candidate.experience.length > 0 && (
+              {candidate.workExperience && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -221,15 +212,8 @@ export function CandidateQuickPreview({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {candidate.experience.map((exp, index) => (
-                        <div key={index} className="text-sm">
-                          <div className="font-medium">{exp.position}</div>
-                          {exp.company && (
-                            <div className="text-muted-foreground">{exp.company}</div>
-                          )}
-                        </div>
-                      ))}
+                    <div className="text-sm text-muted-foreground">
+                      {candidate.workExperience}
                     </div>
                   </CardContent>
                 </Card>

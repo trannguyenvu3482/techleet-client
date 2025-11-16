@@ -32,10 +32,6 @@ export function JobEditClient() {
     vacancies: "",
     employmentType: "",
     experienceLevel: "",
-    skills: "",
-    minExperience: "",
-    maxExperience: "",
-    educationLevel: "",
     applicationDeadline: "",
     location: "",
     departmentId: "",
@@ -63,10 +59,6 @@ export function JobEditClient() {
         vacancies: jobData.vacancies.toString(),
         employmentType: jobData.employmentType,
         experienceLevel: jobData.experienceLevel,
-        skills: jobData.skills,
-        minExperience: jobData.minExperience.toString(),
-        maxExperience: jobData.maxExperience.toString(),
-        educationLevel: jobData.educationLevel,
         applicationDeadline: jobData.applicationDeadline.split('T')[0],
         location: jobData.location,
         departmentId: jobData.departmentId.toString(),
@@ -136,10 +128,6 @@ export function JobEditClient() {
         vacancies: Number(formData.vacancies),
         employmentType: formData.employmentType,
         experienceLevel: formData.experienceLevel,
-        skills: formData.skills,
-        minExperience: Number(formData.minExperience),
-        maxExperience: Number(formData.maxExperience),
-        educationLevel: formData.educationLevel,
         applicationDeadline: formData.applicationDeadline,
         location: formData.location,
         departmentId: Number(formData.departmentId),
@@ -344,56 +332,9 @@ export function JobEditClient() {
                    placeholder="1"
                    required
                  />
-               </div>
+              </div>
 
-               <div className="space-y-2">
-                 <Label htmlFor="skills">Kỹ năng *</Label>
-                 <Input
-                   id="skills"
-                   value={formData.skills}
-                   onChange={(e) => handleInputChange("skills", e.target.value)}
-                   placeholder="React, Node.js, TypeScript, PostgreSQL"
-                   required
-                 />
-               </div>
-
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                   <Label htmlFor="minExperience">Kinh nghiệm tối thiểu (năm) *</Label>
-                   <Input
-                     id="minExperience"
-                     type="number"
-                     value={formData.minExperience}
-                     onChange={(e) => handleInputChange("minExperience", e.target.value)}
-                     placeholder="0"
-                     required
-                   />
-                 </div>
-                 <div className="space-y-2">
-                   <Label htmlFor="maxExperience">Kinh nghiệm tối đa (năm) *</Label>
-                   <Input
-                     id="maxExperience"
-                     type="number"
-                     value={formData.maxExperience}
-                     onChange={(e) => handleInputChange("maxExperience", e.target.value)}
-                     placeholder="10"
-                     required
-                   />
-                 </div>
-               </div>
-
-                              <div className="space-y-2">
-                 <Label htmlFor="educationLevel">Trình độ học vấn *</Label>
-                 <Input
-                   id="educationLevel"
-                   value={formData.educationLevel}
-                   onChange={(e) => handleInputChange("educationLevel", e.target.value)}
-                   placeholder="Bachelor degree in Computer Science"
-                   required
-                 />
-               </div>
-
-               <div className="space-y-2">
+              <div className="space-y-2">
                  <Label htmlFor="applicationDeadline">Hạn nộp hồ sơ *</Label>
                  <Input
                    id="applicationDeadline"
