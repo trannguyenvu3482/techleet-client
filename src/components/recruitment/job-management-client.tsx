@@ -60,11 +60,11 @@ export function JobManagementClient() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <JobsListClient/>
+               <JobsListClient/>
             </CardContent>
           </Card>
         )}
-      </div>
+              </div>
     </div>
   )
 }

@@ -36,28 +36,28 @@ export function MessageBubble({ message, isUser = false }: MessageBubbleProps) {
       </Avatar>
       
       <div className={cn(
-        "flex flex-col max-w-[80%]",
-        isUser ? "items-end" : "items-start"
+        "flex flex-col min-w-0",
+        isUser ? "items-end max-w-[75%]" : "items-start max-w-[70%]"
       )}>
         <div className={cn(
-          "px-4 py-3 rounded-2xl text-sm",
+          "px-4 py-3 rounded-2xl text-xs w-full min-w-0",
           isUser 
             ? "bg-blue-500 text-white rounded-br-md" 
             : "bg-gray-100 text-gray-900 rounded-bl-md dark:bg-gray-800 dark:text-gray-100"
         )}>
           {isUser ? (
-            <div className="whitespace-pre-wrap break-words">
+            <div className="whitespace-pre-wrap break-words text-xs overflow-wrap-anywhere min-w-0">
               {message.content}
             </div>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+            <div className="prose prose-sm dark:prose-invert max-w-none break-words text-xs [&_*]:text-xs overflow-wrap-anywhere min-w-0">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                  li: ({ children }) => <li className="ml-4">{children}</li>,
+                  p: ({ children }) => <p className="mb-2 last:mb-0 text-xs">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1 text-xs">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1 text-xs">{children}</ol>,
+                  li: ({ children }) => <li className="ml-4 text-xs">{children}</li>,
                   code: ({ children, className, ...props }: any) => {
                     const isInline = !className || !className.includes('language-');
                     if (isInline) {
@@ -78,16 +78,16 @@ export function MessageBubble({ message, isUser = false }: MessageBubbleProps) {
                       {children}
                     </pre>
                   ),
-                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                  em: ({ children }) => <em className="italic">{children}</em>,
+                  strong: ({ children }) => <strong className="font-semibold text-xs">{children}</strong>,
+                  em: ({ children }) => <em className="italic text-xs">{children}</em>,
                   a: ({ href, children }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">
                       {children}
                     </a>
                   ),
-                  h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-sm font-bold mb-2 mt-3 first:mt-0">{children}</h3>,
+                  h1: ({ children }) => <h1 className="text-sm font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xs font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xs font-bold mb-2 mt-3 first:mt-0">{children}</h3>,
                   blockquote: ({ children }) => (
                     <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-3 italic mb-2">
                       {children}

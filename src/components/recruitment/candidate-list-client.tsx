@@ -495,11 +495,11 @@ export function CandidateListClient() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Danh sách ứng viên</CardTitle>
-              <CardDescription>
-                {filteredCandidates.length} ứng viên được tìm thấy
-                {isJobSpecific && " cho vị trí này"}
-              </CardDescription>
+          <CardTitle>Danh sách ứng viên</CardTitle>
+          <CardDescription>
+            {filteredCandidates.length} ứng viên được tìm thấy
+            {isJobSpecific && " cho vị trí này"}
+          </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -523,7 +523,7 @@ export function CandidateListClient() {
         </CardHeader>
         <CardContent>
           {viewMode === "table" ? (
-            <Table>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
