@@ -43,10 +43,13 @@ import {
 import Link from "next/link"
 import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
 import CreateInterviewModal from "@/app/(home)/recruitment/candidate/detail/[candidateId]/create-interview-modal"
-import { ApproveOfferDialog } from "@/components/recruitment/interview-notes/approve-offer-dialog"
-import { RejectApplicationDialog } from "@/components/recruitment/interview-notes/reject-application-dialog"
-import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
-import { StatusBadge } from "@/components/recruitment/status-badge"
+import { ApproveOfferDialog } from "../../interviews/notes/approve-offer-dialog"
+import { RejectApplicationDialog } from "../../interviews/notes/reject-application-dialog"
+import { RecruitmentBreadcrumb } from "../../shared/recruitment-breadcrumb"
+import { StatusBadge } from "../../shared/status-badge"
+import { ScoreIndicator } from "@/components/ui/score-indicator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { toast } from "sonner"
 
 interface CertificateFile {
@@ -567,9 +570,11 @@ export function CandidateDetailClient() {
         applicationStatus: newStatus === "approved" ? "accepted" : newStatus as "pending" | "reviewing" | "interview" | "rejected" | "accepted"
       })
       setIsEditingStatus(false)
+      toast.success("Đã cập nhật trạng thái ứng viên")
       fetchData() // Refresh data
     } catch (error) {
       console.error("Error updating status:", error)
+      toast.error("Không thể cập nhật trạng thái")
     }
   }
 
@@ -604,16 +609,79 @@ export function CandidateDetailClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Breadcrumb skeleton */}
+        <Skeleton className="h-4 w-64" />
+        
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-24" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Main content skeletons */}
+          <div className="md:col-span-2 space-y-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 flex-1" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Sidebar skeletons */}
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!candidate) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Không tìm thấy thông tin ứng viên</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <EmptyState
+          icon="users"
+          title="Không tìm thấy ứng viên"
+          description="Ứng viên không tồn tại hoặc đã bị xóa khỏi hệ thống."
+          action={{
+            label: "Quay lại danh sách",
+            onClick: () => router.push("/recruitment/candidate/list")
+          }}
+        />
       </div>
     )
   }
@@ -626,7 +694,7 @@ export function CandidateDetailClient() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Breadcrumbs */}
       <RecruitmentBreadcrumb items={breadcrumbItems} />
 
@@ -663,7 +731,7 @@ export function CandidateDetailClient() {
         {/* Main Content */}
         <div className="md:col-span-2 space-y-6">
           {/* Personal Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
@@ -758,7 +826,7 @@ export function CandidateDetailClient() {
           </Card>
 
           {/* Professional Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
@@ -844,7 +912,7 @@ export function CandidateDetailClient() {
           </Card>
 
           {/* Education Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
@@ -883,7 +951,7 @@ export function CandidateDetailClient() {
 
           {/* Certificates & Documents */}
           {candidate.certificates && candidate.certificates.length > 0 && (
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5" />
@@ -972,7 +1040,7 @@ export function CandidateDetailClient() {
 
           {/* Candidate Files from API */}
           {candidateFiles && candidateFiles.length > 0 && (
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
@@ -1072,7 +1140,7 @@ export function CandidateDetailClient() {
 
           {/* Application History */}
           {applications.length > 0 && (
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
@@ -1100,11 +1168,12 @@ export function CandidateDetailClient() {
                         </div>
                         <div className="flex items-center gap-2">
                           <StatusBadge status={application.applicationStatus} type="application" />
-                          {application.score && (
-                            <div className={`flex items-center gap-1 ${getScoreColor(application.score)}`}>
-                              <Star className="h-4 w-4" />
-                              <span className="text-sm font-medium">{Math.round(application.score)}%</span>
-                            </div>
+                          {application.score !== undefined && (
+                            <ScoreIndicator 
+                              score={application.score} 
+                              size="sm" 
+                              showLabel={false}
+                            />
                           )}
                         </div>
                       </div>
@@ -1124,7 +1193,7 @@ export function CandidateDetailClient() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status Management */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle>Quản lý trạng thái CV</CardTitle>
             </CardHeader>
@@ -1240,12 +1309,14 @@ export function CandidateDetailClient() {
                     {formatDate(candidate.currentApplication.updatedAt)}
                   </span>
                 </div>
-                {candidate.overscore && (
+                {candidate.overscore !== undefined && candidate.overscore !== null && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Điểm tổng thể</span>
-                    <span className={`text-sm font-medium ${getScoreColor(candidate.overscore)}`}>
-                      {Math.round(candidate.overscore)}%
-                    </span>
+                    <ScoreIndicator 
+                      score={candidate.overscore} 
+                      size="sm" 
+                      showLabel={false}
+                    />
                   </div>
                 )}
               </CardContent>

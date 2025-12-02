@@ -1,6 +1,6 @@
 "use client"
 
-import { CandidateListClient } from "@/components/recruitment/candidate-list-client"
+import { CandidateListClient } from "@/components/recruitment/candidates/candidate-list-client"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function CandidateListPage() {

@@ -4,8 +4,8 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageWrapper } from "@/components/layout/page-wrapper"
-import { QuestionsManager } from "@/components/recruitment/questions-manager"
-import { QuestionSetsManager } from "@/components/recruitment/question-sets-manager"
+import { QuestionsManager } from "@/components/recruitment/questions/questions-manager"
+import { QuestionSetsManager } from "@/components/recruitment/questions/question-sets-manager"
 
 export default function QuestionsManagementPage() {
   const [activeTab, setActiveTab] = useState("questions")

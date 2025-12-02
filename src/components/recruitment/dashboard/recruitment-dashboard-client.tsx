@@ -22,7 +22,7 @@ import {
 import Link from "next/link"
 import { analyticsAPI, HiringFunnelData, ActivityItem, DashboardStats } from "@/lib/api/analytics"
 import { recruitmentAPI } from "@/lib/api/recruitment"
-import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
+import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
 import { toast } from "sonner"
 
 interface PipelineStage {

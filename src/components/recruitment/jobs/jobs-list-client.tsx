@@ -12,7 +12,10 @@ import Link from "next/link"
 import { recruitmentAPI, JobPosting, GetJobPostingsParams, GetJobPostingsResponse } from "@/lib/api/recruitment"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { StatusBadge } from "./status-badge"
+import { StatusBadge } from "../shared/status-badge"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export function JobsListClient() {
   const [jobs, setJobs] = useState<JobPosting[]>([])
@@ -25,6 +28,8 @@ export function JobsListClient() {
   const [totalPages, setTotalPages] = useState(0)
   const [total, setTotal] = useState(0)
   const [pageSize, setPageSize] = useState(10)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [jobToDelete, setJobToDelete] = useState<number | null>(null)
   const router = useRouter()
 
   const fetchJobs = useCallback(async () => {
@@ -81,14 +86,22 @@ export function JobsListClient() {
     return new Date(dateString).toLocaleDateString("vi-VN")
   }
 
-  const handleDeleteJob = async (jobId: number) => {
-    if (confirm("Bạn có chắc chắn muốn xóa vị trí tuyển dụng này?")) {
-      try {
-        await recruitmentAPI.deleteJobPosting(jobId)
-        fetchJobs()
-      } catch (error) {
-        toast.error("Không thể xóa vị trí tuyển dụng")
-      }
+  const openDeleteDialog = (jobId: number) => {
+    setJobToDelete(jobId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteJob = async () => {
+    if (!jobToDelete) return
+    
+    try {
+      await recruitmentAPI.deleteJobPosting(jobToDelete)
+      toast.success("Đã xóa vị trí tuyển dụng")
+      fetchJobs()
+    } catch (error) {
+      toast.error("Không thể xóa vị trí tuyển dụng")
+    } finally {
+      setJobToDelete(null)
     }
   }
 
@@ -227,14 +240,43 @@ export function JobsListClient() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-2">Đang tải...</p>
+            <div className="space-y-4">
+              {/* Table header skeleton */}
+              <div className="flex gap-4 border-b pb-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+                  <Skeleton key={i} className="h-4 flex-1" />
+                ))}
+              </div>
+              {/* Table rows skeleton */}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex gap-4 items-center py-3 border-b">
+                  <Skeleton className="h-4 w-8" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-4 w-8" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              ))}
             </div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Không tìm thấy vị trí tuyển dụng nào</p>
-            </div>
+            <EmptyState
+              icon="briefcase"
+              title="Không tìm thấy vị trí tuyển dụng"
+              description={searchTerm ? "Thử tìm kiếm với từ khóa khác." : "Tạo vị trí tuyển dụng đầu tiên để bắt đầu."}
+              action={{
+                label: "Tạo vị trí mới",
+                onClick: () => router.push("/recruitment/jobs/create")
+              }}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -254,7 +296,11 @@ export function JobsListClient() {
               </TableHeader>
               <TableBody>
                 {jobs.map((job) => (
-                  <TableRow className="cursor-pointer" onClick={() => router.push(`/recruitment/jobs/detail/${job.jobPostingId}`)} key={job.jobPostingId} >
+                  <TableRow 
+                    className="cursor-pointer table-row-hover" 
+                    onClick={() => router.push(`/recruitment/jobs/detail/${job.jobPostingId}`)} 
+                    key={job.jobPostingId}
+                  >
                     <TableCell>
                       {job.jobPostingId}
                     </TableCell>
@@ -321,7 +367,7 @@ export function JobsListClient() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDeleteJob(job.jobPostingId)
+                            openDeleteDialog(job.jobPostingId)
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -389,6 +435,17 @@ export function JobsListClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Xóa vị trí tuyển dụng"
+        description="Bạn có chắc chắn muốn xóa vị trí tuyển dụng này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        onConfirm={handleDeleteJob}
+        variant="danger"
+      />
     </div>
   )
 }

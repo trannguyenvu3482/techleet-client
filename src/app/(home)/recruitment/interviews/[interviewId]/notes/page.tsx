@@ -1,4 +1,4 @@
-import { InterviewNotesPage } from "@/components/recruitment/interview-notes/interview-notes-page";
+import { InterviewNotesPage } from "@/components/recruitment/interviews/notes/interview-notes-page";
 
 interface InterviewNotesPageProps {
   params: Promise<{

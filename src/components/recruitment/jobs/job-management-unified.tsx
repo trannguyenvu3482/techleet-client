@@ -39,9 +39,12 @@ import {
   JobPosting,
   GetJobPostingsParams,
 } from "@/lib/api/recruitment";
-import { JobApplicationsList } from "./job-applications-list";
+import { JobApplicationsList } from "./applications/job-applications-list";
 import { toast } from "sonner";
-import { StatusBadge } from "./status-badge";
+import { StatusBadge } from "../shared/status-badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function JobManagementUnified() {
   const router = useRouter();
@@ -51,6 +54,8 @@ export function JobManagementUnified() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"info" | "applications">("info");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<number | null>(null);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -89,19 +94,26 @@ export function JobManagementUnified() {
     setActiveTab("info");
   };
 
-  const handleDeleteJob = async (jobId: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa vị trí tuyển dụng này?")) return;
+  const openDeleteDialog = (jobId: number) => {
+    setJobToDelete(jobId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteJob = async () => {
+    if (!jobToDelete) return;
 
     try {
-      await recruitmentAPI.deleteJobPosting(jobId);
-      if (selectedJob?.jobPostingId === jobId) {
-        const remainingJobs = jobs.filter((j) => j.jobPostingId !== jobId);
+      await recruitmentAPI.deleteJobPosting(jobToDelete);
+      if (selectedJob?.jobPostingId === jobToDelete) {
+        const remainingJobs = jobs.filter((j) => j.jobPostingId !== jobToDelete);
         setSelectedJob(remainingJobs.length > 0 ? remainingJobs[0] : null);
       }
       fetchJobs();
       toast.success("Đã xóa vị trí tuyển dụng");
     } catch (error) {
       toast.error("Không thể xóa vị trí tuyển dụng");
+    } finally {
+      setJobToDelete(null);
     }
   };
 
@@ -169,13 +181,29 @@ export function JobManagementUnified() {
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-2">
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Đang tải...
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i}>
+                    <CardContent className="p-3">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <div className="flex gap-3">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : filteredJobs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Không tìm thấy việc làm nào
-              </div>
+              <EmptyState
+                icon="briefcase"
+                title="Không tìm thấy việc làm"
+                description="Tạo vị trí tuyển dụng mới để bắt đầu."
+                size="sm"
+              />
             ) : (
               filteredJobs.map((job) => (
                 <Card
@@ -257,7 +285,7 @@ export function JobManagementUnified() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDeleteJob(selectedJob.jobPostingId)}
+                  onClick={() => openDeleteDialog(selectedJob.jobPostingId)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Xóa
@@ -395,6 +423,17 @@ export function JobManagementUnified() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Xóa vị trí tuyển dụng"
+        description="Bạn có chắc chắn muốn xóa vị trí tuyển dụng này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        onConfirm={handleDeleteJob}
+        variant="danger"
+      />
     </div>
   );
 }

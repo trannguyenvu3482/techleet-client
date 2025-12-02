@@ -15,7 +15,7 @@ import {
   User
 } from "lucide-react"
 import { recruitmentAPI } from "@/lib/api/recruitment"
-import { StatusBadge } from "@/components/recruitment/status-badge"
+import { StatusBadge } from "../../shared/status-badge"
 import { toast } from "sonner"
 
 interface Application {

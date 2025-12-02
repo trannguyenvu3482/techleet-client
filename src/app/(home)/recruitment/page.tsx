@@ -1,6 +1,6 @@
 "use client"
 
-import { RecruitmentDashboardClient } from "@/components/recruitment/recruitment-dashboard-client"
+import { RecruitmentDashboardClient } from "@/components/recruitment/dashboard/recruitment-dashboard-client"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function RecruitmentDashboardPage() {

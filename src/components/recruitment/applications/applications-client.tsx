@@ -32,8 +32,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
-import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
-import { StatusBadge } from "@/components/recruitment/status-badge"
+import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
+import { StatusBadge } from "../shared/status-badge"
 import { toast } from "sonner"
 import Link from "next/link"
 

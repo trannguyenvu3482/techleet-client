@@ -35,9 +35,12 @@ import {
   Table as TableIcon
 } from "lucide-react"
 import { recruitmentAPI, JobPosting, examinationAPI } from "@/lib/api/recruitment"
-import { RecruitmentBreadcrumb } from "@/components/recruitment/recruitment-breadcrumb"
-import { CandidateQuickPreview } from "@/components/recruitment/candidate-quick-preview"
-import { StatusBadge } from "@/components/recruitment/status-badge"
+import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
+import { CandidateQuickPreview } from "./candidate-quick-preview"
+import { StatusBadge } from "../shared/status-badge"
+import { ScoreIndicator } from "@/components/ui/score-indicator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -357,8 +360,74 @@ export function CandidateListClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Breadcrumb skeleton */}
+        <Skeleton className="h-4 w-48" />
+        
+        {/* Header skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+
+        {/* Stats cards skeleton */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Filter skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-[250px]" />
+              <Skeleton className="h-10 w-[150px]" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Table header */}
+              <div className="flex gap-4 border-b pb-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-4 flex-1" />
+                ))}
+              </div>
+              {/* Table rows */}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex gap-4 items-center py-2">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -563,9 +632,12 @@ export function CandidateListClient() {
             {filteredCandidates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={isJobSpecific ? (currentJobIsTest ? 8 : 7) : 6} className="text-center py-8">
-                    <div className="text-muted-foreground">
-                      Không tìm thấy ứng viên nào
-                    </div>
+                    <EmptyState
+                      icon="users"
+                      title="Không tìm thấy ứng viên"
+                      description={searchTerm ? "Thử tìm kiếm với từ khóa khác." : "Chưa có ứng viên nào trong danh sách."}
+                      size="sm"
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -598,12 +670,11 @@ export function CandidateListClient() {
                     </TableCell>
                     {isJobSpecific && (
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          <span className={candidate.overscore === null ? "text-muted-foreground" : ""}>
-                            {formatScore(candidate.overscore)}
-                          </span>
-                        </div>
+                        <ScoreIndicator 
+                          score={candidate.overscore} 
+                          size="sm" 
+                          showLabel={false}
+                        />
                       </TableCell>
                     )}
                     <TableCell>
@@ -639,8 +710,13 @@ export function CandidateListClient() {
           ) : (
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {filteredCandidates.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  Không tìm thấy ứng viên nào
+                <div className="col-span-full">
+                  <EmptyState
+                    icon="users"
+                    title="Không tìm thấy ứng viên"
+                    description={searchTerm ? "Thử tìm kiếm với từ khóa khác." : "Chưa có ứng viên nào trong danh sách."}
+                    size="md"
+                  />
                 </div>
               ) : (
                 filteredCandidates.map((candidate) => (
@@ -685,12 +761,13 @@ export function CandidateListClient() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {isJobSpecific && candidate.overscore !== null && (
+                        {isJobSpecific && (
                           <div className="flex items-center gap-2">
-                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                            <span className="text-sm font-medium">
-                              Điểm: {formatScore(candidate.overscore)}
-                            </span>
+                            <ScoreIndicator 
+                              score={candidate.overscore} 
+                              size="sm"
+                              variant="bar"
+                            />
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

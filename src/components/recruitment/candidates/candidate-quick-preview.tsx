@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { recruitmentAPI, Candidate, Application } from "@/lib/api/recruitment"
-import { StatusBadge } from "@/components/recruitment/status-badge"
+import { StatusBadge } from "../shared/status-badge"
 
 interface CandidateQuickPreviewProps {
   candidateId: number
