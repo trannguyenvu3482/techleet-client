@@ -82,7 +82,7 @@ export function CandidateQuickPreview({
   }
 
   const formatScore = (score: number | null | undefined) => {
-    if (score === null || score === undefined) return "Chưa có điểm"
+    if (score === null || score === undefined || isNaN(score)) return "Chưa có điểm"
     return `${Math.round(score)}%`
   }
 

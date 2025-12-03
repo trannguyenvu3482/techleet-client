@@ -254,7 +254,146 @@ export function CandidateDetailClient() {
         }
       }
       
-      // Fallback to mock data
+      // Try to fetch candidate by ID if no applicationId provided
+      try {
+        const apiCandidate = await recruitmentAPI.getCandidateById(candidateId)
+        
+        if (apiCandidate) {
+          // Transform API data to match our interface
+          const transformedCandidate: CandidateDetailData = {
+            candidateId: apiCandidate.candidateId,
+            firstName: safeValue(apiCandidate.firstName),
+            lastName: safeValue(apiCandidate.lastName),
+            email: safeValue(apiCandidate.email),
+            phoneNumber: safeValue(apiCandidate.phoneNumber),
+            address: safeValue(apiCandidate.address),
+            city: safeValue(apiCandidate.city),
+            postalCode: safeValue(apiCandidate.postalCode),
+            education: safeValue(apiCandidate.education),
+            workExperience: safeValue(apiCandidate.workExperience),
+            skills: safeValue(apiCandidate.skills),
+            certifications: safeValue(apiCandidate.certifications),
+            portfolioUrl: safeValue(apiCandidate.portfolioUrl),
+            linkedinUrl: safeValue(apiCandidate.linkedinUrl),
+            resumeUrl: safeValue(apiCandidate.resumeUrl),
+            createdAt: apiCandidate.createdAt,
+            updatedAt: apiCandidate.updatedAt,
+            isActive: apiCandidate.isActive,
+            // Additional fields - try to get from extended API response
+            birthDate: safeValue((apiCandidate as any).birthDate || apiCandidate.dateOfBirth),
+            gender: (apiCandidate as any).gender === "Male" ? true : (apiCandidate as any).gender === "Female" ? false : undefined,
+            githubUrl: safeValue((apiCandidate as any).githubUrl),
+            status: safeValue((apiCandidate as any).status),
+            appliedDate: safeValue((apiCandidate as any).appliedDate),
+            summary: safeValue((apiCandidate as any).summary),
+            yearsOfExperience: (apiCandidate as any).yearsOfExperience || 0,
+            currentJobTitle: safeValue((apiCandidate as any).currentJobTitle),
+            currentCompany: safeValue((apiCandidate as any).currentCompany),
+            educationLevel: safeValue((apiCandidate as any).educationLevel),
+            fieldOfStudy: safeValue((apiCandidate as any).fieldOfStudy),
+            university: safeValue((apiCandidate as any).university),
+            graduationYear: (apiCandidate as any).graduationYear || undefined,
+            programmingLanguages: (apiCandidate as any).programmingLanguages ? (typeof (apiCandidate as any).programmingLanguages === 'string' ? (apiCandidate as any).programmingLanguages : JSON.parse((apiCandidate as any).programmingLanguages).join(", ")) : "-",
+            expectedSalary: (apiCandidate as any).expectedSalary || undefined,
+            preferredEmploymentType: safeValue((apiCandidate as any).preferredEmploymentType),
+            availableForRemote: (apiCandidate as any).availableForRemote,
+            availableStartDate: safeValue((apiCandidate as any).availableStartDate),
+            source: safeValue((apiCandidate as any).source),
+            applications: [],
+            currentApplication: undefined,
+            jobTitle: undefined,
+            overscore: null,
+            certificates: []
+          }
+          
+          // Fetch applications for this candidate
+          try {
+            const applicationsResponse = await recruitmentAPI.getApplications({ 
+              page: 0, 
+              limit: 100,
+              candidateId: candidateId
+            })
+            
+            const candidateApplications: Application[] = (applicationsResponse.data || []).map((app: any) => ({
+              applicationId: app.applicationId,
+              candidateId: app.candidateId,
+              jobPostingId: app.jobPostingId,
+              coverLetter: safeValue(app.coverLetter),
+              applicationStatus: app.status === "approved" ? "accepted" : app.status as "pending" | "reviewing" | "interview" | "rejected" | "accepted",
+              appliedAt: app.appliedDate || app.createdAt,
+              updatedAt: app.updatedAt,
+              score: app.screeningScore || app.score || undefined,
+              candidate: transformedCandidate,
+              jobPosting: app.jobPosting || undefined
+            }))
+            
+            setApplications(candidateApplications)
+            
+            // Find current application if applicationId is provided
+            let currentApplication: Application | undefined
+            if (applicationId) {
+              currentApplication = candidateApplications.find(app => 
+                app.applicationId === Number(applicationId)
+              )
+            } else if (candidateApplications.length > 0) {
+              // Default to first application
+              currentApplication = candidateApplications[0]
+            }
+            
+            // Fetch candidate files
+            try {
+              const files = await recruitmentAPI.getCandidateFiles(candidateId)
+              setCandidateFiles(files)
+            } catch (fileError) {
+              console.error("Error fetching candidate files:", fileError)
+              setCandidateFiles([])
+            }
+            
+            setCandidate({
+              ...transformedCandidate,
+              applications: candidateApplications,
+              currentApplication,
+              jobTitle: currentApplication?.jobPosting?.title,
+              overscore: currentApplication?.score || null
+            })
+            
+            if (currentApplication) {
+              setNewStatus(currentApplication.applicationStatus)
+              setSelectedApplicationId(currentApplication.applicationId)
+              setCurrentApplicationStatus(currentApplication.applicationStatus)
+            }
+            
+            // Check if candidate has future interview
+            try {
+              const interviewData = await recruitmentAPI.getInterviewByCandidateId(candidateId);
+              if (interviewData) {
+                const scheduledTime = new Date(interviewData.scheduledAt);
+                const now = new Date();
+                setHasFutureInterview(scheduledTime > now);
+              } else {
+                setHasFutureInterview(false);
+              }
+            } catch (error) {
+              console.log("Error checking future interview:", error);
+              setHasFutureInterview(false);
+            }
+            
+            return // Exit early if API call successful
+          } catch (appError) {
+            console.error("Error fetching applications:", appError)
+            // Continue with candidate data only
+            setApplications([])
+            setCandidate(transformedCandidate)
+            setCandidateFiles([])
+            return
+          }
+        }
+      } catch (candidateError) {
+        console.error("Error fetching candidate by ID:", candidateError)
+        // Continue to fallback mock data if API fails
+      }
+      
+      // Fallback to mock data only if all API calls fail
       const mockCandidate: CandidateDetailData = {
         candidateId: candidateId,
         firstName: "Nguyễn Văn",
@@ -299,56 +438,7 @@ export function CandidateDetailClient() {
         currentApplication: undefined,
         jobTitle: undefined,
         overscore: null,
-        certificates: [
-          {
-            id: "1",
-            name: "AWS Certified Developer Certificate.pdf",
-            url: "https://example.com/certificates/aws-developer.pdf",
-            type: "pdf",
-            size: "2.5 MB",
-            uploadDate: "2024-01-10T10:30:00Z"
-          },
-          {
-            id: "2",
-            name: "React Certification.jpg",
-            url: "https://example.com/certificates/react-cert.jpg",
-            type: "image",
-            size: "1.2 MB",
-            uploadDate: "2024-01-08T14:20:00Z"
-          },
-          {
-            id: "3",
-            name: "TypeScript Course Completion.xlsx",
-            url: "https://example.com/certificates/typescript-course.xlsx",
-            type: "excel",
-            size: "850 KB",
-            uploadDate: "2024-01-05T09:15:00Z"
-          },
-          {
-            id: "4",
-            name: "English Proficiency Test Results.pdf",
-            url: "https://example.com/certificates/english-test.pdf",
-            type: "pdf",
-            size: "1.8 MB",
-            uploadDate: "2024-01-03T16:45:00Z"
-          },
-          {
-            id: "5",
-            name: "Project Portfolio Documentation.docx",
-            url: "https://example.com/certificates/portfolio-docs.docx",
-            type: "document",
-            size: "3.2 MB",
-            uploadDate: "2024-01-01T11:30:00Z"
-          },
-          {
-            id: "6",
-            name: "University Degree Certificate.png",
-            url: "https://example.com/certificates/degree-cert.png",
-            type: "image",
-            size: "2.1 MB",
-            uploadDate: "2023-12-28T13:20:00Z"
-          }
-        ]
+        certificates: []
       }
 
       const mockApplications: Application[] = [
@@ -949,8 +1039,8 @@ export function CandidateDetailClient() {
             </CardContent>
           </Card>
 
-          {/* Certificates & Documents */}
-          {candidate.certificates && candidate.certificates.length > 0 && (
+          {/* Certificates & Documents - Using real data from API */}
+          {candidateFiles && candidateFiles.length > 0 && (
             <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -959,95 +1049,6 @@ export function CandidateDetailClient() {
                 </CardTitle>
                 <CardDescription>
                   Danh sách các chứng chỉ và tài liệu đã nộp
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Horizontal scrollable file list */}
-                  <div className="overflow-x-auto">
-                    <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
-                      {candidate.certificates.map((file) => (
-                        <div
-                          key={file.id}
-                          className="flex-shrink-0 w-64 border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
-                          onClick={() => handleFileClick(file)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
-                              {getFileIcon(file.type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate" title={file.name}>
-                                {file.name}
-                              </h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-muted-foreground">
-                                  {file.size}
-                                </span>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(file.uploadDate)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={(e) => handleFileDownload(file, e)}
-                                >
-                                  <Download className="h-3 w-3 mr-1" />
-                                  Tải
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => handleFileClick(file)}
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  Xem
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* File type summary */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                    {['pdf', 'image', 'excel', 'document'].map((type) => {
-                      const count = candidate.certificates?.filter(f => f.type === type).length || 0
-                      if (count === 0) return null
-                      
-                      return (
-                        <div key={type} className="text-center">
-                          <div className="flex justify-center mb-2">
-                            {getFileIcon(type)}
-                          </div>
-                          <div className="text-sm font-medium">{count} file</div>
-                          <div className="text-xs text-muted-foreground capitalize">{type}</div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Candidate Files from API */}
-          {candidateFiles && candidateFiles.length > 0 && (
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Tài liệu ứng viên
-                </CardTitle>
-                <CardDescription>
-                  Danh sách các tài liệu được tải lên bởi ứng viên
                 </CardDescription>
               </CardHeader>
               <CardContent>

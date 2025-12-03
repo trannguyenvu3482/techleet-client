@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -32,11 +32,12 @@ import {
   CheckCircle2,
   XCircle,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { recruitmentAPI, JobPosting, examinationAPI } from "@/lib/api/recruitment"
 import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
-import { CandidateQuickPreview } from "./candidate-quick-preview"
 import { StatusBadge } from "../shared/status-badge"
 import { ScoreIndicator } from "@/components/ui/score-indicator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -56,6 +57,7 @@ interface CandidateListItem {
 }
 
 export function CandidateListClient() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [candidates, setCandidates] = useState<CandidateListItem[]>([])
   const [jobs, setJobs] = useState<JobPosting[]>([])
@@ -68,8 +70,10 @@ export function CandidateListClient() {
   const [applicationsWithExams, setApplicationsWithExams] = useState<Record<number, 'pending' | 'completed' | null>>({})
   const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
   const [viewMode, setViewMode] = useState<"table" | "card">("table")
-  const [previewCandidateId, setPreviewCandidateId] = useState<number | null>(null)
-  const [previewApplicationId, setPreviewApplicationId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   
   // Get jobId from URL params or search
   const urlJobId = searchParams.get("jobId")
@@ -88,23 +92,17 @@ export function CandidateListClient() {
     try {
       setLoading(true)
       
-      // Mock data for testing when API is not available
-      const mockCandidates: CandidateListItem[] = [
-        
-      ]
+      // Fetch jobs for filter
+      const jobsResponse = await recruitmentAPI.getJobPostings({ page: 0, limit: 100 }).catch(() => ({ data: [], total: 0, totalPages: 0 }))
+      setJobs(jobsResponse.data || [])
 
-      const mockJobs: JobPosting[] = [
-        
-      ]
-
-      // Fetch real data from API if jobId is specified
       let realCandidates: CandidateListItem[] = []
-      console.log("isJobSpecific",isJobSpecific)
+      
       if (isJobSpecific) {
-        try {
-          const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
-          console.log("jobId",jobId)
-          if (jobId) {
+        // Fetch candidates for specific job
+        const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
+        if (jobId) {
+          try {
             // Fetch job detail to detect isTest
             try {
               const jobData = await recruitmentAPI.getJobPostingById(Number(jobId))
@@ -113,30 +111,36 @@ export function CandidateListClient() {
               console.error("Error fetching job detail:", e)
               setCurrentJobIsTest(false)
             }
-            const response = await recruitmentAPI.getApplicationsByJobId(Number(jobId))
-            console.log("response",response)
             
-            if (response) {
-              console.log("response",response)
-              realCandidates = response.data.map((app) => ({
-                candidateId: app.candidateId,
-                fullname: `${app.firstName} ${app.lastName}`,
-                email: app.email,
-                status: app.status,
-                createdAt: app.createdAt,
-                overscore: app.score,
-                applicationId: app.applicationId,
-                jobTitle: undefined // Will be filled by job filter logic
-              }))
+            const response = await recruitmentAPI.getApplicationsByJobId(Number(jobId))
+            
+            if (response && response.data) {
+              realCandidates = response.data.map((app) => {
+                const firstName = app.firstName || ''
+                const lastName = app.lastName || ''
+                const fullname = `${firstName} ${lastName}`.trim() || 'N/A'
+                const email = app.email || ''
+                
+                return {
+                  candidateId: app.candidateId,
+                  fullname: fullname,
+                  email: email,
+                  status: app.status,
+                  createdAt: app.createdAt,
+                  overscore: app.score,
+                  applicationId: app.applicationId,
+                  jobTitle: undefined
+                }
+              })
 
-              // Fetch exams for these applications (to toggle action button)
+              // Fetch exams for these applications
               try {
                 const uniqueAppIds = Array.from(new Set(realCandidates.map(c => c.applicationId).filter(Boolean))) as number[]
                 const results = await Promise.all(uniqueAppIds.map(async (id) => {
                   try {
                     const exams = await examinationAPI.getExaminationsToDo(id)
                     if (Array.isArray(exams) && exams.length > 0) {
-                      const exam = exams[0] // Lấy exam đầu tiên
+                      const exam = exams[0]
                       const status = exam.status
                       if (status === 'pending') {
                         return [id, 'pending'] as [number, 'pending']
@@ -159,60 +163,68 @@ export function CandidateListClient() {
                 setApplicationsWithExams({})
               }
             }
+          } catch (apiError) {
+            console.error("Error fetching real API data:", apiError)
+          }
+        }
+      } else {
+        // Fetch all candidates from applications with pagination
+        try {
+          const applicationsResponse = await recruitmentAPI.getApplications({ 
+            page: currentPage, 
+            limit: pageSize,
+            keyword: searchTerm || undefined,
+          })
+          
+          if (applicationsResponse && applicationsResponse.data) {
+            // Get unique candidates from applications
+            const candidateMap = new Map<number, CandidateListItem>()
+            
+            applicationsResponse.data.forEach((app: any) => {
+              const candidateId = app.candidateId
+              if (!candidateMap.has(candidateId)) {
+                const firstName = app.candidate?.firstName || ''
+                const lastName = app.candidate?.lastName || ''
+                const email = app.candidate?.email || ''
+                const fullname = `${firstName} ${lastName}`.trim() || 'N/A'
+                
+                candidateMap.set(candidateId, {
+                  candidateId: candidateId,
+                  fullname: fullname,
+                  email: email,
+                  status: app.status || 'submitted',
+                  createdAt: app.appliedDate || app.createdAt || app.appliedAt || '',
+                  overscore: null, // No score in general view
+                  applicationId: undefined,
+                  jobTitle: undefined
+                })
+              }
+            })
+            
+            realCandidates = Array.from(candidateMap.values())
+            setTotal(applicationsResponse.total || 0)
+            setTotalPages(Math.ceil((applicationsResponse.total || 0) / pageSize))
           }
         } catch (apiError) {
-          console.error("Error fetching real API data:", apiError)
-          // Continue with mock data only if API fails
+          console.error("Error fetching all candidates:", apiError)
+          setTotal(0)
+          setTotalPages(0)
         }
       }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      if (isJobSpecific) {
-        // Filter candidates by job if jobId is provided
-        const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
-        const filteredMockCandidates = jobId 
-          ? mockCandidates.filter(c => c.jobTitle?.toLowerCase().includes(jobId === "1" ? "frontend" : "backend"))
-          : mockCandidates
-        
-        // Combine mock data with real data (mock first, then real)
-        const combinedCandidates = [...filteredMockCandidates, ...realCandidates]
-        
-        setCandidates(combinedCandidates)
-        setJobs(mockJobs)
-      } else {
-        // Show all candidates without overscore for general view
-        const generalMockCandidates = mockCandidates.map(candidate => ({
-          ...candidate,
-          overscore: null,
-          applicationId: undefined,
-          jobTitle: undefined,
-          // Keep original status for display
-        }))
-        
-        // Combine mock data with real data for general view (also remove overscore from real data)
-        const generalRealCandidates = realCandidates.map(candidate => ({
-          ...candidate,
-          overscore: null,
-          applicationId: undefined,
-          jobTitle: undefined,
-        }))
-        
-        const combinedCandidates = [...generalMockCandidates, ...generalRealCandidates]
-        
-        setCandidates(combinedCandidates)
-        setJobs(mockJobs)
-      }
+      
+      setCandidates(realCandidates)
     } catch (error) {
       console.error("Error fetching data:", error)
-      // Fallback to empty array
       setCandidates([])
       setJobs([])
     } finally {
       setLoading(false)
     }
-  }, [isJobSpecific, urlJobId, jobIdFilter])
+  }, [isJobSpecific, urlJobId, jobIdFilter, currentPage, pageSize, searchTerm])
+
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [searchTerm, jobIdFilter])
 
   useEffect(() => {
     fetchData()
@@ -235,7 +247,7 @@ export function CandidateListClient() {
   }
 
   const formatScore = (score: number | null) => {
-    if (score === null) return "Đang xử lý"
+    if (score === null || score === undefined || isNaN(score)) return "Đang xử lý"
     return `${Math.round(score)}%`
   }
 
@@ -272,11 +284,18 @@ export function CandidateListClient() {
       }
     }
     
-    // Open quick preview instead of navigating
-    setPreviewCandidateId(candidate.candidateId)
+    // Navigate to candidate detail page
+    const jobId = urlJobId || (jobIdFilter !== "all" ? jobIdFilter : null)
+    const params = new URLSearchParams()
     if (candidate.applicationId) {
-      setPreviewApplicationId(candidate.applicationId)
+      params.set("applicationId", candidate.applicationId.toString())
     }
+    if (jobId) {
+      params.set("jobId", jobId)
+    }
+    
+    const queryString = params.toString()
+    router.push(`/recruitment/candidate/detail/${candidate.candidateId}${queryString ? `?${queryString}` : ""}`)
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -358,6 +377,15 @@ export function CandidateListClient() {
     candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const breadcrumbItems = isJobSpecific 
+    ? [
+        { label: "Danh sách việc làm", href: "/recruitment/jobs" },
+        { label: "Ứng viên theo vị trí" }
+      ]
+    : [
+        { label: "Danh sách ứng viên" }
+      ]
+
   if (loading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -432,15 +460,6 @@ export function CandidateListClient() {
     )
   }
 
-  const breadcrumbItems = isJobSpecific 
-    ? [
-        { label: "Danh sách việc làm", href: "/recruitment/jobs" },
-        { label: "Ứng viên theo vị trí" }
-      ]
-    : [
-        { label: "Danh sách ứng viên" }
-      ]
-
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
@@ -473,124 +492,105 @@ export function CandidateListClient() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng ứng viên</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{candidates.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đã sàng lọc</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {candidates.filter(c => c.overscore !== null).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang xử lý</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {candidates.filter(c => c.overscore === null).length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Bộ lọc và tìm kiếm</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm theo tên hoặc email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-            <Select value={jobIdFilter} onValueChange={handleJobFilter}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Lọc theo vị trí tuyển dụng" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả ứng viên</SelectItem>
-                {jobs.map((job) => (
-                  <SelectItem key={job.jobPostingId} value={job.jobPostingId.toString()}>
-                    {job.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value: "createdAt" | "overscore") => setSortBy(value)}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Sắp xếp theo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Ngày tạo</SelectItem>
-                {isJobSpecific && <SelectItem value="overscore">Điểm số</SelectItem>}
-              </SelectContent>
-            </Select>
+      {/* Candidates Table */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Danh sách ứng viên</h2>
+            <p className="text-muted-foreground">
+              {!isJobSpecific && total > 0 
+                ? `Hiển thị ${candidates.length} trong tổng số ${total} kết quả`
+                : `${filteredCandidates.length} ứng viên được tìm thấy${isJobSpecific ? " cho vị trí này" : ""}`
+              }
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isJobSpecific && (
+              <>
+                <span className="text-sm">Hiển thị:</span>
+                <Select 
+                  value={pageSize.toString()} 
+                  onValueChange={(value) => {
+                    setPageSize(Number(value))
+                    setCurrentPage(0)
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
             <Button
-              variant="outline"
-              onClick={() => setSortOrder(sortOrder === "ASC" ? "DESC" : "ASC")}
+              variant={viewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("table")}
             >
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              {sortOrder === "ASC" ? "Tăng dần" : "Giảm dần"}
+              <TableIcon className="mr-2 h-4 w-4" />
+              Bảng
+            </Button>
+            <Button
+              variant={viewMode === "card" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("card")}
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Card
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Candidates Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-          <CardTitle>Danh sách ứng viên</CardTitle>
-          <CardDescription>
-            {filteredCandidates.length} ứng viên được tìm thấy
-            {isJobSpecific && " cho vị trí này"}
-          </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-              >
-                <TableIcon className="mr-2 h-4 w-4" />
-                Bảng
-              </Button>
-              <Button
-                variant={viewMode === "card" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("card")}
-              >
-                <LayoutGrid className="mr-2 h-4 w-4" />
-                Card
-              </Button>
+        {/* Search and Filters */}
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm theo tên hoặc email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+          <Select value={jobIdFilter} onValueChange={handleJobFilter}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Lọc theo vị trí tuyển dụng" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả ứng viên</SelectItem>
+              {jobs.map((job) => (
+                <SelectItem key={job.jobPostingId} value={job.jobPostingId.toString()}>
+                  {job.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(value: "createdAt" | "overscore") => setSortBy(value)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Sắp xếp theo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="createdAt">Ngày tạo</SelectItem>
+              {isJobSpecific && <SelectItem value="overscore">Điểm số</SelectItem>}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => setSortOrder(sortOrder === "ASC" ? "DESC" : "ASC")}
+          >
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            {sortOrder === "ASC" ? "Tăng dần" : "Giảm dần"}
+          </Button>
+        </div>
+
+        <div>
           {viewMode === "table" ? (
           <Table>
             <TableHeader>
@@ -766,7 +766,7 @@ export function CandidateListClient() {
                             <ScoreIndicator 
                               score={candidate.overscore} 
                               size="sm"
-                              variant="bar"
+                              variant="circular"
                             />
                           </div>
                         )}
@@ -799,22 +799,61 @@ export function CandidateListClient() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Quick Preview */}
-      {previewCandidateId && (
-        <CandidateQuickPreview
-          candidateId={previewCandidateId}
-          applicationId={previewApplicationId || undefined}
-          open={!!previewCandidateId}
-          onOpenChange={(open) => {
-            if (!open) {
-              setPreviewCandidateId(null)
-              setPreviewApplicationId(null)
-            }
-          }}
-        />
+      {/* Pagination - Only for general candidate list */}
+      {!isJobSpecific && totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Trang {currentPage + 1} của {totalPages} ({total} kết quả)
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Trước
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = i + Math.max(0, currentPage - 2)
+                    if (pageNum >= totalPages) return null
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    )
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  Sau
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

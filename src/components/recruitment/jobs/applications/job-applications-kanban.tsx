@@ -108,7 +108,7 @@ export function JobApplicationsKanban({
   }
 
   const formatScore = (score: number | null) => {
-    if (score === null) return "Đang xử lý"
+    if (score === null || score === undefined || isNaN(score)) return "Đang xử lý"
     return `${Math.round(score)}%`
   }
 

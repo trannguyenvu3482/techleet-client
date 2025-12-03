@@ -210,35 +210,107 @@ export function JobsListClient() {
       </Card>
 
       {/* Jobs Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Danh sách vị trí</CardTitle>
-              <CardDescription>
-                Hiển thị {jobs.length} trong tổng số {total} kết quả
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Hiển thị:</span>
-              <Select 
-                value={pageSize.toString()} 
-                onValueChange={(value) => setPageSize(parseInt(value))}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Danh sách vị trí</h2>
+            <p className="text-muted-foreground">
+              Hiển thị {jobs.length} trong tổng số {total} kết quả
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Hiển thị:</span>
+            <Select 
+              value={pageSize.toString()} 
+              onValueChange={(value) => setPageSize(parseInt(value))}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm vị trí..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Button onClick={handleSearch}>
+              <Search className="mr-2 h-4 w-4" />
+              Tìm kiếm
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select value={statusFilter} onValueChange={(value) => {
+              setStatusFilter(value)
+              handleFilterChange()
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="draft">Nháp</SelectItem>
+                <SelectItem value="published">Đang tuyển</SelectItem>
+                <SelectItem value="closed">Đã đóng</SelectItem>
+                <SelectItem value="cancelled">Đã hủy</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={employmentTypeFilter} onValueChange={(value) => {
+              setEmploymentTypeFilter(value)
+              handleFilterChange()
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Loại việc làm" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="full-time">Toàn thời gian</SelectItem>
+                <SelectItem value="part-time">Bán thời gian</SelectItem>
+                <SelectItem value="contract">Hợp đồng</SelectItem>
+                <SelectItem value="internship">Thực tập</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={experienceLevelFilter} onValueChange={(value) => {
+              setExperienceLevelFilter(value)
+              handleFilterChange()
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Mức độ kinh nghiệm" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+                <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+                <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+                <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+                <SelectItem value="lead">Lead/Manager</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
           {loading ? (
             <div className="space-y-4">
               {/* Table header skeleton */}
@@ -379,8 +451,8 @@ export function JobsListClient() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (

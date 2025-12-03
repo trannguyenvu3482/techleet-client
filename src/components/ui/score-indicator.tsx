@@ -12,6 +12,7 @@ interface ScoreIndicatorProps {
 }
 
 function getScoreColor(score: number, maxScore: number): string {
+  if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return "text-muted-foreground"
   const percentage = (score / maxScore) * 100
   if (percentage >= 80) return "text-emerald-600"
   if (percentage >= 60) return "text-amber-600"
@@ -20,6 +21,7 @@ function getScoreColor(score: number, maxScore: number): string {
 }
 
 function getScoreGradient(score: number, maxScore: number): string {
+  if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return "from-muted to-muted"
   const percentage = (score / maxScore) * 100
   if (percentage >= 80) return "from-emerald-500 to-emerald-400"
   if (percentage >= 60) return "from-amber-500 to-amber-400"
@@ -28,6 +30,7 @@ function getScoreGradient(score: number, maxScore: number): string {
 }
 
 function getScoreTrackColor(score: number, maxScore: number): string {
+  if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return "stroke-muted"
   const percentage = (score / maxScore) * 100
   if (percentage >= 80) return "stroke-emerald-500"
   if (percentage >= 60) return "stroke-amber-500"
@@ -49,7 +52,7 @@ export function ScoreIndicator({
   variant = "circular",
   className 
 }: ScoreIndicatorProps) {
-  if (score === null || score === undefined) {
+  if (score === null || score === undefined || isNaN(score)) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <div className={cn(

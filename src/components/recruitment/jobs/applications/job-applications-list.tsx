@@ -88,7 +88,7 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
   }
 
   const formatScore = (score: number | null) => {
-    if (score === null) return "Đang xử lý"
+    if (score === null || score === undefined || isNaN(score)) return "Đang xử lý"
     return `${Math.round(score)}%`
   }
 
@@ -315,12 +315,6 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
       {/* Applications Grid */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Danh sách ứng tuyển</h3>
-            <p className="text-sm text-muted-foreground">
-              {filteredApplications.length} trong tổng số {applications.length} ứng tuyển
-            </p>
-          </div>
           <div className="flex items-center gap-2">
             {selectedApplications.length > 0 && (
               <>

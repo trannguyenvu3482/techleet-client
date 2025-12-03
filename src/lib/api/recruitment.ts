@@ -605,7 +605,14 @@ export const recruitmentAPI = {
   async getApplicationById(
     applicationId: number
   ): Promise<{ application: Application; candidate: Candidate }> {
-    return api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
+    const response = await api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
+    // Map screeningScore to score for compatibility
+    if (response && response.application) {
+      response.application.score = response.application.screeningScore !== undefined 
+        ? response.application.screeningScore 
+        : response.application.score;
+    }
+    return response;
   },
 
   async getApplicationsByJobId(jobId: number): Promise<{
@@ -620,7 +627,44 @@ export const recruitmentAPI = {
       score: number | null;
     }>;
   }> {
-    return api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
+    const response = await api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
+    // Map screeningScore to score for compatibility
+    // Backend returns raw data with possible field names: screeningScore, application_screeningScore, or score
+    if (response && response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((app: any) => {
+        // Try multiple possible field names for score
+        const score = app.screeningScore !== undefined && app.screeningScore !== null 
+          ? app.screeningScore 
+          : app.application_screeningScore !== undefined && app.application_screeningScore !== null
+          ? app.application_screeningScore
+          : app.score !== undefined && app.score !== null
+          ? app.score
+          : null;
+        
+        // Try multiple possible field names for candidate info
+        // Raw query returns: candidate_firstName, candidate_lastName, candidate_email
+        // Or nested: candidate.firstName, candidate.lastName, candidate.email
+        const firstName = app.candidate_firstName || app.candidate?.firstName || app.firstName || '';
+        const lastName = app.candidate_lastName || app.candidate?.lastName || app.lastName || '';
+        const email = app.candidate_email || app.candidate?.email || app.email || '';
+        const createdAt = app.application_createdAt || app.application_created_at || app.createdAt || app.created_at || app.appliedDate || app.applied_date || '';
+        const applicationId = app.application_applicationId || app.applicationId || app.application_id;
+        const candidateId = app.application_candidateId || app.candidateId || app.candidate_id;
+        const status = app.application_status || app.status;
+        
+        return {
+          applicationId,
+          candidateId,
+          firstName,
+          lastName,
+          email,
+          status,
+          createdAt,
+          score,
+        };
+      });
+    }
+    return response;
   },
 
   async createApplication(

@@ -297,7 +297,65 @@ export const companyAPI = {
   },
 
   async getPositionsByDepartment(departmentId: number): Promise<Position[]> {
-    return api.get(`/api/v1/company-service/departments/${departmentId}/positions`);
+    // Position entity doesn't have departmentId field in the database
+    // Get positions that are used in job postings of this department
+    try {
+      // Get job postings for this department to find which positions are used
+      const jobPostingsResponse = await api.get<PaginatedResponse<any>>('/api/v1/recruitment-service/job-postings', {
+        page: 0,
+        limit: 100,
+        departmentId: departmentId
+      });
+      
+      // Extract unique positionIds from job postings
+      const positionIds = new Set<number>();
+      (jobPostingsResponse.data || []).forEach((job: any) => {
+        if (job.positionId) {
+          positionIds.add(job.positionId);
+        }
+      });
+      
+      // Get all positions
+      const positionsResponse = await api.get<PaginatedResponse<Position>>('/api/v1/company-service/positions', {
+        page: 0,
+        limit: 100
+      });
+      
+      // If department has job postings, filter positions used in those job postings
+      // Otherwise, return all positions (new department, no job postings yet)
+      let filtered: Position[];
+      if (positionIds.size > 0) {
+        filtered = (positionsResponse.data || []).filter((position: Position) => 
+          positionIds.has(position.positionId)
+        );
+      } else {
+        // No job postings for this department yet, return all positions
+        filtered = positionsResponse.data || [];
+      }
+      
+      console.log('getPositionsByDepartment:', {
+        departmentId,
+        jobPostingsCount: jobPostingsResponse.data?.length || 0,
+        uniquePositionIds: Array.from(positionIds),
+        totalPositions: positionsResponse.data?.length || 0,
+        filteredCount: filtered.length
+      });
+      
+      return filtered;
+    } catch (error) {
+      console.error('Error in getPositionsByDepartment:', error);
+      // Fallback: return all positions if error occurs
+      try {
+        const response = await api.get<PaginatedResponse<Position>>('/api/v1/company-service/positions', {
+          page: 0,
+          limit: 100
+        });
+        return response.data || [];
+      } catch (fallbackError) {
+        console.error('Error in fallback:', fallbackError);
+        return [];
+      }
+    }
   },
 
   // Headquarter Management

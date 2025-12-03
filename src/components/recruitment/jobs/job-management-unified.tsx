@@ -32,6 +32,8 @@ import {
   Trash2,
   X,
   ChevronRight,
+  Clock,
+  Award,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -39,6 +41,7 @@ import {
   JobPosting,
   GetJobPostingsParams,
 } from "@/lib/api/recruitment";
+import { companyAPI, Department, Position } from "@/lib/api/company";
 import { JobApplicationsList } from "./applications/job-applications-list";
 import { toast } from "sonner";
 import { StatusBadge } from "../shared/status-badge";
@@ -53,9 +56,36 @@ export function JobManagementUnified() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState<string>("all");
+  const [experienceLevelFilter, setExperienceLevelFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"info" | "applications">("info");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<number | null>(null);
+  const [departments, setDepartments] = useState<Map<number, string>>(new Map());
+  const [positions, setPositions] = useState<Map<number, string>>(new Map());
+
+  const fetchDepartmentsAndPositions = useCallback(async () => {
+    try {
+      const [deptsResponse, positionsResponse] = await Promise.all([
+        companyAPI.getDepartments({ page: 0, limit: 100 }),
+        companyAPI.getPositions({ page: 0, limit: 100 })
+      ]);
+
+      const deptMap = new Map<number, string>();
+      (deptsResponse.data || []).forEach((dept) => {
+        deptMap.set(dept.departmentId, dept.departmentName);
+      });
+      setDepartments(deptMap);
+
+      const posMap = new Map<number, string>();
+      (positionsResponse.data || []).forEach((pos) => {
+        posMap.set(pos.positionId, pos.positionName);
+      });
+      setPositions(posMap);
+    } catch (error) {
+      console.error("Error fetching departments and positions:", error);
+    }
+  }, []);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -68,6 +98,8 @@ export function JobManagementUnified() {
           statusFilter !== "all"
             ? (statusFilter as "draft" | "published" | "closed")
             : undefined,
+        employmentType: employmentTypeFilter !== "all" ? employmentTypeFilter : undefined,
+        experienceLevel: experienceLevelFilter !== "all" ? experienceLevelFilter : undefined,
         sortBy: "createdAt",
         sortOrder: "DESC",
       };
@@ -83,7 +115,11 @@ export function JobManagementUnified() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, selectedJob]);
+  }, [searchTerm, statusFilter, employmentTypeFilter, experienceLevelFilter, selectedJob]);
+
+  useEffect(() => {
+    fetchDepartmentsAndPositions();
+  }, [fetchDepartmentsAndPositions]);
 
   useEffect(() => {
     fetchJobs();
@@ -128,6 +164,27 @@ export function JobManagementUnified() {
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
+  const getEmploymentTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      "full-time": "Toàn thời gian",
+      "part-time": "Bán thời gian",
+      "contract": "Hợp đồng",
+      "internship": "Thực tập",
+    };
+    return labels[type] || type;
+  };
+
+  const getExperienceLevelLabel = (level: string) => {
+    const labels: Record<string, string> = {
+      "entry": "Mới tốt nghiệp",
+      "junior": "Junior (1-3 năm)",
+      "mid": "Mid-level (3-5 năm)",
+      "senior": "Senior (5+ năm)",
+      "lead": "Lead/Manager",
+    };
+    return labels[level] || level;
+  };
+
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -135,14 +192,16 @@ export function JobManagementUnified() {
       job.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    const matchesEmploymentType = employmentTypeFilter === "all" || job.employmentType === employmentTypeFilter;
+    const matchesExperienceLevel = experienceLevelFilter === "all" || job.experienceLevel === experienceLevelFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesEmploymentType && matchesExperienceLevel;
   });
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-250px)] gap-4">
       {/* Left Sidebar - Jobs List */}
-      <div className="w-full lg:w-1/3 flex flex-col border-r-0 lg:border-r pr-0 lg:pr-4 pb-4 lg:pb-0 border-b lg:border-b-0">
+      <div className="w-full lg:w-1/3 flex flex-col border-r-0 lg:border-r pr-0 lg:pr-4 pb-4 lg:pb-0 border-b lg:border-b-0 min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Danh sách việc làm</h2>
@@ -161,10 +220,14 @@ export function JobManagementUnified() {
               placeholder="Tìm kiếm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && fetchJobs()}
               className="pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(value) => {
+            setStatusFilter(value);
+            fetchJobs();
+          }}>
             <SelectTrigger>
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
@@ -173,6 +236,37 @@ export function JobManagementUnified() {
               <SelectItem value="draft">Nháp</SelectItem>
               <SelectItem value="published">Đang tuyển</SelectItem>
               <SelectItem value="closed">Đã đóng</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={employmentTypeFilter} onValueChange={(value) => {
+            setEmploymentTypeFilter(value);
+            fetchJobs();
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Loại việc làm" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="full-time">Toàn thời gian</SelectItem>
+              <SelectItem value="part-time">Bán thời gian</SelectItem>
+              <SelectItem value="contract">Hợp đồng</SelectItem>
+              <SelectItem value="internship">Thực tập</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={experienceLevelFilter} onValueChange={(value) => {
+            setExperienceLevelFilter(value);
+            fetchJobs();
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Kinh nghiệm" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+              <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+              <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+              <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+              <SelectItem value="lead">Lead/Manager</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -215,8 +309,8 @@ export function JobManagementUnified() {
                   }`}
                   onClick={() => handleJobSelect(job)}
                 >
-                  <CardContent className="">
-                    <div className="flex items-start justify-between gap-2">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-semibold text-xs line-clamp-2 flex-1 leading-tight">
                         {job.title}
                       </h3>
@@ -224,7 +318,7 @@ export function JobManagementUnified() {
                         <StatusBadge status={job.status} type="job" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         <span>{job.applicationCount || 0}</span>
@@ -252,43 +346,53 @@ export function JobManagementUnified() {
         {selectedJob ? (
           <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-hidden">
             {/* Job Header */}
-            <div className="flex items-start justify-between flex-shrink-0">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-2xl font-bold">{selectedJob.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h1 className="text-xl sm:text-2xl font-bold break-words">{selectedJob.title}</h1>
                   <StatusBadge status={selectedJob.status} type="job" />
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {selectedJob.location || "N/A"}
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{selectedJob.location || "N/A"}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
-                    {formatSalary(selectedJob.salaryMin, selectedJob.salaryMax)}
+                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{formatSalary(selectedJob.salaryMin, selectedJob.salaryMax)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {selectedJob.applicationCount || 0} ứng tuyển
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{getEmploymentTypeLabel(selectedJob.employmentType)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{getExperienceLevelLabel(selectedJob.experienceLevel)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>{selectedJob.applicationCount || 0} ứng tuyển</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <Link
                   href={`/recruitment/jobs/edit/${selectedJob.jobPostingId}`}
                 >
-                  <Button variant="outline" size="sm">
-                    <Edit className="mr-2 h-4 w-4" />
-                    Chỉnh sửa
+                  <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                    <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Chỉnh sửa</span>
+                    <span className="sm:hidden">Sửa</span>
                   </Button>
                 </Link>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => openDeleteDialog(selectedJob.jobPostingId)}
+                  className="text-xs sm:text-sm"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Xóa
+                  <Trash2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Xóa</span>
                 </Button>
               </div>
             </div>
@@ -323,27 +427,28 @@ export function JobManagementUnified() {
                     <CardContent className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <Briefcase className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm">
                             <strong>Phòng ban:</strong>{" "}
-                            {selectedJob.departmentId}
+                            {departments.get(selectedJob.departmentId) || `ID: ${selectedJob.departmentId}`}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm">
-                            <strong>Vị trí:</strong> {selectedJob.positionId}
+                            <strong>Vị trí:</strong>{" "}
+                            {positions.get(selectedJob.positionId) || `ID: ${selectedJob.positionId}`}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm">
                             <strong>Địa điểm:</strong>{" "}
                             {selectedJob.location || "N/A"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm">
                             <strong>Mức lương:</strong>{" "}
                             {formatSalary(
@@ -353,10 +458,31 @@ export function JobManagementUnified() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm">
+                            <strong>Loại việc làm:</strong>{" "}
+                            {getEmploymentTypeLabel(selectedJob.employmentType)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Award className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm">
+                            <strong>Kinh nghiệm:</strong>{" "}
+                            {getExperienceLevelLabel(selectedJob.experienceLevel)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-sm">
                             <strong>Hạn nộp:</strong>{" "}
                             {formatDate(selectedJob.applicationDeadline)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm">
+                            <strong>Số lượng tuyển:</strong>{" "}
+                            {selectedJob.vacancies || "N/A"}
                           </span>
                         </div>
                       </div>

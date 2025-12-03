@@ -106,7 +106,9 @@ export function JobForm({ mode, jobId }: JobFormProps) {
   // Fetch positions when department changes
   const fetchPositionsByDepartment = useCallback(async (departmentId: number) => {
     try {
+      console.log('fetchPositionsByDepartment called with departmentId:', departmentId)
       const positionsRes = await companyAPI.getPositionsByDepartment(departmentId)
+      console.log('Positions received:', positionsRes)
       setPositions(positionsRes)
     } catch (error) {
       console.error("Error fetching positions:", error)

@@ -27,13 +27,17 @@ import {
   Briefcase,
   Users,
   FileText,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
 import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
 import { StatusBadge } from "../shared/status-badge"
+import { ScoreIndicator } from "@/components/ui/score-indicator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -61,36 +65,48 @@ export function ApplicationsClient() {
   const [scoreFilter, setScoreFilter] = useState<string>("all")
   const [dateRangeFilter, setDateRangeFilter] = useState<string>("all")
   const [selectedApplications, setSelectedApplications] = useState<number[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
-      const [jobsResponse, allApplications] = await Promise.all([
+      const [jobsResponse, applicationsResponse] = await Promise.all([
         recruitmentAPI.getJobPostings({ page: 0, limit: 100 }).catch(() => ({ data: [], total: 0, totalPages: 0 })),
-        Promise.all(
-          Array.from({ length: 10 }, (_, i) => 
-            recruitmentAPI.getApplicationsByJobId(i + 1).catch(() => ({ data: [] }))
-          )
-        )
+        recruitmentAPI.getApplications({ 
+          page: currentPage, 
+          limit: pageSize,
+          keyword: searchTerm || undefined,
+          jobPostingId: jobFilter !== "all" ? Number(jobFilter) : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        }).catch(() => ({ data: [], total: 0, totalPages: 0 }))
       ])
 
       setJobs(jobsResponse.data || [])
       
-      const allApps: Application[] = []
-      allApplications.forEach((response, index) => {
-        if (response && response.data) {
-          const job = jobsResponse.data.find(j => j.jobPostingId === index + 1)
-          response.data.forEach((app: any) => {
-            allApps.push({
-              ...app,
-              jobTitle: job?.title
-            })
-          })
+      // Map applications with job titles and candidate info
+      const allApps: Application[] = (applicationsResponse.data || []).map((app: any) => {
+        const job = app.jobPosting || jobsResponse.data.find(j => j.jobPostingId === app.jobPostingId)
+        return {
+          applicationId: app.applicationId,
+          candidateId: app.candidateId,
+          jobPostingId: app.jobPostingId,
+          firstName: app.candidate?.firstName || '',
+          lastName: app.candidate?.lastName || '',
+          email: app.candidate?.email || '',
+          status: app.status || 'submitted',
+          createdAt: app.appliedDate || app.createdAt || '',
+          score: app.screeningScore !== undefined && app.screeningScore !== null ? app.screeningScore : null,
+          jobTitle: job?.title || ''
         }
       })
       
       setApplications(allApps)
+      setTotal(applicationsResponse.total || 0)
+      setTotalPages(Math.ceil((applicationsResponse.total || 0) / pageSize))
     } catch (error) {
       console.error("Error fetching applications:", error)
       toast.error("Không thể tải danh sách ứng tuyển")
@@ -98,7 +114,11 @@ export function ApplicationsClient() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentPage, pageSize, searchTerm, jobFilter, statusFilter])
+
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [searchTerm, jobFilter, statusFilter, scoreFilter, dateRangeFilter])
 
   useEffect(() => {
     fetchData()
@@ -110,30 +130,12 @@ export function ApplicationsClient() {
   }
 
   const formatScore = (score: number | null) => {
-    if (score === null) return "Đang xử lý"
+    if (score === null || score === undefined || isNaN(score)) return "Đang xử lý"
     return `${Math.round(score)}%`
   }
 
+  // Client-side filtering for score and date range (since API handles search, job, status)
   const filteredApplications = applications.filter((app) => {
-    const matchesSearch = 
-      searchTerm === "" ||
-      `${app.firstName} ${app.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesJob = 
-      jobFilter === "all" ||
-      app.jobPostingId.toString() === jobFilter
-    
-    const matchesStatus = 
-      statusFilter === "all" ||
-      (statusFilter === "pending" && (app.status === "submitted" || app.status === "pending" || app.status === "screening")) ||
-      (statusFilter === "interviewing" && (app.status === "interviewing" || app.status === "interview_scheduled")) ||
-      (statusFilter === "offer" && app.status === "offer") ||
-      (statusFilter === "hired" && app.status === "hired") ||
-      (statusFilter === "rejected" && (app.status === "rejected" || app.status === "screening_failed" || app.status === "failed_exam")) ||
-      app.status === statusFilter
-    
     const matchesScore =
       scoreFilter === "all" ||
       (scoreFilter === "high" && app.score !== null && app.score >= 80) ||
@@ -160,7 +162,7 @@ export function ApplicationsClient() {
       }
     })()
     
-    return matchesSearch && matchesJob && matchesStatus && matchesScore && matchesDateRange
+    return matchesScore && matchesDateRange
   })
 
   const handleSelectAll = (checked: boolean) => {
@@ -299,62 +301,28 @@ export function ApplicationsClient() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng đơn</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{applications.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang xử lý</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {applications.filter(app => app.status === "submitted" || app.status === "pending" || app.status === "screening").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Phỏng vấn</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {applications.filter(app => app.status === "interviewing" || app.status === "interview_scheduled").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đã tuyển</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {applications.filter(app => app.status === "hired").length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Bộ lọc và tìm kiếm</CardTitle>
-              <CardDescription>
-                Tìm kiếm và lọc ứng tuyển theo tiêu chí
-              </CardDescription>
-            </div>
+      {/* Applications Table */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Hiển thị:</span>
+            <Select 
+              value={pageSize.toString()} 
+              onValueChange={(value) => {
+                setPageSize(Number(value))
+                setCurrentPage(0)
+              }}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="mr-2 h-4 w-4" />
@@ -362,83 +330,74 @@ export function ApplicationsClient() {
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm theo tên, email, vị trí..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={jobFilter} onValueChange={setJobFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Vị trí" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả vị trí</SelectItem>
-                {jobs.map((job) => (
-                  <SelectItem key={job.jobPostingId} value={job.jobPostingId.toString()}>
-                    {job.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="pending">Đang xử lý</SelectItem>
-                <SelectItem value="interviewing">Phỏng vấn</SelectItem>
-                <SelectItem value="offer">Đề nghị</SelectItem>
-                <SelectItem value="hired">Đã tuyển</SelectItem>
-                <SelectItem value="rejected">Từ chối</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={scoreFilter} onValueChange={setScoreFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Điểm số" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả điểm số</SelectItem>
-                <SelectItem value="high">Cao (≥80%)</SelectItem>
-                <SelectItem value="medium">Trung bình (60-79%)</SelectItem>
-                <SelectItem value="low">Thấp (&lt;60%)</SelectItem>
-                <SelectItem value="pending">Đang xử lý</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Thời gian" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả thời gian</SelectItem>
-                <SelectItem value="today">Hôm nay</SelectItem>
-                <SelectItem value="week">7 ngày qua</SelectItem>
-                <SelectItem value="month">30 ngày qua</SelectItem>
-                <SelectItem value="quarter">90 ngày qua</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Applications Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách ứng tuyển</CardTitle>
-          <CardDescription>
-            {filteredApplications.length} trong tổng số {applications.length} ứng tuyển
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Search and Filters */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm theo tên, email, vị trí..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Select value={jobFilter} onValueChange={setJobFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vị trí" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả vị trí</SelectItem>
+              {jobs.map((job) => (
+                <SelectItem key={job.jobPostingId} value={job.jobPostingId.toString()}>
+                  {job.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="pending">Đang xử lý</SelectItem>
+              <SelectItem value="interviewing">Phỏng vấn</SelectItem>
+              <SelectItem value="offer">Đề nghị</SelectItem>
+              <SelectItem value="hired">Đã tuyển</SelectItem>
+              <SelectItem value="rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={scoreFilter} onValueChange={setScoreFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Điểm số" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả điểm số</SelectItem>
+              <SelectItem value="high">Cao (≥80%)</SelectItem>
+              <SelectItem value="medium">Trung bình (60-79%)</SelectItem>
+              <SelectItem value="low">Thấp (&lt;60%)</SelectItem>
+              <SelectItem value="pending">Đang xử lý</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Thời gian" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả thời gian</SelectItem>
+              <SelectItem value="today">Hôm nay</SelectItem>
+              <SelectItem value="week">7 ngày qua</SelectItem>
+              <SelectItem value="month">30 ngày qua</SelectItem>
+              <SelectItem value="quarter">90 ngày qua</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
           {filteredApplications.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -508,14 +467,12 @@ export function ApplicationsClient() {
                       <StatusBadge status={app.status} type="application" />
                     </TableCell>
                     <TableCell>
-                      {app.score !== null ? (
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          <span>{formatScore(app.score)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">Đang xử lý</span>
-                      )}
+                      <ScoreIndicator 
+                        score={app.score} 
+                        size="sm" 
+                        showLabel={true}
+                        variant="circular"
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -538,8 +495,8 @@ export function ApplicationsClient() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
