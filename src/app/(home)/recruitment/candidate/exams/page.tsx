@@ -1,7 +1,7 @@
 "use client"
 
 import { PageWrapper } from "@/components/layout/page-wrapper"
-import CandidateExamsClient from "@/components/recruitment/candidate-exams-client"
+import CandidateExamsClient from "@/components/recruitment/candidates/exams/candidate-exams-client"
 
 export default function CandidateExamsPage() {
   return (

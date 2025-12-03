@@ -27,11 +27,15 @@ import {
   Filter,
   X,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  Columns
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { recruitmentAPI } from "@/lib/api/recruitment"
 import { JobApplicationsStats } from "./job-applications-stats"
+import { JobApplicationsKanban } from "./job-applications-kanban"
+import { StatusBadge } from "../../shared/status-badge"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -57,7 +61,8 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [scoreFilter, setScoreFilter] = useState<string>("all")
-  const [viewMode, setViewMode] = useState<"card" | "table">("card")
+  const [viewMode, setViewMode] = useState<"card" | "table" | "kanban">("kanban")
+  const [selectedApplications, setSelectedApplications] = useState<number[]>([])
 
   const fetchApplications = useCallback(async () => {
     try {
@@ -77,43 +82,13 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
     fetchApplications()
   }, [fetchApplications])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "submitted":
-      case "pending":
-        return <Badge variant="secondary">Đã nộp</Badge>
-      case "screening":
-        return <Badge variant="default">Đang sàng lọc</Badge>
-      case "screening_passed":
-        return <Badge variant="default">Đã qua sàng lọc</Badge>
-      case "screening_failed":
-        return <Badge variant="destructive">Rớt sàng lọc</Badge>
-      case "passed_exam":
-        return <Badge variant="default">Đã đậu bài thi</Badge>
-      case "failed_exam":
-        return <Badge variant="destructive">Rớt bài thi</Badge>
-      case "interviewing":
-      case "interview_scheduled":
-        return <Badge variant="default">Phỏng vấn</Badge>
-      case "offer":
-        return <Badge variant="default">Đề nghị</Badge>
-      case "hired":
-        return <Badge variant="default" className="bg-green-600">Đã tuyển</Badge>
-      case "rejected":
-        return <Badge variant="destructive">Từ chối</Badge>
-      case "withdrawn":
-        return <Badge variant="outline">Rút lui</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN")
   }
 
   const formatScore = (score: number | null) => {
-    if (score === null) return "Đang xử lý"
+    if (score === null || score === undefined || isNaN(score)) return "Đang xử lý"
     return `${Math.round(score)}%`
   }
 
@@ -192,6 +167,65 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
   const handleScheduleInterview = (e: React.MouseEvent, candidateId: number, applicationId: number) => {
     e.stopPropagation()
     router.push(`/recruitment/candidate/detail/${candidateId}?applicationId=${applicationId}&jobId=${jobId}&action=schedule`)
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedApplications(filteredApplications.map(app => app.applicationId))
+    } else {
+      setSelectedApplications([])
+    }
+  }
+
+  const handleSelectApplication = (applicationId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedApplications([...selectedApplications, applicationId])
+    } else {
+      setSelectedApplications(selectedApplications.filter(id => id !== applicationId))
+    }
+  }
+
+  const handleBulkApprove = async () => {
+    if (selectedApplications.length === 0) return
+    if (!confirm(`Bạn có chắc chắn muốn duyệt ${selectedApplications.length} ứng tuyển?`)) return
+
+    try {
+      await Promise.all(
+        selectedApplications.map(id =>
+          recruitmentAPI.updateApplication(id, { applicationStatus: "interview" })
+        )
+      )
+      toast.success(`Đã duyệt ${selectedApplications.length} ứng tuyển`)
+      setSelectedApplications([])
+      fetchApplications()
+    } catch (error) {
+      console.error("Error bulk approving:", error)
+      toast.error("Không thể duyệt một số ứng tuyển")
+    }
+  }
+
+  const handleBulkReject = async () => {
+    if (selectedApplications.length === 0) return
+    if (!confirm(`Bạn có chắc chắn muốn từ chối ${selectedApplications.length} ứng tuyển?`)) return
+
+    try {
+      await Promise.all(
+        selectedApplications.map(id =>
+          recruitmentAPI.updateApplication(id, { applicationStatus: "rejected" })
+        )
+      )
+      toast.success(`Đã từ chối ${selectedApplications.length} ứng tuyển`)
+      setSelectedApplications([])
+      fetchApplications()
+    } catch (error) {
+      console.error("Error bulk rejecting:", error)
+      toast.error("Không thể từ chối một số ứng tuyển")
+    }
+  }
+
+  const handleBulkScheduleInterview = async () => {
+    if (selectedApplications.length === 0) return
+    toast.info("Vui lòng chọn từng ứng viên để lên lịch phỏng vấn")
   }
 
   const clearFilters = () => {
@@ -281,13 +315,31 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
       {/* Applications Grid */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Danh sách ứng tuyển</h3>
-            <p className="text-sm text-muted-foreground">
-              {filteredApplications.length} trong tổng số {applications.length} ứng tuyển
-            </p>
-          </div>
           <div className="flex items-center gap-2">
+            {selectedApplications.length > 0 && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleBulkApprove}>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Duyệt ({selectedApplications.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleBulkReject}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Từ chối ({selectedApplications.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleBulkScheduleInterview}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Lên lịch PV ({selectedApplications.length})
+                </Button>
+              </>
+            )}
+            <Button
+              variant={viewMode === "kanban" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("kanban")}
+            >
+              <Columns className="mr-2 h-4 w-4" />
+              Kanban
+            </Button>
             <Button
               variant={viewMode === "card" ? "default" : "outline"}
               size="sm"
@@ -319,14 +371,29 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
               </p>
             </CardContent>
           </Card>
+        ) : viewMode === "kanban" ? (
+          <JobApplicationsKanban
+            applications={filteredApplications}
+            onApplicationUpdate={fetchApplications}
+            jobId={jobId}
+          />
         ) : viewMode === "card" ? (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredApplications.map((app) => (
               <Card 
                 key={app.applicationId}
-                className="cursor-pointer transition-all hover:shadow-lg hover:border-primary"
+                className="cursor-pointer transition-all hover:shadow-lg hover:border-primary relative"
                 onClick={() => handleViewDetail(app.candidateId, app.applicationId)}
               >
+                <div 
+                  className="absolute top-4 right-4 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={selectedApplications.includes(app.applicationId)}
+                    onCheckedChange={(checked) => handleSelectApplication(app.applicationId, checked as boolean)}
+                  />
+                </div>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2 overflow-hidden">
                     <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
@@ -348,7 +415,7 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
                       </div>
                     </div>
                     <div className="flex-shrink-0 ml-2">
-                      {getStatusBadge(app.status)}
+                      <StatusBadge status={app.status} type="application" />
                     </div>
                   </div>
                 </CardHeader>
@@ -424,6 +491,12 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedApplications.length === filteredApplications.length && filteredApplications.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Mã</TableHead>
                     <TableHead>Họ tên</TableHead>
                     <TableHead>Email</TableHead>
@@ -440,6 +513,12 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleViewDetail(app.candidateId, app.applicationId)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedApplications.includes(app.applicationId)}
+                          onCheckedChange={(checked) => handleSelectApplication(app.applicationId, checked as boolean)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {app.applicationId}
                       </TableCell>
@@ -453,7 +532,7 @@ export function JobApplicationsList({ jobId }: JobApplicationsListProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getStatusBadge(app.status)}
+                        <StatusBadge status={app.status} type="application" />
                       </TableCell>
                       <TableCell>
                         {app.score !== null ? (

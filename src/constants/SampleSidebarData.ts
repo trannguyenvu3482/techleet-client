@@ -47,6 +47,10 @@ export const sidebarData = {
       icon: SquareTerminal,
       items: [
         {
+          title: "Dashboard",
+          url: "/recruitment",
+        },
+        {
           title: "Tin tuyển dụng",
           url: "/recruitment/jobs",
         },

@@ -32,6 +32,11 @@ export interface SessionContext {
   };
 }
 
+export interface PageContext {
+  page: 'job-create' | 'job-edit' | 'general';
+  formData?: Record<string, any>;
+}
+
 export interface ChatRequest {
   message: string;
   sessionId?: string;
@@ -40,6 +45,7 @@ export interface ChatRequest {
     parameters: Record<string, unknown>;
     confirmed: boolean;
   };
+  pageContext?: PageContext;
 }
 
 export interface ChatResponseSource {
@@ -82,4 +88,5 @@ export interface ChatbotState {
     parameters: Record<string, unknown>;
     message: string;
   };
+  pendingFormFill?: any;
 }

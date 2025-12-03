@@ -136,46 +136,35 @@ export function QuestionsManager() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lọc và tìm kiếm</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tìm kiếm</Label>
-              <Input
-                placeholder="Nhập từ khóa tìm kiếm..."
-                value={searchText}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Độ khó</Label>
-              <Select value={difficultyFilter || "all"} onValueChange={(val) => { setDifficultyFilter(val === "all" ? "" : val); setPage(0); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tất cả" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="easy">Dễ</SelectItem>
-                  <SelectItem value="medium">Trung bình</SelectItem>
-                  <SelectItem value="hard">Khó</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách câu hỏi</CardTitle>
-          <CardDescription>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Danh sách câu hỏi</h2>
+          <p className="text-muted-foreground">
             {total} câu hỏi trong hệ thống
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            placeholder="Nhập từ khóa tìm kiếm..."
+            value={searchText}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+          <Select value={difficultyFilter || "all"} onValueChange={(val) => { setDifficultyFilter(val === "all" ? "" : val); setPage(0); }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Tất cả" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="easy">Dễ</SelectItem>
+              <SelectItem value="medium">Trung bình</SelectItem>
+              <SelectItem value="hard">Khó</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -236,7 +225,7 @@ export function QuestionsManager() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
+        </div>
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3">
             <div className="text-sm text-muted-foreground">
@@ -262,7 +251,7 @@ export function QuestionsManager() {
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="w-[95vw] max-w-[1200px]">

@@ -43,8 +43,13 @@ import {
 import Link from "next/link"
 import { recruitmentAPI, Application, Candidate, CandidateFile } from "@/lib/api/recruitment"
 import CreateInterviewModal from "@/app/(home)/recruitment/candidate/detail/[candidateId]/create-interview-modal"
-import { ApproveOfferDialog } from "@/components/recruitment/interview-notes/approve-offer-dialog"
-import { RejectApplicationDialog } from "@/components/recruitment/interview-notes/reject-application-dialog"
+import { ApproveOfferDialog } from "../../interviews/notes/approve-offer-dialog"
+import { RejectApplicationDialog } from "../../interviews/notes/reject-application-dialog"
+import { RecruitmentBreadcrumb } from "../../shared/recruitment-breadcrumb"
+import { StatusBadge } from "../../shared/status-badge"
+import { ScoreIndicator } from "@/components/ui/score-indicator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { toast } from "sonner"
 
 interface CertificateFile {
@@ -249,7 +254,146 @@ export function CandidateDetailClient() {
         }
       }
       
-      // Fallback to mock data
+      // Try to fetch candidate by ID if no applicationId provided
+      try {
+        const apiCandidate = await recruitmentAPI.getCandidateById(candidateId)
+        
+        if (apiCandidate) {
+          // Transform API data to match our interface
+          const transformedCandidate: CandidateDetailData = {
+            candidateId: apiCandidate.candidateId,
+            firstName: safeValue(apiCandidate.firstName),
+            lastName: safeValue(apiCandidate.lastName),
+            email: safeValue(apiCandidate.email),
+            phoneNumber: safeValue(apiCandidate.phoneNumber),
+            address: safeValue(apiCandidate.address),
+            city: safeValue(apiCandidate.city),
+            postalCode: safeValue(apiCandidate.postalCode),
+            education: safeValue(apiCandidate.education),
+            workExperience: safeValue(apiCandidate.workExperience),
+            skills: safeValue(apiCandidate.skills),
+            certifications: safeValue(apiCandidate.certifications),
+            portfolioUrl: safeValue(apiCandidate.portfolioUrl),
+            linkedinUrl: safeValue(apiCandidate.linkedinUrl),
+            resumeUrl: safeValue(apiCandidate.resumeUrl),
+            createdAt: apiCandidate.createdAt,
+            updatedAt: apiCandidate.updatedAt,
+            isActive: apiCandidate.isActive,
+            // Additional fields - try to get from extended API response
+            birthDate: safeValue((apiCandidate as any).birthDate || apiCandidate.dateOfBirth),
+            gender: (apiCandidate as any).gender === "Male" ? true : (apiCandidate as any).gender === "Female" ? false : undefined,
+            githubUrl: safeValue((apiCandidate as any).githubUrl),
+            status: safeValue((apiCandidate as any).status),
+            appliedDate: safeValue((apiCandidate as any).appliedDate),
+            summary: safeValue((apiCandidate as any).summary),
+            yearsOfExperience: (apiCandidate as any).yearsOfExperience || 0,
+            currentJobTitle: safeValue((apiCandidate as any).currentJobTitle),
+            currentCompany: safeValue((apiCandidate as any).currentCompany),
+            educationLevel: safeValue((apiCandidate as any).educationLevel),
+            fieldOfStudy: safeValue((apiCandidate as any).fieldOfStudy),
+            university: safeValue((apiCandidate as any).university),
+            graduationYear: (apiCandidate as any).graduationYear || undefined,
+            programmingLanguages: (apiCandidate as any).programmingLanguages ? (typeof (apiCandidate as any).programmingLanguages === 'string' ? (apiCandidate as any).programmingLanguages : JSON.parse((apiCandidate as any).programmingLanguages).join(", ")) : "-",
+            expectedSalary: (apiCandidate as any).expectedSalary || undefined,
+            preferredEmploymentType: safeValue((apiCandidate as any).preferredEmploymentType),
+            availableForRemote: (apiCandidate as any).availableForRemote,
+            availableStartDate: safeValue((apiCandidate as any).availableStartDate),
+            source: safeValue((apiCandidate as any).source),
+            applications: [],
+            currentApplication: undefined,
+            jobTitle: undefined,
+            overscore: null,
+            certificates: []
+          }
+          
+          // Fetch applications for this candidate
+          try {
+            const applicationsResponse = await recruitmentAPI.getApplications({ 
+              page: 0, 
+              limit: 100,
+              candidateId: candidateId
+            })
+            
+            const candidateApplications: Application[] = (applicationsResponse.data || []).map((app: any) => ({
+              applicationId: app.applicationId,
+              candidateId: app.candidateId,
+              jobPostingId: app.jobPostingId,
+              coverLetter: safeValue(app.coverLetter),
+              applicationStatus: app.status === "approved" ? "accepted" : app.status as "pending" | "reviewing" | "interview" | "rejected" | "accepted",
+              appliedAt: app.appliedDate || app.createdAt,
+              updatedAt: app.updatedAt,
+              score: app.screeningScore || app.score || undefined,
+              candidate: transformedCandidate,
+              jobPosting: app.jobPosting || undefined
+            }))
+            
+            setApplications(candidateApplications)
+            
+            // Find current application if applicationId is provided
+            let currentApplication: Application | undefined
+            if (applicationId) {
+              currentApplication = candidateApplications.find(app => 
+                app.applicationId === Number(applicationId)
+              )
+            } else if (candidateApplications.length > 0) {
+              // Default to first application
+              currentApplication = candidateApplications[0]
+            }
+            
+            // Fetch candidate files
+            try {
+              const files = await recruitmentAPI.getCandidateFiles(candidateId)
+              setCandidateFiles(files)
+            } catch (fileError) {
+              console.error("Error fetching candidate files:", fileError)
+              setCandidateFiles([])
+            }
+            
+            setCandidate({
+              ...transformedCandidate,
+              applications: candidateApplications,
+              currentApplication,
+              jobTitle: currentApplication?.jobPosting?.title,
+              overscore: currentApplication?.score || null
+            })
+            
+            if (currentApplication) {
+              setNewStatus(currentApplication.applicationStatus)
+              setSelectedApplicationId(currentApplication.applicationId)
+              setCurrentApplicationStatus(currentApplication.applicationStatus)
+            }
+            
+            // Check if candidate has future interview
+            try {
+              const interviewData = await recruitmentAPI.getInterviewByCandidateId(candidateId);
+              if (interviewData) {
+                const scheduledTime = new Date(interviewData.scheduledAt);
+                const now = new Date();
+                setHasFutureInterview(scheduledTime > now);
+              } else {
+                setHasFutureInterview(false);
+              }
+            } catch (error) {
+              console.log("Error checking future interview:", error);
+              setHasFutureInterview(false);
+            }
+            
+            return // Exit early if API call successful
+          } catch (appError) {
+            console.error("Error fetching applications:", appError)
+            // Continue with candidate data only
+            setApplications([])
+            setCandidate(transformedCandidate)
+            setCandidateFiles([])
+            return
+          }
+        }
+      } catch (candidateError) {
+        console.error("Error fetching candidate by ID:", candidateError)
+        // Continue to fallback mock data if API fails
+      }
+      
+      // Fallback to mock data only if all API calls fail
       const mockCandidate: CandidateDetailData = {
         candidateId: candidateId,
         firstName: "Nguyễn Văn",
@@ -294,56 +438,7 @@ export function CandidateDetailClient() {
         currentApplication: undefined,
         jobTitle: undefined,
         overscore: null,
-        certificates: [
-          {
-            id: "1",
-            name: "AWS Certified Developer Certificate.pdf",
-            url: "https://example.com/certificates/aws-developer.pdf",
-            type: "pdf",
-            size: "2.5 MB",
-            uploadDate: "2024-01-10T10:30:00Z"
-          },
-          {
-            id: "2",
-            name: "React Certification.jpg",
-            url: "https://example.com/certificates/react-cert.jpg",
-            type: "image",
-            size: "1.2 MB",
-            uploadDate: "2024-01-08T14:20:00Z"
-          },
-          {
-            id: "3",
-            name: "TypeScript Course Completion.xlsx",
-            url: "https://example.com/certificates/typescript-course.xlsx",
-            type: "excel",
-            size: "850 KB",
-            uploadDate: "2024-01-05T09:15:00Z"
-          },
-          {
-            id: "4",
-            name: "English Proficiency Test Results.pdf",
-            url: "https://example.com/certificates/english-test.pdf",
-            type: "pdf",
-            size: "1.8 MB",
-            uploadDate: "2024-01-03T16:45:00Z"
-          },
-          {
-            id: "5",
-            name: "Project Portfolio Documentation.docx",
-            url: "https://example.com/certificates/portfolio-docs.docx",
-            type: "document",
-            size: "3.2 MB",
-            uploadDate: "2024-01-01T11:30:00Z"
-          },
-          {
-            id: "6",
-            name: "University Degree Certificate.png",
-            url: "https://example.com/certificates/degree-cert.png",
-            type: "image",
-            size: "2.1 MB",
-            uploadDate: "2023-12-28T13:20:00Z"
-          }
-        ]
+        certificates: []
       }
 
       const mockApplications: Application[] = [
@@ -371,10 +466,6 @@ export function CandidateDetailClient() {
             location: "Ho Chi Minh City",
             employmentType: "Full-time",
             experienceLevel: "Mid-level",
-            skills: "React, TypeScript, JavaScript",
-            minExperience: 3,
-            maxExperience: 5,
-            educationLevel: "Bachelor",
             departmentId: 1,
             positionId: 1,
             hiringManagerId: 1,
@@ -410,10 +501,6 @@ export function CandidateDetailClient() {
             location: "Ha Noi",
             employmentType: "Full-time",
             experienceLevel: "Senior",
-            skills: "Node.js, Python, PostgreSQL",
-            minExperience: 2,
-            maxExperience: 6,
-            educationLevel: "Bachelor",
             departmentId: 2,
             positionId: 2,
             hiringManagerId: 2,
@@ -489,28 +576,6 @@ export function CandidateDetailClient() {
     }
   }, [candidateId, applicationId, fetchData])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return <Badge variant="secondary">Đã nộp</Badge>
-      case "screening":
-        return <Badge variant="default">Đang sàng lọc</Badge>
-      case "interviewing":
-        return <Badge variant="default">Phỏng vấn</Badge>
-      case "offer":
-        return <Badge variant="default">Đề nghị</Badge>
-      case "hired":
-        return <Badge variant="default">Đã tuyển</Badge>
-      case "rejected":
-        return <Badge variant="destructive">Từ chối</Badge>
-      case "withdrawn":
-        return <Badge variant="outline">Rút lui</Badge>
-      case "new":
-        return <Badge variant="secondary">Mới</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
 
   const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString("vi-VN")
@@ -595,9 +660,11 @@ export function CandidateDetailClient() {
         applicationStatus: newStatus === "approved" ? "accepted" : newStatus as "pending" | "reviewing" | "interview" | "rejected" | "accepted"
       })
       setIsEditingStatus(false)
+      toast.success("Đã cập nhật trạng thái ứng viên")
       fetchData() // Refresh data
     } catch (error) {
       console.error("Error updating status:", error)
+      toast.error("Không thể cập nhật trạng thái")
     }
   }
 
@@ -632,26 +699,99 @@ export function CandidateDetailClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Breadcrumb skeleton */}
+        <Skeleton className="h-4 w-64" />
+        
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-24" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Main content skeletons */}
+          <div className="md:col-span-2 space-y-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 flex-1" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Sidebar skeletons */}
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!candidate) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Không tìm thấy thông tin ứng viên</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <EmptyState
+          icon="users"
+          title="Không tìm thấy ứng viên"
+          description="Ứng viên không tồn tại hoặc đã bị xóa khỏi hệ thống."
+          action={{
+            label: "Quay lại danh sách",
+            onClick: () => router.push("/recruitment/candidate/list")
+          }}
+        />
       </div>
     )
   }
 
+  const jobId = searchParams.get("jobId")
+  const breadcrumbItems = [
+    { label: "Danh sách ứng viên", href: "/recruitment/candidate/list" },
+    ...(jobId ? [{ label: "Ứng viên theo vị trí", href: `/recruitment/candidate/list?jobId=${jobId}` }] : []),
+    { label: `${candidate.firstName} ${candidate.lastName}` },
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
+      {/* Breadcrumbs */}
+      <RecruitmentBreadcrumb items={breadcrumbItems} />
+
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={`/recruitment/candidate/list${searchParams.get("jobId") ? `?jobId=${searchParams.get("jobId")}` : ""}`}>
+          <Link href={`/recruitment/candidate/list${jobId ? `?jobId=${jobId}` : ""}`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại
@@ -681,7 +821,7 @@ export function CandidateDetailClient() {
         {/* Main Content */}
         <div className="md:col-span-2 space-y-6">
           {/* Personal Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
@@ -776,7 +916,7 @@ export function CandidateDetailClient() {
           </Card>
 
           {/* Professional Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
@@ -862,7 +1002,7 @@ export function CandidateDetailClient() {
           </Card>
 
           {/* Education Information */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
@@ -899,9 +1039,9 @@ export function CandidateDetailClient() {
             </CardContent>
           </Card>
 
-          {/* Certificates & Documents */}
-          {candidate.certificates && candidate.certificates.length > 0 && (
-            <Card>
+          {/* Certificates & Documents - Using real data from API */}
+          {candidateFiles && candidateFiles.length > 0 && (
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5" />
@@ -909,95 +1049,6 @@ export function CandidateDetailClient() {
                 </CardTitle>
                 <CardDescription>
                   Danh sách các chứng chỉ và tài liệu đã nộp
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Horizontal scrollable file list */}
-                  <div className="overflow-x-auto">
-                    <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
-                      {candidate.certificates.map((file) => (
-                        <div
-                          key={file.id}
-                          className="flex-shrink-0 w-64 border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
-                          onClick={() => handleFileClick(file)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
-                              {getFileIcon(file.type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate" title={file.name}>
-                                {file.name}
-                              </h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-muted-foreground">
-                                  {file.size}
-                                </span>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(file.uploadDate)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={(e) => handleFileDownload(file, e)}
-                                >
-                                  <Download className="h-3 w-3 mr-1" />
-                                  Tải
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => handleFileClick(file)}
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  Xem
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* File type summary */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                    {['pdf', 'image', 'excel', 'document'].map((type) => {
-                      const count = candidate.certificates?.filter(f => f.type === type).length || 0
-                      if (count === 0) return null
-                      
-                      return (
-                        <div key={type} className="text-center">
-                          <div className="flex justify-center mb-2">
-                            {getFileIcon(type)}
-                          </div>
-                          <div className="text-sm font-medium">{count} file</div>
-                          <div className="text-xs text-muted-foreground capitalize">{type}</div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Candidate Files from API */}
-          {candidateFiles && candidateFiles.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Tài liệu ứng viên
-                </CardTitle>
-                <CardDescription>
-                  Danh sách các tài liệu được tải lên bởi ứng viên
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1090,7 +1141,7 @@ export function CandidateDetailClient() {
 
           {/* Application History */}
           {applications.length > 0 && (
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
@@ -1117,12 +1168,13 @@ export function CandidateDetailClient() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(application.applicationStatus)}
-                          {application.score && (
-                            <div className={`flex items-center gap-1 ${getScoreColor(application.score)}`}>
-                              <Star className="h-4 w-4" />
-                              <span className="text-sm font-medium">{Math.round(application.score)}%</span>
-                            </div>
+                          <StatusBadge status={application.applicationStatus} type="application" />
+                          {application.score !== undefined && (
+                            <ScoreIndicator 
+                              score={application.score} 
+                              size="sm" 
+                              showLabel={false}
+                            />
                           )}
                         </div>
                       </div>
@@ -1142,7 +1194,7 @@ export function CandidateDetailClient() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status Management */}
-          <Card>
+          <Card className="card-hover">
             <CardHeader>
               <CardTitle>Quản lý trạng thái CV</CardTitle>
             </CardHeader>
@@ -1151,7 +1203,7 @@ export function CandidateDetailClient() {
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Trạng thái hiện tại</span>
-                    {getStatusBadge(candidate.currentApplication.applicationStatus)}
+                    <StatusBadge status={candidate.currentApplication.applicationStatus} type="application" />
                   </div>
                   
                   <div>
@@ -1258,12 +1310,14 @@ export function CandidateDetailClient() {
                     {formatDate(candidate.currentApplication.updatedAt)}
                   </span>
                 </div>
-                {candidate.overscore && (
+                {candidate.overscore !== undefined && candidate.overscore !== null && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Điểm tổng thể</span>
-                    <span className={`text-sm font-medium ${getScoreColor(candidate.overscore)}`}>
-                      {Math.round(candidate.overscore)}%
-                    </span>
+                    <ScoreIndicator 
+                      score={candidate.overscore} 
+                      size="sm" 
+                      showLabel={false}
+                    />
                   </div>
                 )}
               </CardContent>

@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
-import { CustomChatbot } from "@/components/chatbot/custom-chatbot";
+import { ChatbotPageContextProvider } from "@/components/chatbot/chatbot-page-context";
+import { ChatbotWithContext } from "@/components/chatbot/chatbot-with-context";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -31,14 +32,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster 
-            richColors 
-            position="top-center" 
-            expand={false}
-            closeButton={true}
-          />
-          <CustomChatbot />
+          <ChatbotPageContextProvider>
+            {children}
+            <Toaster 
+              richColors 
+              position="top-center" 
+              expand={false}
+              closeButton={true}
+            />
+            <ChatbotWithContext />
+          </ChatbotPageContextProvider>
         </ThemeProvider>
       </body>
     </html>

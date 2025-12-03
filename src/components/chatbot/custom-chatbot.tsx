@@ -4,10 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChatbotButton } from './chatbot-button';
 import { ChatbotWindow } from './chatbot-window';
 import { ChatbotAPI } from './chatbot-api';
-import { ChatbotState, ChatMessage, ChatRequest } from './chatbot-types';
+import { ChatbotState, ChatMessage, ChatRequest, PageContext } from './chatbot-types';
 import { useAuthStore } from '@/store/auth-store';
 
-export function CustomChatbot() {
+interface CustomChatbotProps {
+  pageContext?: PageContext;
+  onFormFill?: (data: any) => void;
+}
+
+export function CustomChatbot({ pageContext, onFormFill }: CustomChatbotProps = {}) {
   const { user } = useAuthStore();
   const [state, setState] = useState<ChatbotState>({
     isOpen: false,
@@ -73,6 +78,7 @@ export function CustomChatbot() {
         message: confirmation ? '' : message,
         sessionId: state.sessionId,
         confirmation: confirmation,
+        pageContext: pageContext,
       };
 
       const response = await ChatbotAPI.sendMessage(request);
@@ -80,6 +86,20 @@ export function CustomChatbot() {
       const toolCalls = response.toolCalls || [];
       const requiresConfirmation = response.requiresConfirmation || false;
       const confirmationToolCall = toolCalls.find((tc: any) => tc.requiresConfirmation);
+
+      // Check for generate_job_content tool call
+      const jobContentToolCall = toolCalls.find((tc: any) => tc.toolName === 'generate_job_content');
+      if (jobContentToolCall && jobContentToolCall.result && onFormFill) {
+        const toolResult = jobContentToolCall.result as any;
+        // Only set pendingFormFill if we have valid data structure
+        if (toolResult.success && toolResult.data && toolResult.data.generatedFields) {
+          // Store pending form fill data
+          setState(prev => ({
+            ...prev,
+            pendingFormFill: toolResult.data
+          }));
+        }
+      }
 
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -113,7 +133,7 @@ export function CustomChatbot() {
         pendingConfirmation: undefined,
       }));
     }
-  }, [state.sessionId, user?.employeeId]);
+  }, [state.sessionId, user?.employeeId, pageContext, onFormFill]);
 
   const toggleChatbot = () => {
     setState(prev => ({
@@ -146,6 +166,12 @@ export function CustomChatbot() {
                 parameters: state.pendingConfirmation.parameters,
                 confirmed
               });
+            }
+          }}
+          onFormFill={(data) => {
+            if (onFormFill) {
+              onFormFill(data);
+              setState(prev => ({ ...prev, pendingFormFill: undefined }));
             }
           }}
           onClose={() => setState(prev => ({ ...prev, isOpen: false }))}

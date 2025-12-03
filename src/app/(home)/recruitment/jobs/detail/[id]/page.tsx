@@ -1,6 +1,6 @@
 "use client"
 
-import { JobDetailClient } from "@/components/recruitment/job-detail-client"
+import { JobDetailClient } from "@/components/recruitment/jobs/job-detail-client"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 
 export default function JobDetailPage() {
