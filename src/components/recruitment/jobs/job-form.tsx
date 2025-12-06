@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { recruitmentAPI, CreateJobPostingRequest, UpdateJobPostingRequest, JobPo
 import { companyAPI, Headquarter, Department, Position } from "@/lib/api/company"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { setGlobalFormFillHandler } from "@/components/chatbot/chatbot-with-context"
 
 interface JobFormProps {
   mode: "create" | "edit"
@@ -82,6 +83,12 @@ export function JobForm({ mode, jobId }: JobFormProps) {
   
   // Form state
   const [formData, setFormData] = useState<FormData>(initialFormData)
+  const formDataRef = useRef<FormData>(formData)
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    formDataRef.current = formData
+  }, [formData])
 
   // Fetch initial reference data
   const fetchReferenceData = useCallback(async () => {
@@ -184,6 +191,87 @@ export function JobForm({ mode, jobId }: JobFormProps) {
       }
     }
   }, [formData.departmentId, fetchPositionsByDepartment, mode])
+
+  // Extract handleFormFill to be reusable
+  const handleFormFill = useCallback(async (data: any) => {
+    if (!data || !data.generatedFields) {
+      console.warn("Invalid form fill data:", data)
+      return
+    }
+
+    const fields = data.generatedFields
+    const suggestions = data.suggestions || {}
+
+    // Map generated fields to form data
+    const updates: Partial<FormData> = {}
+
+    if (fields.title) updates.title = String(fields.title)
+    if (fields.description) updates.description = String(fields.description)
+    if (fields.requirements) updates.requirements = String(fields.requirements)
+    if (fields.benefits) updates.benefits = String(fields.benefits)
+    if (fields.employmentType) updates.employmentType = String(fields.employmentType)
+    if (fields.experienceLevel) updates.experienceLevel = String(fields.experienceLevel)
+    if (fields.salaryMin !== undefined) updates.salaryMin = String(fields.salaryMin)
+    if (fields.salaryMax !== undefined) updates.salaryMax = String(fields.salaryMax)
+    if (fields.vacancies !== undefined) updates.vacancies = String(fields.vacancies)
+    if (fields.headquarterId) updates.headquarterId = String(fields.headquarterId)
+    if (fields.applicationDeadline) updates.applicationDeadline = String(fields.applicationDeadline)
+
+    // Handle suggestions for department and position
+    if (suggestions.departmentId) {
+      updates.departmentId = String(suggestions.departmentId)
+      // Fetch positions for the suggested department first
+      try {
+        await fetchPositionsByDepartment(suggestions.departmentId)
+        // After positions are loaded, set the position if suggested
+        if (suggestions.positionId) {
+          updates.positionId = String(suggestions.positionId)
+        }
+      } catch (error) {
+        console.error("Error fetching positions for suggested department:", error)
+      }
+    } else if (suggestions.positionId && formDataRef.current.departmentId) {
+      // Only set position if department is already selected
+      updates.positionId = String(suggestions.positionId)
+    }
+
+    // Update form data
+    setFormData(prev => ({ ...prev, ...updates }))
+    
+    toast.success("Đã điền thông tin vào form từ chatbot!")
+  }, [fetchPositionsByDepartment])
+
+  // Register form fill handler for chatbot (only in create mode)
+  useEffect(() => {
+    if (mode !== "create") {
+      setGlobalFormFillHandler(undefined)
+      return
+    }
+    setGlobalFormFillHandler(handleFormFill)
+    return () => setGlobalFormFillHandler(undefined)
+  }, [mode, handleFormFill])
+
+  // Check for pending data from chatbot navigation
+  useEffect(() => {
+    if (mode === "create") {
+      const pendingData = sessionStorage.getItem('pendingJobFormData')
+      if (pendingData) {
+        try {
+          const data = JSON.parse(pendingData)
+          sessionStorage.removeItem('pendingJobFormData') // Clear immediately
+          
+          // Small delay to ensure component is ready
+          setTimeout(() => {
+             handleFormFill(data)
+          }, 300)
+        } catch (e) {
+          console.error("Failed to parse pending job form data", e)
+        }
+      }
+    }
+  }, [mode, handleFormFill])
+
+
 
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
