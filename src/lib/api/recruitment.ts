@@ -605,7 +605,7 @@ export const recruitmentAPI = {
   async getApplicationById(
     applicationId: number
   ): Promise<{ application: Application; candidate: Candidate }> {
-    const response = await api.get(`/api/v1/recruitment-service/applications/${applicationId}`);
+    const response = await api.get<{ application: Application; candidate: Candidate }>(`/api/v1/recruitment-service/applications/${applicationId}`);
     // Map screeningScore to score for compatibility
     if (response && response.application) {
       response.application.score = response.application.screeningScore !== undefined 
@@ -627,11 +627,11 @@ export const recruitmentAPI = {
       score: number | null;
     }>;
   }> {
-    const response = await api.get(`/api/v1/recruitment-service/applications/job/${jobId}`);
+    const response = await api.get<{ data: Array<Record<string, unknown>> }>(`/api/v1/recruitment-service/applications/job/${jobId}`);
     // Map screeningScore to score for compatibility
     // Backend returns raw data with possible field names: screeningScore, application_screeningScore, or score
     if (response && response.data && Array.isArray(response.data)) {
-      response.data = response.data.map((app: any) => {
+      const transformedData = response.data.map((app: any) => {
         // Try multiple possible field names for score
         const score = app.screeningScore !== undefined && app.screeningScore !== null 
           ? app.screeningScore 
@@ -663,8 +663,9 @@ export const recruitmentAPI = {
           score,
         };
       });
+      return { data: transformedData };
     }
-    return response;
+    return { data: [] };
   },
 
   async createApplication(
