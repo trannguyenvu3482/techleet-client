@@ -209,6 +209,9 @@ export interface Application {
   screeningStatus?: string;
   screeningCompletedAt?: string;
   daysSinceApplied?: number;
+  aiSummary?: string;
+  keyHighlights?: string[];
+  concerns?: string[];
 }
 
 export interface CreateApplicationRequest {

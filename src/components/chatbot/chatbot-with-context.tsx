@@ -11,27 +11,17 @@ export function setGlobalFormFillHandler(handler: ((data: any) => void) | undefi
   globalFormFillHandler = handler;
 }
 
-import { useRouter, usePathname } from 'next/navigation';
-
 export function ChatbotWithContext() {
   const { pageContext } = useChatbotPageContext();
-  const router = useRouter();
-  const pathname = usePathname();
 
   // Always get the latest handler from the global variable
   const handleFormFill = useCallback((data: any) => {
-    // Check if we are already on the job creation page
-    if (pathname === '/recruitment/jobs/create') {
-      const handler = globalFormFillHandler;
-      if (handler) {
-        handler(data);
-      }
-    } else {
-      // If not, save data to session storage and navigate
-      sessionStorage.setItem('pendingJobFormData', JSON.stringify(data));
-      router.push('/recruitment/jobs/create');
+    // Always get the latest handler from the global variable
+    const handler = globalFormFillHandler;
+    if (handler) {
+      handler(data);
     }
-  }, [pathname, router]);
+  }, []);
 
   return <CustomChatbot pageContext={pageContext} onFormFill={handleFormFill} />;
 }

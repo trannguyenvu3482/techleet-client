@@ -175,7 +175,15 @@ export function CandidateDetailClient() {
               postalCode: "-", // Not in API response
               education: safeValue(apiCandidate.university || apiCandidate.education),
               workExperience: `${safeValue(apiCandidate.yearsOfExperience)} năm kinh nghiệm`,
-              skills: apiCandidate.skills ? JSON.parse(apiCandidate.skills).join(", ") : "-",
+              skills: (() => {
+                if (!apiCandidate.skills) return "-";
+                try {
+                  const parsed = JSON.parse(apiCandidate.skills);
+                  return Array.isArray(parsed) ? parsed.join(", ") : String(parsed);
+                } catch {
+                  return apiCandidate.skills;
+                }
+              })(),
               certifications: "-", // Not in API response
               portfolioUrl: safeValue(apiCandidate.portfolioUrl),
               linkedinUrl: safeValue(apiCandidate.linkedinUrl),
@@ -197,7 +205,15 @@ export function CandidateDetailClient() {
               fieldOfStudy: safeValue(apiCandidate.fieldOfStudy),
               university: safeValue(apiCandidate.university),
               graduationYear: apiCandidate.graduationYear || undefined,
-              programmingLanguages: apiCandidate.programmingLanguages ? JSON.parse(apiCandidate.programmingLanguages).join(", ") : "-",
+              programmingLanguages: (() => {
+                if (!apiCandidate.programmingLanguages) return "-";
+                try {
+                  const parsed = JSON.parse(apiCandidate.programmingLanguages);
+                  return Array.isArray(parsed) ? parsed.join(", ") : String(parsed);
+                } catch {
+                  return apiCandidate.programmingLanguages;
+                }
+              })(),
               expectedSalary: apiCandidate.expectedSalary || undefined,
               preferredEmploymentType: safeValue(apiCandidate.preferredEmploymentType),
               availableForRemote: apiCandidate.availableForRemote,
@@ -221,8 +237,13 @@ export function CandidateDetailClient() {
               updatedAt: application.updatedAt,
               score: application.score || undefined,
               candidate: transformedCandidate,
-              jobPosting: undefined // Not in API response
+              jobPosting: undefined, // Not in API response
+              aiSummary: (application as any).aiSummary,
+              keyHighlights: (application as any).keyHighlights,
+              concerns: (application as any).concerns
             }
+
+            console.log("transformedApplication", transformedApplication)
 
             setApplications([transformedApplication])
             setCandidate({
@@ -324,7 +345,10 @@ export function CandidateDetailClient() {
               updatedAt: app.updatedAt,
               score: app.screeningScore || app.score || undefined,
               candidate: transformedCandidate,
-              jobPosting: app.jobPosting || undefined
+              jobPosting: app.jobPosting || undefined,
+              aiSummary: app.aiSummary,
+              keyHighlights: app.keyHighlights,
+              concerns: app.concerns
             }))
             
             setApplications(candidateApplications)
@@ -1182,6 +1206,48 @@ export function CandidateDetailClient() {
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                           {application.coverLetter}
                         </p>
+                      )}
+
+                      {/* AI Screening Insights */}
+                      {(application.aiSummary || (application.keyHighlights && application.keyHighlights.length > 0) || (application.concerns && application.concerns.length > 0)) && (
+                        <div className="mt-3 pt-3 border-t">
+                          <h5 className="text-sm font-semibold mb-2">AI Screening Insights</h5>
+                          
+                          {application.aiSummary && (
+                            <div className="mb-2">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">AI Summary</p>
+                              <p className="text-sm italic text-muted-foreground">{application.aiSummary}</p>
+                            </div>
+                          )}
+
+                          {application.keyHighlights && application.keyHighlights.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-xs font-medium text-green-600 mb-1">Key Highlights</p>
+                              <ul className="text-sm space-y-1">
+                                {application.keyHighlights.map((highlight, idx) => (
+                                  <li key={idx} className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                                    <span className="text-muted-foreground">{highlight}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {application.concerns && application.concerns.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-red-600 mb-1">Concerns</p>
+                              <ul className="text-sm space-y-1">
+                                {application.concerns.map((concern, idx) => (
+                                  <li key={idx} className="flex items-start gap-2">
+                                    <XCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                                    <span className="text-muted-foreground">{concern}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
