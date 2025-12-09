@@ -29,13 +29,15 @@ import {
   FileText,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { recruitmentAPI, JobPosting } from "@/lib/api/recruitment"
 import { RecruitmentBreadcrumb } from "../shared/recruitment-breadcrumb"
 import { StatusBadge } from "../shared/status-badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ScoreIndicator } from "@/components/ui/score-indicator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -51,6 +53,7 @@ interface Application {
   status: string
   createdAt: string
   score: number | null
+  screeningError?: string
   jobTitle?: string
 }
 
@@ -481,14 +484,48 @@ export function ApplicationsClient() {
                       </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetail(app.candidateId, app.applicationId, app.jobPostingId)}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Xem
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetail(app.candidateId, app.applicationId, app.jobPostingId)}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Xem
+                        </Button>
+                        {app.status === 'screening_failed' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={async () => {
+                                if (confirm('Bạn có muốn thử lại quá trình sàng lọc CV cho ứng viên này không?')) {
+                                   try {
+                                      await recruitmentAPI.triggerCvScreening(app.applicationId);
+                                      toast.success("Đã kích hoạt lại sàng lọc CV");
+                                      fetchData(); // Refresh list
+                                   } catch (e) {
+                                      console.error(e);
+                                      toast.error("Không thể kích hoạt lại sàng lọc");
+                                   }
+                                }
+                            }}
+                          >
+                           Retry
+                          </Button>
+                        )}
+                        {app.status === 'screening_failed' && app.screeningError && (
+                           <TooltipProvider>
+                              <Tooltip>
+                                 <TooltipTrigger asChild>
+                                    <AlertCircle className="h-4 w-4 text-red-500 cursor-help" />
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                    <p className="max-w-xs">{app.screeningError}</p>
+                                 </TooltipContent>
+                              </Tooltip>
+                           </TooltipProvider>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

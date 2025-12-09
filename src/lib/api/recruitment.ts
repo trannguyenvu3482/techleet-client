@@ -212,6 +212,7 @@ export interface Application {
   aiSummary?: string;
   keyHighlights?: string[];
   concerns?: string[];
+  screeningError?: string;
 }
 
 export interface CreateApplicationRequest {
@@ -628,6 +629,7 @@ export const recruitmentAPI = {
       status: string;
       createdAt: string;
       score: number | null;
+      screeningError?: string;
     }>;
   }> {
     const response = await api.get<{ data: Array<Record<string, unknown>> }>(`/api/v1/recruitment-service/applications/job/${jobId}`);
@@ -654,6 +656,7 @@ export const recruitmentAPI = {
         const applicationId = app.application_applicationId || app.applicationId || app.application_id;
         const candidateId = app.application_candidateId || app.candidateId || app.candidate_id;
         const status = app.application_status || app.status;
+        const screeningError = app.application_screeningError || app.screeningError || app.screening_error;
         
         return {
           applicationId,
@@ -664,6 +667,7 @@ export const recruitmentAPI = {
           status,
           createdAt,
           score,
+          screeningError,
         };
       });
       return { data: transformedData };
@@ -855,6 +859,19 @@ export const recruitmentAPI = {
     return api.post(
       "/api/v1/recruitment-service/cv-screening/test-local-cv",
       data
+    );
+  },
+
+  async retryCvScreening(screeningId: number): Promise<void> {
+    return api.post(
+      `/api/v1/recruitment-service/cv-screening/retry/${screeningId}`
+    );
+  },
+
+  async triggerCvScreening(applicationId: number): Promise<void> {
+    return api.post(
+       `/api/v1/recruitment-service/cv-screening/trigger`,
+       { applicationId }
     );
   },
 
