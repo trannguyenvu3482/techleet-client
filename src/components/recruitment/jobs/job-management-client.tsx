@@ -23,12 +23,7 @@ export function JobManagementClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/recruitment/jobs/cv-testing">
-            <Button variant="outline" size="sm">
-              <TestTube className="mr-2 h-4 w-4" />
-              CV Testing
-            </Button>
-          </Link>
+
           <Link href="/recruitment/jobs/create">
             <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />

@@ -4,10 +4,10 @@ import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, ChevronRight, Users } from "lucide-react"
+import { Users, ZoomIn, ZoomOut, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-// Mock organizational data - this would come from your API
+// Mock organizational data
 interface OrgNode {
   id: number
   name: string
@@ -119,148 +119,110 @@ const mockOrgData: OrgNode = {
 }
 
 export function OrganizationalChart() {
-  const [orgData, setOrgData] = React.useState<OrgNode>(mockOrgData)
+  const [zoom, setZoom] = React.useState(1)
 
-  const toggleExpanded = (nodeId: number, currentNode: OrgNode): OrgNode => {
-    if (currentNode.id === nodeId) {
-      return { ...currentNode, isExpanded: !currentNode.isExpanded }
-    }
-    
-    if (currentNode.employees) {
-      return {
-        ...currentNode,
-        employees: currentNode.employees.map(emp => toggleExpanded(nodeId, emp))
-      }
-    }
-    
-    return currentNode
-  }
-
-  const handleToggle = (nodeId: number) => {
-    setOrgData(prev => toggleExpanded(nodeId, prev))
-  }
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase()
-  }
-
-  const countTotalEmployees = (node: OrgNode): number => {
-    let count = 1 // Current node
-    if (node.employees) {
-      count += node.employees.reduce((sum, emp) => sum + countTotalEmployees(emp), 0)
-    }
-    return count
-  }
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5))
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5))
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="h-[800px] flex flex-col space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Cơ cấu tổ chức</h2>
           <p className="text-muted-foreground">
-            Sơ đồ tổ chức và cấu trúc quản lý của công ty ({countTotalEmployees(orgData)} nhân viên)
+            Sơ đồ cây trực quan
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Xuất sơ đồ
-          </Button>
+            <Button variant="outline" size="sm" onClick={handleZoomOut}>
+                <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-sm w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <Button variant="outline" size="sm" onClick={handleZoomIn}>
+                <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Xuất sơ đồ
+            </Button>
         </div>
       </div>
 
-      {/* Organizational Tree */}
-      <div className="space-y-4">
-        <OrgNode 
-          node={orgData} 
-          level={0} 
-          onToggle={handleToggle}
-          getInitials={getInitials}
-        />
+      <div className="flex-1 overflow-auto border rounded-lg bg-slate-50/50 p-8 shadow-inner relative">
+        <div 
+          className="min-w-max mx-auto origin-top transition-transform duration-200"
+          style={{ transform: `scale(${zoom})` }}
+        >
+          <Tree node={mockOrgData} />
+        </div>
       </div>
     </div>
   )
 }
 
-interface OrgNodeProps {
-  node: OrgNode
-  level: number
-  onToggle: (nodeId: number) => void
-  getInitials: (name: string) => string
+const Tree = ({ node }: { node: OrgNode }) => {
+  return (
+    <div className="flex flex-col items-center">
+      <NodeCard node={node} />
+      {node.employees && node.employees.length > 0 && (
+        <>
+          <div className="h-8 w-px bg-border"></div>
+          <div className="flex gap-8 relative">
+             {/* Connecting line top */}
+            <div className="absolute top-0 left-1/2 -ml-px w-px h-4 bg-border"></div>
+            
+            {/* Horizontal line */}
+            {node.employees.length > 1 && (
+                 <div className="absolute top-0 left-0 right-0 h-px bg-border mt-0"
+                    style={{ 
+                        left: `calc(100% / ${node.employees.length * 2})`, 
+                        right: `calc(100% / ${node.employees.length * 2})`
+                    }}
+                 ></div>
+            )}
+            
+            {node.employees.map((child, index) => (
+              <div key={child.id} className="flex flex-col items-center relative pt-4">
+                {/* Vertical line specifically for this child */}
+                <div className="absolute top-0 left-1/2 -ml-px w-px h-4 bg-border"></div>
+                <Tree node={child} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
-function OrgNode({ node, level, onToggle, getInitials }: OrgNodeProps) {
-  const hasChildren = node.employees && node.employees.length > 0
-  const isExpanded = node.isExpanded || false
-
+const NodeCard = ({ node }: { node: OrgNode }) => {
   return (
-    <div className="space-y-2">
-      <Card className={`transition-all duration-200 ${level === 0 ? 'border-primary shadow-lg' : ''}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            {/* Expand/Collapse Button */}
-            {hasChildren && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onToggle(node.id)}
-                className="h-6 w-6 p-0"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {!hasChildren && <div className="w-6" />}
-
-            {/* Avatar */}
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={node.avatarUrl} />
-              <AvatarFallback>{getInitials(node.name)}</AvatarFallback>
-            </Avatar>
-
-            {/* Employee Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium truncate">{node.name}</h3>
-                {level === 0 && (
-                  <Badge variant="default" className="bg-primary">
-                    CEO
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground truncate">{node.position}</p>
-              <p className="text-xs text-muted-foreground">{node.department}</p>
+    <div className="relative group">
+        <div className="w-64 bg-white rounded-xl border-t-4 border-t-primary shadow-sm hover:shadow-lg transition-all duration-300 p-4 flex flex-col items-center gap-3 z-10 relative">
+            <div className="absolute -top-3">
+                <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
+                    <AvatarImage src={node.avatarUrl} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                        {node.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                </Avatar>
+            </div>
+            
+            <div className="mt-5 text-center w-full">
+                <h3 className="font-semibold text-sm truncate w-full" title={node.name}>{node.name}</h3>
+                <p className="text-xs text-primary font-medium truncate w-full" title={node.position}>{node.position}</p>
+                <div className="mt-2 text-[10px] text-muted-foreground bg-slate-50 py-1 px-2 rounded-full inline-block">
+                    {node.department}
+                </div>
             </div>
 
-            {/* Employee Count */}
-            {hasChildren && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{node.employees!.length}</span>
-              </div>
+            {node.employees && node.employees.length > 0 && (
+                <div className="absolute -bottom-3 bg-white px-2 py-0.5 rounded-full border shadow-sm text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {node.employees.length}
+                </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Children */}
-      {hasChildren && isExpanded && (
-        <div className={`ml-${level * 6 + 6} space-y-2 border-l-2 border-muted pl-4`}>
-          {node.employees!.map((employee) => (
-            <OrgNode
-              key={employee.id}
-              node={employee}
-              level={level + 1}
-              onToggle={onToggle}
-              getInitials={getInitials}
-            />
-          ))}
         </div>
-      )}
     </div>
   )
 }

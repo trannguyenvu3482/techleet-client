@@ -345,43 +345,6 @@ export function RecruitmentDashboardClient() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Thao tác nhanh</CardTitle>
-          <CardDescription>
-            Truy cập nhanh các chức năng thường dùng
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <Link href="/recruitment/jobs/create">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Tạo vị trí mới
-              </Button>
-            </Link>
-            <Link href="/recruitment/jobs">
-              <Button variant="outline" className="w-full justify-start">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Quản lý việc làm
-              </Button>
-            </Link>
-            <Link href="/recruitment/candidate/list">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="mr-2 h-4 w-4" />
-                Danh sách ứng viên
-              </Button>
-            </Link>
-            <Link href="/recruitment/interviews">
-              <Button variant="outline" className="w-full justify-start">
-                <Calendar className="mr-2 h-4 w-4" />
-                Lịch phỏng vấn
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

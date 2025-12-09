@@ -224,13 +224,15 @@ export function JobManagementUnified() {
               className="pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(value) => {
-            setStatusFilter(value);
-            fetchJobs();
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground ml-1">Trạng thái</span>
+            <Select value={statusFilter} onValueChange={(value) => {
+              setStatusFilter(value);
+              fetchJobs();
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="draft">Nháp</SelectItem>
@@ -238,37 +240,44 @@ export function JobManagementUnified() {
               <SelectItem value="closed">Đã đóng</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={employmentTypeFilter} onValueChange={(value) => {
-            setEmploymentTypeFilter(value);
-            fetchJobs();
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Loại việc làm" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="full-time">Toàn thời gian</SelectItem>
-              <SelectItem value="part-time">Bán thời gian</SelectItem>
-              <SelectItem value="contract">Hợp đồng</SelectItem>
-              <SelectItem value="internship">Thực tập</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={experienceLevelFilter} onValueChange={(value) => {
-            setExperienceLevelFilter(value);
-            fetchJobs();
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Kinh nghiệm" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
-              <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
-              <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
-              <SelectItem value="senior">Senior (5+ năm)</SelectItem>
-              <SelectItem value="lead">Lead/Manager</SelectItem>
-            </SelectContent>
-          </Select>
+          </div>
+          <div className="space-y-1">
+             <span className="text-xs font-medium text-muted-foreground ml-1">Loại việc làm</span>
+             <Select value={employmentTypeFilter} onValueChange={(value) => {
+               setEmploymentTypeFilter(value);
+               fetchJobs();
+             }}>
+               <SelectTrigger>
+                 <SelectValue placeholder="Loại việc làm" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Tất cả</SelectItem>
+                 <SelectItem value="full-time">Toàn thời gian</SelectItem>
+                 <SelectItem value="part-time">Bán thời gian</SelectItem>
+                 <SelectItem value="contract">Hợp đồng</SelectItem>
+                 <SelectItem value="internship">Thực tập</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
+          <div className="space-y-1">
+             <span className="text-xs font-medium text-muted-foreground ml-1">Kinh nghiệm</span>
+             <Select value={experienceLevelFilter} onValueChange={(value) => {
+               setExperienceLevelFilter(value);
+               fetchJobs();
+             }}>
+               <SelectTrigger>
+                 <SelectValue placeholder="Kinh nghiệm" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Tất cả</SelectItem>
+                 <SelectItem value="entry">Mới tốt nghiệp</SelectItem>
+                 <SelectItem value="junior">Junior (1-3 năm)</SelectItem>
+                 <SelectItem value="mid">Mid-level (3-5 năm)</SelectItem>
+                 <SelectItem value="senior">Senior (5+ năm)</SelectItem>
+                 <SelectItem value="lead">Lead/Manager</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
         </div>
 
         {/* Jobs List */}

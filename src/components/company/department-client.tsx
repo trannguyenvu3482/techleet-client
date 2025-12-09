@@ -12,8 +12,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { AddDepartmentModal } from "./add-department-modal"
-import { companyAPI, type Department, type CreateDepartmentRequest } from "@/lib/api/company"
+import { EditDepartmentModal } from "./edit-department-modal"
+import { companyAPI, type Department, type CreateDepartmentRequest, type UpdateDepartmentRequest } from "@/lib/api/company"
 import { toast } from "sonner"
 
 export function DepartmentClient() {
@@ -21,6 +30,8 @@ export function DepartmentClient() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
 
   const fetchDepartments = useCallback(async () => {
     try {
@@ -54,6 +65,24 @@ export function DepartmentClient() {
     }
   }
 
+  const handleEditDepartment = async (id: number, departmentData: UpdateDepartmentRequest) => {
+    try {
+      await companyAPI.updateDepartment(id, departmentData)
+      toast.success('Department updated successfully')
+      setShowEditModal(false)
+      setEditingDepartment(null)
+      fetchDepartments()
+    } catch (error) {
+      console.error("Failed to update department:", error)
+      toast.error('Failed to update department')
+    }
+  }
+
+  const openEditModal = (department: Department) => {
+    setEditingDepartment(department)
+    setShowEditModal(true)
+  }
+
   const handleDeleteDepartment = async (departmentId: number) => {
     if (!confirm('Are you sure you want to delete this department?')) {
       return
@@ -70,82 +99,13 @@ export function DepartmentClient() {
   }
 
   const filteredDepartments = departments?.filter(dept =>
-    dept.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    dept.departmentCode.toLowerCase().includes(searchTerm.toLowerCase())
+    (dept.departmentName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (dept.departmentCode?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   ) || []
 
-  // Group departments by parent (simple hierarchy)
-  const rootDepartments = filteredDepartments?.filter(dept => !dept.parentDepartmentId) || []
-  const childDepartments = filteredDepartments?.filter(dept => dept.parentDepartmentId) || []
-
-  const getDepartmentChildren = (parentId: number) => {
-    return childDepartments?.filter(dept => dept.parentDepartmentId === parentId) || []
-  }
-
-  const DepartmentCard = ({ department, isChild = false }: { department: Department; isChild?: boolean }) => (
-    <Card className={`${isChild ? 'ml-6 border-l-4 border-l-blue-200' : ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <Building2 className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">{department.departmentName}</CardTitle>
-              <CardDescription>Code: {department.departmentCode}</CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={department.isActive ? "default" : "secondary"}>
-              {department.isActive ? "Active" : "Inactive"}
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="text-red-600"
-                  onClick={() => handleDeleteDepartment(department.departmentId)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Description</p>
-            <p className="font-medium">{department.description || "No description"}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Employee Count</p>
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span className="font-medium">{department.employeeCount || 0}</span>
-            </div>
-          </div>
-        </div>
-        {department.manager && (
-          <div className="mt-3 pt-3 border-t">
-            <p className="text-sm text-muted-foreground">Manager</p>
-            <p className="font-medium">{department.manager.firstName} {department.manager.lastName}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-
+  // Flatten hierarchy for table view but keep parent indicator if needed
+  // For now simple table list is requested to improve UI
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -164,7 +124,7 @@ export function DepartmentClient() {
         <div>
           <h1 className="text-2xl font-bold">Department Management</h1>
           <p className="text-muted-foreground">
-            Manage your organization&apos;s department structure and hierarchy
+            Manage your organization&apos;s department structure
           </p>
         </div>
         <Button onClick={() => setShowAddModal(true)}>
@@ -186,37 +146,86 @@ export function DepartmentClient() {
         </div>
       </div>
 
-      {/* Department List */}
-      <div className="space-y-4">
-        {rootDepartments.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No departments found</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Get started by creating your first department
-              </p>
-              <Button onClick={() => setShowAddModal(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Department
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          rootDepartments.map((department) => (
-            <div key={department.departmentId} className="space-y-2">
-              <DepartmentCard department={department} />
-              {/* Child departments */}
-              {getDepartmentChildren(department.departmentId).map((childDept) => (
-                <DepartmentCard 
-                  key={childDept.departmentId} 
-                  department={childDept} 
-                  isChild={true} 
-                />
-              ))}
-            </div>
-          ))
-        )}
+      {/* Department List - Table View */}
+      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Department Name</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Parent Department</TableHead>
+              <TableHead>Employees</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredDepartments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    No departments found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredDepartments.map((dept) => {
+                  const parentDept = departments.find(d => d.departmentId === dept.parentDepartmentId);
+                  return (
+                    <TableRow key={dept.departmentId}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Building2 className="h-4 w-4" />
+                            </div>
+                            {dept.departmentName}
+                        </div>
+                      </TableCell>
+                      <TableCell>{dept.departmentCode}</TableCell>
+                      <TableCell>
+                          {parentDept ? (
+                              <Badge variant="outline">{parentDept.departmentName}</Badge>
+                          ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                      </TableCell>
+                      <TableCell>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                              <Users className="h-3 w-3" />
+                              <span>{dept.employeeCount || 0}</span>
+                          </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={dept.isActive ? "default" : "secondary"}>
+                          {dept.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditModal(dept)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteDepartment(dept.departmentId)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+              })
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Add Department Modal */}
@@ -224,6 +233,15 @@ export function DepartmentClient() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onSubmit={handleAddDepartment}
+        departments={departments}
+      />
+
+       {/* Edit Department Modal */}
+       <EditDepartmentModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSubmit={handleEditDepartment}
+        department={editingDepartment}
         departments={departments}
       />
     </div>

@@ -144,6 +144,13 @@ export function CandidateDetailClient() {
   const applicationId = searchParams.get("applicationId")
   const candidateId = Number(params.candidateId)
 
+  // Ensure newStatus is synced when candidate data loads
+  useEffect(() => {
+    if (candidate?.currentApplication) {
+      setNewStatus(candidate.currentApplication.applicationStatus)
+    }
+  }, [candidate])
+
   // Helper function to handle null/undefined values
   const safeValue = (value: unknown, defaultValue: string = "-"): string => {
     if (value === null || value === undefined || value === "") {
@@ -894,47 +901,48 @@ export function CandidateDetailClient() {
               
               {/* Social Links */}
               <div className="space-y-2">
-                {candidate.linkedinUrl && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                    <a 
-                      href={candidate.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      LinkedIn Profile
-                    </a>
-                  </div>
-                )}
-                
-                {candidate.githubUrl && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                    <a 
-                      href={candidate.githubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      GitHub Profile
-                    </a>
-                  </div>
-                )}
-                
-                {candidate.portfolioUrl && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                    <a 
-                      href={candidate.portfolioUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Portfolio
-                    </a>
-                  </div>
-                )}
+                  {/* Use optional chaining and strict checks for rendering */}
+                  {candidate.linkedinUrl && candidate.linkedinUrl !== "-" && (
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={candidate.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        LinkedIn Profile
+                      </a>
+                    </div>
+                  )}
+                  
+                  {candidate.githubUrl && candidate.githubUrl !== "-" && (
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={candidate.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        GitHub Profile
+                      </a>
+                    </div>
+                  )}
+                  
+                  {candidate.portfolioUrl && candidate.portfolioUrl !== "-" && (
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={candidate.portfolioUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Portfolio
+                      </a>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>
@@ -1405,6 +1413,7 @@ export function CandidateDetailClient() {
                   </Button>
                 }
               />
+              {/* Removed redundant buttons as requested
               <Button variant="outline" className="w-full justify-start">
                 <Mail className="mr-2 h-4 w-4" />
                 Gửi email
@@ -1413,6 +1422,7 @@ export function CandidateDetailClient() {
                 <FileText className="mr-2 h-4 w-4" />
                 Thêm ghi chú
               </Button>
+              */}
             </CardContent>
           </Card>
         </div>

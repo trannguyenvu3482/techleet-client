@@ -81,33 +81,7 @@ export const sidebarData = {
       url: "/employees",
       icon: Users,
     },
-    {
-      title: "Tài liệu",
-      url: "/documents",
-      icon: FileText,
-      items: [
-        {
-          title: "Tất cả tài liệu",
-          url: "/documents",
-        },
-        {
-          title: "Quy trình onboarding",
-          url: "/documents/onboarding",
-        },
-        {
-          title: "Chính sách công ty",
-          url: "/documents/policies",
-        },
-        {
-          title: "Quy định nội bộ",
-          url: "/documents/regulations",
-        },
-        {
-          title: "Mẫu biểu & Form",
-          url: "/documents/templates",
-        },
-      ],
-    },
+
     // {
     //   title: "Quản lý người dùng",
     //   url: "/users",
@@ -142,25 +116,7 @@ export const sidebarData = {
         },
       ],
     },
-    {
-      title: "Báo cáo",
-      url: "/reports",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Báo cáo tuyển dụng",
-          url: "/reports/recruitment",
-        },
-        {
-          title: "Báo cáo nhân sự",
-          url: "/reports/employees",
-        },
-        {
-          title: "Thống kê hiệu suất",
-          url: "/reports/performance",
-        },
-      ],
-    },
+
     {
       title: "Cài đặt",
       url: "/settings",

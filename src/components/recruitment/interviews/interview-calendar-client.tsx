@@ -315,10 +315,12 @@ export default function InterviewCalendarClient() {
               size="lg"
             />
           ) : (
-            <FullCalendar
-              ref={calendarRef as never}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
+            <div className="overflow-x-auto">
+              <div className="min-w-[800px]">
+                <FullCalendar
+                  ref={calendarRef as never}
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
               selectable={false}
               selectMirror={false}
               editable={true}
@@ -327,9 +329,11 @@ export default function InterviewCalendarClient() {
               headerToolbar={headerToolbar}
               events={events}
               eventClick={handleEventClick}
-              height="auto"
-              eventClassNames="cursor-pointer transition-opacity hover:opacity-80"
-            />
+                  height="auto"
+                  eventClassNames="cursor-pointer transition-opacity hover:opacity-80"
+                />
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

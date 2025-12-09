@@ -20,39 +20,43 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AddPositionModal } from "@/components/company/add-position-modal"
-import { companyAPI, type Position, type Department, type CreatePositionRequest } from "@/lib/api/company"
+import { EditPositionModal } from "@/components/company/edit-position-modal"
+import { companyAPI, type Position, type Department, type CreatePositionRequest, type UpdatePositionRequest } from "@/lib/api/company"
 import { toast } from "sonner"
 
 export function PositionClient() {
-  const [positions, setPositions] = useState<Position[]>([])
+  const [allPositions, setAllPositions] = useState<Position[]>([]) // Store all positions for frontend filter
+  const [positions, setPositions] = useState<Position[]>([]) // Displayed positions
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
   const [selectedLevel, setSelectedLevel] = useState<string>("all")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPosition, setEditingPosition] = useState<Position | null>(null)
 
+  // Fetch all positions once (limit 100 or higher) to enable frontend search
   const fetchPositions = useCallback(async () => {
     try {
       setLoading(true)
       const response = await companyAPI.getPositions({
-        keyword: searchTerm || undefined,
-        departmentId: selectedDepartment !== "all" ? parseInt(selectedDepartment) : undefined,
-        level: selectedLevel !== "all" ? selectedLevel : undefined,
         limit: 100,
+        // We fetch ALL and filter locally to avoid API search issues mentioned in ticket
       })
-      setPositions(response.data)
+      setAllPositions(response.data)
+      setPositions(response.data) 
     } catch (error) {
       console.error('Failed to fetch positions:', error)
       toast.error('Failed to load positions')
     } finally {
       setLoading(false)
     }
-  }, [searchTerm, selectedDepartment, selectedLevel])
+  }, [])
 
   const fetchDepartments = async () => {
     try {
-      const response = await companyAPI.getDepartments({ limit: 100 })
+      const response = await companyAPI.getDepartments({ limit: 100, isActive: true })
       setDepartments(response.data)
     } catch (error) {
       console.error('Failed to fetch departments:', error)
@@ -61,11 +65,32 @@ export function PositionClient() {
 
   useEffect(() => {
     fetchDepartments()
-  }, [])
-
-  useEffect(() => {
     fetchPositions()
-  }, [searchTerm, selectedDepartment, selectedLevel, fetchPositions])
+  }, [fetchPositions])
+
+  // Frontend Filtering
+  useEffect(() => {
+     let filtered = allPositions;
+
+     if (searchTerm) {
+         const lowerTerm = searchTerm.toLowerCase();
+         filtered = filtered.filter(p => 
+             (p.positionName?.toLowerCase() || "").includes(lowerTerm) ||
+             (p.positionCode?.toLowerCase() || "").includes(lowerTerm)
+         );
+     }
+
+     if (selectedDepartment && selectedDepartment !== "all") {
+         filtered = filtered.filter(p => p.departmentId === parseInt(selectedDepartment));
+     }
+
+     if (selectedLevel && selectedLevel !== "all") {
+         filtered = filtered.filter(p => p.level === selectedLevel);
+     }
+
+     setPositions(filtered);
+  }, [searchTerm, selectedDepartment, selectedLevel, allPositions]);
+
 
   const handleAddPosition = async (positionData: CreatePositionRequest) => {
     try {
@@ -77,6 +102,24 @@ export function PositionClient() {
       console.error('Failed to create position:', error)
       toast.error('Failed to create position')
     }
+  }
+
+  const handleEditPosition = async (id: number, positionData: UpdatePositionRequest) => {
+      try {
+        await companyAPI.updatePosition(id, positionData)
+        toast.success('Position updated successfully')
+        setShowEditModal(false)
+        setEditingPosition(null)
+        fetchPositions()
+      } catch (error) {
+        console.error("Failed to update position:", error)
+        toast.error("Failed to update position")
+      }
+  }
+
+  const openEditModal = (position: Position) => {
+      setEditingPosition(position)
+      setShowEditModal(true)
   }
 
   const handleDeletePosition = async (positionId: number) => {
@@ -144,7 +187,7 @@ export function PositionClient() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEditModal(position)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
@@ -220,7 +263,7 @@ export function PositionClient() {
         <div>
           <h1 className="text-2xl font-bold">Position Management</h1>
           <p className="text-muted-foreground">
-            Manage job positions, salary ranges, and organizational roles
+            Manage job positions and salary ranges
           </p>
         </div>
         <Button onClick={() => setShowAddModal(true)}>
@@ -234,7 +277,7 @@ export function PositionClient() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search positions..."
+            placeholder="Search positions (local)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -274,14 +317,16 @@ export function PositionClient() {
 
       {/* Position List */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {positions?.length === 0 ? (
+        {positions.length === 0 ? (
           <div className="col-span-full">
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No positions found</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Get started by creating your first position
+                  {allPositions.length === 0 
+                     ? "Get started by creating your first position" 
+                     : "No positions match your search filters"}
                 </p>
                 <Button onClick={() => setShowAddModal(true)}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -291,7 +336,7 @@ export function PositionClient() {
             </Card>
           </div>
         ) : (
-          positions?.map((position) => (
+          positions.map((position) => (
             <PositionCard key={position.positionId} position={position} />
           ))
         )}
@@ -302,6 +347,15 @@ export function PositionClient() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onSubmit={handleAddPosition}
+        departments={departments}
+      />
+
+       {/* Edit Position Modal */}
+       <EditPositionModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSubmit={handleEditPosition}
+        position={editingPosition}
         departments={departments}
       />
     </div>

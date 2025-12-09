@@ -95,11 +95,7 @@ export function DashboardContent() {
     hired: 0,
   }))
 
-  const departmentData = departmentStats.slice(0, 5).map((dept, index) => ({
-    name: dept.departmentName,
-    employees: dept.jobCount,
-    fill: ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#00ff00"][index] || "#8884d8",
-  }))
+
 
   const applicationStatusData = summary?.applicationStatusBreakdown.map((item, index) => ({
     status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
@@ -222,41 +218,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
 
-        {/* Department Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Department Distribution</CardTitle>
-            <CardDescription>
-              Job postings by department
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {departmentData.length > 0 ? (
-              <ChartContainer config={chartConfig} className="h-[300px]">
-                <PieChart>
-                  <Pie
-                    data={departmentData}
-                    dataKey="employees"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {departmentData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No department data available
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
 
         {/* Application Status */}
         <Card>

@@ -405,16 +405,7 @@ export function JobForm({ mode, jobId }: JobFormProps) {
             </p>
           </div>
         </div>
-        {mode === "create" && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info("Sử dụng nút chatbot ở góc dưới bên phải để tạo job với AI")}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Tạo với AI
-          </Button>
-        )}
+
       </div>
 
       <form onSubmit={handleSubmit}>
