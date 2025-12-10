@@ -240,21 +240,20 @@ export function InterviewRequestsList({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-3">
           {applications.map((application) => {
             const screeningScore = getScreeningScore(application);
             return (
-              <Card 
+              <div
                 key={application.applicationId} 
-                className={`transition-all hover:shadow-lg border-2 h-full flex flex-col ${
+                className={`group relative rounded-lg border transition-all hover:bg-muted/50 p-3 ${
                   selectedApplicationIds.has(application.applicationId) 
-                    ? "border-primary bg-primary/5" 
+                    ? "border-primary bg-primary/5 hover:bg-primary/10" 
                     : "border-border"
                 }`}
               >
-                <CardContent className="pt-4 pb-4 flex-1 flex flex-col">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="pt-1">
+                 <div className="flex items-start gap-3">
+                    <div className="pt-0.5">
                       <Checkbox
                         checked={selectedApplicationIds.has(application.applicationId)}
                         onCheckedChange={() => handleSelectApplication(application.applicationId)}
@@ -263,106 +262,75 @@ export function InterviewRequestsList({
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-primary flex-shrink-0" />
-                        <h3 className="font-semibold text-base truncate">
-                          {application.candidate
-                            ? `${application.candidate.firstName} ${application.candidate.lastName}`
-                            : "Ứng viên"}
-                        </h3>
-                      </div>
-                      
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                          <Mail className="h-3 w-3" />
-                          <span className="truncate max-w-[120px]">{application.candidate?.email || "N/A"}</span>
-                        </Badge>
-                        {screeningScore !== undefined && screeningScore !== null && typeof screeningScore === 'number' && !isNaN(screeningScore) && (
-                          <Badge
-                            className={`${getScreeningScoreColor(screeningScore)} text-white flex items-center gap-1 text-xs`}
+                       <div className="flex items-center justify-between gap-2 mb-1">
+                          <label 
+                            htmlFor={`select-${application.applicationId}`}
+                            className="font-medium text-sm truncate hover:text-primary cursor-pointer"
                           >
-                            <Award className="h-3 w-3" />
-                            {screeningScore.toFixed(1)}%
-                          </Badge>
-                        )}
-                      </div>
+                             {application.candidate
+                              ? `${application.candidate.firstName} ${application.candidate.lastName}`
+                              : "Ứng viên"}
+                          </label>
 
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="font-medium truncate">
-                            {application.jobPosting?.title || "Vị trí không xác định"}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {screeningScore !== undefined && screeningScore !== null && typeof screeningScore === 'number' && !isNaN(screeningScore) && (
+                              <Badge
+                                className={`${getScreeningScoreColor(screeningScore)} text-white flex items-center gap-1 text-[10px] h-5 px-1.5`}
+                              >
+                                {screeningScore.toFixed(0)}
+                              </Badge>
+                            )}
+                             <Button
+                              onClick={() => onScheduleClick(application)}
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Lên lịch"
+                            >
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <span className="truncate max-w-[150px]">
+                            {application.jobPosting?.title}
                           </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="text-xs">
+                          <span>•</span>
+                          <span>
                             {(application as any).appliedDate || application.appliedAt
                               ? dayjs((application as any).appliedDate || application.appliedAt).format("DD/MM/YYYY")
                               : "N/A"}
-                            {application.daysSinceApplied !== undefined && (
-                              <span className="ml-1">
-                                ({application.daysSinceApplied} ngày trước)
-                              </span>
-                            )}
                           </span>
-                        </div>
-                        {(application as any).resumeUrl && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <FileText className="h-3 w-3 flex-shrink-0" />
-                            <span>Đã có CV</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {screeningScore !== undefined && screeningScore !== null && typeof screeningScore === 'number' && !isNaN(screeningScore) && (
-                        <div className="text-xs text-muted-foreground mb-3">
-                          Đánh giá: {getScreeningScoreLabel(screeningScore)}
-                        </div>
-                      )}
+                       </div>
                     </div>
-                  </div>
-
-                  <div className="mt-auto pt-3 border-t">
-                    <Button
-                      onClick={() => onScheduleClick(application)}
-                      variant="outline"
-                      size="sm"
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Lên lịch
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                 </div>
+              </div>
             );
           })}
 
           {total > limit && (
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-4 border-t">
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                   >
                     Trước
                   </Button>
-                  <span className="text-sm text-muted-foreground font-medium">
+                  <span className="text-xs text-muted-foreground font-medium">
                     Trang {page + 1} / {Math.ceil(total / limit)}
                   </span>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={(page + 1) * limit >= total}
                   >
                     Sau
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           )}
         </div>
       )}

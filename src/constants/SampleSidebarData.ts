@@ -67,10 +67,6 @@ export const sidebarData = {
           url: "/recruitment/interviews",
         },
         {
-          title: "So sánh Model",
-          url: "/recruitment/model-comparison",
-        },
-        {
           title: "Quản lý Câu hỏi & Bộ đề",
           url: "/recruitment/questions",
         },
@@ -114,26 +110,6 @@ export const sidebarData = {
           title: "Văn phòng",
           url: "/company/headquarters",
         },
-      ],
-    },
-
-    {
-      title: "Cài đặt",
-      url: "/settings",
-      icon: Settings2,
-      items: [
-        {
-          title: "Cấu hình chung",
-          url: "/settings/general",
-        },
-        // {
-        //   title: "Cài đặt công ty",
-        //   url: "/settings/company",
-        // },
-        // {
-        //   title: "Cài đặt hệ thống",
-        //   url: "/settings/system",
-        // },
       ],
     },
   ],
