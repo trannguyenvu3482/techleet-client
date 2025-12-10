@@ -323,7 +323,7 @@ export const examinationAPI = {
     score: number,
     reason?: string
   ): Promise<void> {
-    await api.put(
+    await api.patch(
       `api/v1/recruitment-service/question/examinations/score/${examQuestionId}`,
       { score, reason }
     );
@@ -609,12 +609,16 @@ export const recruitmentAPI = {
   async getApplicationById(
     applicationId: number
   ): Promise<{ application: Application; candidate: Candidate }> {
-    const response = await api.get<{ application: Application; candidate: Candidate }>(`/api/v1/recruitment-service/applications/${applicationId}`);
+    const response = await api.get<{
+      application: Application;
+      candidate: Candidate;
+    }>(`/api/v1/recruitment-service/applications/${applicationId}`);
     // Map screeningScore to score for compatibility
     if (response && response.application) {
-      response.application.score = response.application.screeningScore !== undefined 
-        ? response.application.screeningScore 
-        : response.application.score;
+      response.application.score =
+        response.application.screeningScore !== undefined
+          ? response.application.screeningScore
+          : response.application.score;
     }
     return response;
   },
@@ -632,32 +636,59 @@ export const recruitmentAPI = {
       screeningError?: string;
     }>;
   }> {
-    const response = await api.get<{ data: Array<Record<string, unknown>> }>(`/api/v1/recruitment-service/applications/job/${jobId}`);
+    const response = await api.get<{ data: Array<Record<string, unknown>> }>(
+      `/api/v1/recruitment-service/applications/job/${jobId}`
+    );
     // Map screeningScore to score for compatibility
     // Backend returns raw data with possible field names: screeningScore, application_screeningScore, or score
     if (response && response.data && Array.isArray(response.data)) {
       const transformedData = response.data.map((app: any) => {
         // Try multiple possible field names for score
-        const score = app.screeningScore !== undefined && app.screeningScore !== null 
-          ? app.screeningScore 
-          : app.application_screeningScore !== undefined && app.application_screeningScore !== null
-          ? app.application_screeningScore
-          : app.score !== undefined && app.score !== null
-          ? app.score
-          : null;
-        
+        const score =
+          app.screeningScore !== undefined && app.screeningScore !== null
+            ? app.screeningScore
+            : app.application_screeningScore !== undefined &&
+              app.application_screeningScore !== null
+            ? app.application_screeningScore
+            : app.score !== undefined && app.score !== null
+            ? app.score
+            : null;
+
         // Try multiple possible field names for candidate info
         // Raw query returns: candidate_firstName, candidate_lastName, candidate_email
         // Or nested: candidate.firstName, candidate.lastName, candidate.email
-        const firstName = app.candidate_firstName || app.candidate?.firstName || app.firstName || '';
-        const lastName = app.candidate_lastName || app.candidate?.lastName || app.lastName || '';
-        const email = app.candidate_email || app.candidate?.email || app.email || '';
-        const createdAt = app.application_createdAt || app.application_created_at || app.createdAt || app.created_at || app.appliedDate || app.applied_date || '';
-        const applicationId = app.application_applicationId || app.applicationId || app.application_id;
-        const candidateId = app.application_candidateId || app.candidateId || app.candidate_id;
+        const firstName =
+          app.candidate_firstName ||
+          app.candidate?.firstName ||
+          app.firstName ||
+          "";
+        const lastName =
+          app.candidate_lastName ||
+          app.candidate?.lastName ||
+          app.lastName ||
+          "";
+        const email =
+          app.candidate_email || app.candidate?.email || app.email || "";
+        const createdAt =
+          app.application_createdAt ||
+          app.application_created_at ||
+          app.createdAt ||
+          app.created_at ||
+          app.appliedDate ||
+          app.applied_date ||
+          "";
+        const applicationId =
+          app.application_applicationId ||
+          app.applicationId ||
+          app.application_id;
+        const candidateId =
+          app.application_candidateId || app.candidateId || app.candidate_id;
         const status = app.application_status || app.status;
-        const screeningError = app.application_screeningError || app.screeningError || app.screening_error;
-        
+        const screeningError =
+          app.application_screeningError ||
+          app.screeningError ||
+          app.screening_error;
+
         return {
           applicationId,
           candidateId,
@@ -729,7 +760,10 @@ export const recruitmentAPI = {
     jobPostingId?: number;
     minScreeningScore?: number;
   }): Promise<GetApplicationsResponse> {
-    return api.get("/api/v1/recruitment-service/applications/interview-requests", params);
+    return api.get(
+      "/api/v1/recruitment-service/applications/interview-requests",
+      params
+    );
   },
 
   // Interview Management
@@ -766,7 +800,7 @@ export const recruitmentAPI = {
     interviewId: number,
     data: UpdateInterviewRequest
   ): Promise<Interview> {
-    return api.put(
+    return api.patch(
       `/api/v1/recruitment-service/interview/${interviewId}`,
       data
     );
@@ -869,10 +903,9 @@ export const recruitmentAPI = {
   },
 
   async triggerCvScreening(applicationId: number): Promise<void> {
-    return api.post(
-       `/api/v1/recruitment-service/cv-screening/trigger`,
-       { applicationId }
-    );
+    return api.post(`/api/v1/recruitment-service/cv-screening/trigger`, {
+      applicationId,
+    });
   },
 
   // Get applications for testing purposes
@@ -977,7 +1010,7 @@ export const questionAPI = {
     questionId: number,
     data: UpdateQuestionRequest
   ): Promise<Question> {
-    return api.put(
+    return api.patch(
       `/api/v1/recruitment-service/question/questions/${questionId}`,
       data
     );
@@ -1012,7 +1045,7 @@ export const questionAPI = {
     setId: number,
     data: UpdateQuestionSetRequest
   ): Promise<QuestionSet> {
-    return api.put(
+    return api.patch(
       `/api/v1/recruitment-service/question/question-sets/${setId}`,
       data
     );

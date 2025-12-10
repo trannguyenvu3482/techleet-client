@@ -93,7 +93,7 @@ export const employeeAPI = {
         ? new Date(data.startDate).toISOString()
         : undefined,
     };
-    return api.put<Employee>("/api/v1/user-service/employee", requestData);
+    return api.patch<Employee>("/api/v1/user-service/employee", requestData);
   },
 
   async deleteEmployee(employeeId: number): Promise<void> {
