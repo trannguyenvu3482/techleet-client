@@ -98,14 +98,13 @@ export function EditHeadquarterModal({
     if (headquarter) {
       form.reset({
         headquarterName: headquarter.headquarterName || "",
-        address: headquarter.headquarterAddress || headquarter.address || "", // Handle both naming conventions if any
+        address: headquarter.address || "",
         city: headquarter.city || "",
         state: headquarter.state || "",
         postalCode: headquarter.postalCode || "",
         country: headquarter.country || "",
-        phoneNumber:
-          headquarter.headquarterPhone || headquarter.phoneNumber || "",
-        email: headquarter.headquarterEmail || headquarter.email || "",
+        phoneNumber: headquarter.phoneNumber || "",
+        email: headquarter.email || "",
         isActive: headquarter.isActive ?? true,
       });
     }

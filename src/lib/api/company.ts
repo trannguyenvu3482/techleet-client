@@ -1,5 +1,5 @@
-import { api } from './client';
-import { PaginatedResponse } from '@/types/api';
+import { api } from "./client";
+import { PaginatedResponse } from "@/types/api";
 
 // Department Types
 export interface Department {
@@ -48,7 +48,7 @@ export interface GetDepartmentsParams extends Record<string, unknown> {
   isActive?: boolean;
   parentDepartmentId?: number;
   sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface GetDepartmentsResponse {
@@ -106,7 +106,7 @@ export interface GetPositionsParams extends Record<string, unknown> {
   level?: string;
   isActive?: boolean;
   sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface GetPositionsResponse {
@@ -132,6 +132,8 @@ export interface Headquarter {
   createdAt: string;
   updatedAt: string;
   employeeCount?: number;
+  departments?: Department[];
+  isMainHeadquarter?: boolean;
 }
 
 export interface CreateHeadquarterRequest {
@@ -166,7 +168,7 @@ export interface GetHeadquartersParams extends Record<string, unknown> {
   country?: string;
   isActive?: boolean;
   sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface GetHeadquartersResponse {
@@ -237,14 +239,19 @@ export interface CompanyStatistics {
 // Company Management API
 export const companyAPI = {
   // Department Management
-  async getDepartments(params: GetDepartmentsParams = {}): Promise<GetDepartmentsResponse> {
-    const response = await api.get<PaginatedResponse<Department>>('/api/v1/company-service/departments', params);
+  async getDepartments(
+    params: GetDepartmentsParams = {}
+  ): Promise<GetDepartmentsResponse> {
+    const response = await api.get<PaginatedResponse<Department>>(
+      "/api/v1/company-service/departments",
+      params
+    );
     return {
       data: response.data,
       total: response.total,
       page: params.page || 1,
       limit: params.limit || 10,
-      totalPages: Math.ceil(response.total / (params.limit || 10))
+      totalPages: Math.ceil(response.total / (params.limit || 10)),
     };
   },
 
@@ -253,11 +260,17 @@ export const companyAPI = {
   },
 
   async createDepartment(data: CreateDepartmentRequest): Promise<Department> {
-    return api.post('/api/v1/company-service/departments', data);
+    return api.post("/api/v1/company-service/departments", data);
   },
 
-  async updateDepartment(departmentId: number, data: UpdateDepartmentRequest): Promise<Department> {
-    return api.patch(`/api/v1/company-service/departments/${departmentId}`, data);
+  async updateDepartment(
+    departmentId: number,
+    data: UpdateDepartmentRequest
+  ): Promise<Department> {
+    return api.patch(
+      `/api/v1/company-service/departments/${departmentId}`,
+      data
+    );
   },
 
   async deleteDepartment(departmentId: number): Promise<void> {
@@ -265,18 +278,23 @@ export const companyAPI = {
   },
 
   async getDepartmentHierarchy(): Promise<Department[]> {
-    return api.get('/api/v1/company-service/departments/hierarchy');
+    return api.get("/api/v1/company-service/departments/hierarchy");
   },
 
   // Position Management
-  async getPositions(params: GetPositionsParams = {}): Promise<GetPositionsResponse> {
-    const response = await api.get<PaginatedResponse<Position>>('/api/v1/company-service/positions', params);
+  async getPositions(
+    params: GetPositionsParams = {}
+  ): Promise<GetPositionsResponse> {
+    const response = await api.get<PaginatedResponse<Position>>(
+      "/api/v1/company-service/positions",
+      params
+    );
     return {
       data: response.data,
       total: response.total,
       page: params.page || 1,
       limit: params.limit || 10,
-      totalPages: Math.ceil(response.total / (params.limit || 10))
+      totalPages: Math.ceil(response.total / (params.limit || 10)),
     };
   },
 
@@ -285,10 +303,13 @@ export const companyAPI = {
   },
 
   async createPosition(data: CreatePositionRequest): Promise<Position> {
-    return api.post('/api/v1/company-service/positions', data);
+    return api.post("/api/v1/company-service/positions", data);
   },
 
-  async updatePosition(positionId: number, data: UpdatePositionRequest): Promise<Position> {
+  async updatePosition(
+    positionId: number,
+    data: UpdatePositionRequest
+  ): Promise<Position> {
     return api.patch(`/api/v1/company-service/positions/${positionId}`, data);
   },
 
@@ -301,12 +322,15 @@ export const companyAPI = {
     // Get positions that are used in job postings of this department
     try {
       // Get job postings for this department to find which positions are used
-      const jobPostingsResponse = await api.get<PaginatedResponse<any>>('/api/v1/recruitment-service/job-postings', {
-        page: 0,
-        limit: 100,
-        departmentId: departmentId
-      });
-      
+      const jobPostingsResponse = await api.get<PaginatedResponse<any>>(
+        "/api/v1/recruitment-service/job-postings",
+        {
+          page: 0,
+          limit: 100,
+          departmentId: departmentId,
+        }
+      );
+
       // Extract unique positionIds from job postings
       const positionIds = new Set<number>();
       (jobPostingsResponse.data || []).forEach((job: any) => {
@@ -314,59 +338,70 @@ export const companyAPI = {
           positionIds.add(job.positionId);
         }
       });
-      
+
       // Get all positions
-      const positionsResponse = await api.get<PaginatedResponse<Position>>('/api/v1/company-service/positions', {
-        page: 0,
-        limit: 100
-      });
-      
+      const positionsResponse = await api.get<PaginatedResponse<Position>>(
+        "/api/v1/company-service/positions",
+        {
+          page: 0,
+          limit: 100,
+        }
+      );
+
       // If department has job postings, filter positions used in those job postings
       // Otherwise, return all positions (new department, no job postings yet)
       let filtered: Position[];
       if (positionIds.size > 0) {
-        filtered = (positionsResponse.data || []).filter((position: Position) => 
+        filtered = (positionsResponse.data || []).filter((position: Position) =>
           positionIds.has(position.positionId)
         );
       } else {
         // No job postings for this department yet, return all positions
         filtered = positionsResponse.data || [];
       }
-      
-      console.log('getPositionsByDepartment:', {
+
+      console.log("getPositionsByDepartment:", {
         departmentId,
         jobPostingsCount: jobPostingsResponse.data?.length || 0,
         uniquePositionIds: Array.from(positionIds),
         totalPositions: positionsResponse.data?.length || 0,
-        filteredCount: filtered.length
+        filteredCount: filtered.length,
       });
-      
+
       return filtered;
     } catch (error) {
-      console.error('Error in getPositionsByDepartment:', error);
+      console.error("Error in getPositionsByDepartment:", error);
       // Fallback: return all positions if error occurs
       try {
-        const response = await api.get<PaginatedResponse<Position>>('/api/v1/company-service/positions', {
-          page: 0,
-          limit: 100
-        });
+        const response = await api.get<PaginatedResponse<Position>>(
+          "/api/v1/company-service/positions",
+          {
+            page: 0,
+            limit: 100,
+          }
+        );
         return response.data || [];
       } catch (fallbackError) {
-        console.error('Error in fallback:', fallbackError);
+        console.error("Error in fallback:", fallbackError);
         return [];
       }
     }
   },
 
   // Headquarter Management
-  async getHeadquarters(params: GetHeadquartersParams = {}): Promise<GetHeadquartersResponse> {
-    const response = await api.get<PaginatedResponse<Headquarter>>('/api/v1/company-service/headquarters', params);
+  async getHeadquarters(
+    params: GetHeadquartersParams = {}
+  ): Promise<GetHeadquartersResponse> {
+    const response = await api.get<PaginatedResponse<Headquarter>>(
+      "/api/v1/company-service/headquarters",
+      params
+    );
     return {
       data: response.data,
       total: response.total,
       page: params.page || 1,
       limit: params.limit || 10,
-      totalPages: Math.ceil(response.total / (params.limit || 10))
+      totalPages: Math.ceil(response.total / (params.limit || 10)),
     };
   },
 
@@ -374,12 +409,20 @@ export const companyAPI = {
     return api.get(`/api/v1/company-service/headquarters/${headquarterId}`);
   },
 
-  async createHeadquarter(data: CreateHeadquarterRequest): Promise<Headquarter> {
-    return api.post('/api/v1/company-service/headquarters', data);
+  async createHeadquarter(
+    data: CreateHeadquarterRequest
+  ): Promise<Headquarter> {
+    return api.post("/api/v1/company-service/headquarters", data);
   },
 
-  async updateHeadquarter(headquarterId: number, data: UpdateHeadquarterRequest): Promise<Headquarter> {
-    return api.patch(`/api/v1/company-service/headquarters/${headquarterId}`, data);
+  async updateHeadquarter(
+    headquarterId: number,
+    data: UpdateHeadquarterRequest
+  ): Promise<Headquarter> {
+    return api.patch(
+      `/api/v1/company-service/headquarters/${headquarterId}`,
+      data
+    );
   },
 
   async deleteHeadquarter(headquarterId: number): Promise<void> {
@@ -387,8 +430,10 @@ export const companyAPI = {
   },
 
   // Company Settings Management
-  async getCompanySettings(params: GetCompanySettingsParams = {}): Promise<CompanySetting[]> {
-    return api.get('/api/v1/company-service/settings', params);
+  async getCompanySettings(
+    params: GetCompanySettingsParams = {}
+  ): Promise<CompanySetting[]> {
+    return api.get("/api/v1/company-service/settings", params);
   },
 
   async getCompanySettingById(settingId: number): Promise<CompanySetting> {
@@ -399,16 +444,26 @@ export const companyAPI = {
     return api.get(`/api/v1/company-service/settings/key/${settingKey}`);
   },
 
-  async createCompanySetting(data: CreateCompanySettingRequest): Promise<CompanySetting> {
-    return api.post('/api/v1/company-service/settings', data);
+  async createCompanySetting(
+    data: CreateCompanySettingRequest
+  ): Promise<CompanySetting> {
+    return api.post("/api/v1/company-service/settings", data);
   },
 
-  async updateCompanySetting(settingId: number, data: UpdateCompanySettingRequest): Promise<CompanySetting> {
+  async updateCompanySetting(
+    settingId: number,
+    data: UpdateCompanySettingRequest
+  ): Promise<CompanySetting> {
     return api.patch(`/api/v1/company-service/settings/${settingId}`, data);
   },
 
-  async updateCompanySettingByKey(settingKey: string, settingValue: string): Promise<CompanySetting> {
-    return api.patch(`/api/v1/company-service/settings/key/${settingKey}`, { settingValue });
+  async updateCompanySettingByKey(
+    settingKey: string,
+    settingValue: string
+  ): Promise<CompanySetting> {
+    return api.patch(`/api/v1/company-service/settings/key/${settingKey}`, {
+      settingValue,
+    });
   },
 
   async deleteCompanySetting(settingId: number): Promise<void> {
@@ -417,15 +472,23 @@ export const companyAPI = {
 
   // Company Statistics
   async getCompanyStatistics(): Promise<CompanyStatistics> {
-    return api.get('/api/v1/company-service/statistics');
+    return api.get("/api/v1/company-service/statistics");
   },
 
-  async getDepartmentStatistics(departmentId: number): Promise<Record<string, unknown>> {
-    return api.get(`/api/v1/company-service/departments/${departmentId}/statistics`);
+  async getDepartmentStatistics(
+    departmentId: number
+  ): Promise<Record<string, unknown>> {
+    return api.get(
+      `/api/v1/company-service/departments/${departmentId}/statistics`
+    );
   },
 
-  async getHeadquarterStatistics(headquarterId: number): Promise<Record<string, unknown>> {
-    return api.get(`/api/v1/company-service/headquarters/${headquarterId}/statistics`);
+  async getHeadquarterStatistics(
+    headquarterId: number
+  ): Promise<Record<string, unknown>> {
+    return api.get(
+      `/api/v1/company-service/headquarters/${headquarterId}/statistics`
+    );
   },
 };
 

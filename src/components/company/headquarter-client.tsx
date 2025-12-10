@@ -242,26 +242,20 @@ export function HeadquarterClient() {
           <div className="space-y-2 text-sm">
             <div className="flex items-start gap-2 text-muted-foreground">
               <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-              <span className="line-clamp-2">
-                {headquarter.headquarterAddress}
-              </span>
+              <span className="line-clamp-2">{headquarter.address}</span>
             </div>
 
-            {(headquarter.headquarterPhone || headquarter.phoneNumber) && (
+            {headquarter.phoneNumber && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-4 w-4 shrink-0" />
-                <span>
-                  {headquarter.headquarterPhone || headquarter.phoneNumber}
-                </span>
+                <span>{headquarter.phoneNumber}</span>
               </div>
             )}
 
-            {(headquarter.headquarterEmail || headquarter.email) && (
+            {headquarter.email && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {headquarter.headquarterEmail || headquarter.email}
-                </span>
+                <span className="truncate">{headquarter.email}</span>
               </div>
             )}
           </div>
