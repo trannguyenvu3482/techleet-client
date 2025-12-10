@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,45 +9,56 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Plus } from "lucide-react"
-import { toast } from "sonner"
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { companyAPI, Department, Position } from "@/lib/api/company";
+import { Employee } from "./employee-table";
 
 export interface EmployeeFormData {
-  firstName: string
-  lastName: string
-  email: string
-  phoneNumber: string
-  address: string
-  birthDate: string
-  gender: boolean
-  startDate: string
-  isActive: boolean
-  avatarUrl?: string
-  baseSalary: number
-  departmentId: number
-  positionId: number
-  permissions: number[]
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  birthDate: string;
+  gender: boolean;
+  startDate: string;
+  isActive: boolean;
+  avatarUrl?: string;
+  baseSalary: number;
+  departmentId: number;
+  positionId: number;
+  permissions: number[];
 }
 
-interface AddEmployeeModalProps {
-  onSubmit: (data: EmployeeFormData) => Promise<void>
-  isLoading?: boolean
+interface EmployeeModalProps {
+  onSubmit: (data: EmployeeFormData) => Promise<void>;
+  employee?: Employee | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isLoading?: boolean;
 }
 
-export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps) {
-  const [open, setOpen] = React.useState(false)
+export function EmployeeModal({
+  onSubmit,
+  employee,
+  open,
+  onOpenChange,
+  isLoading,
+}: EmployeeModalProps) {
+  const [departments, setDepartments] = React.useState<Department[]>([]);
+  const [positions, setPositions] = React.useState<Position[]>([]);
+
   const [formData, setFormData] = React.useState<EmployeeFormData>({
     firstName: "",
     lastName: "",
@@ -60,44 +71,32 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
     isActive: true,
     avatarUrl: "",
     baseSalary: 0,
-    departmentId: 1,
-    positionId: 1,
+    departmentId: 0,
+    positionId: 0,
     permissions: [1, 2],
-  })
+  });
 
-  const validateForm = (): string[] => {
-    const errors: string[] = []
-
-    if (!formData.firstName.trim()) errors.push("Họ là bắt buộc")
-    if (!formData.lastName.trim()) errors.push("Tên là bắt buộc")
-    if (!formData.email.trim()) errors.push("Email là bắt buộc")
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push("Email không hợp lệ")
-    }
-    if (!formData.phoneNumber.trim()) errors.push("Số điện thoại là bắt buộc")
-    if (formData.phoneNumber && !/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
-      errors.push("Số điện thoại phải có 10-11 chữ số")
-    }
-    if (!formData.address.trim()) errors.push("Địa chỉ là bắt buộc")
-    if (!formData.birthDate) errors.push("Ngày sinh là bắt buộc")
-    if (!formData.startDate) errors.push("Ngày bắt đầu là bắt buộc")
-    if (formData.baseSalary <= 0) errors.push("Lương cơ bản phải lớn hơn 0")
-
-    return errors
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const errors = validateForm()
-    if (errors.length > 0) {
-      errors.forEach(error => toast.error(error))
-      return
-    }
-
-    try {
-      await onSubmit(formData)
-      setOpen(false)
+  // Load initial data when editing
+  React.useEffect(() => {
+    if (employee) {
+      setFormData({
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        phoneNumber: employee.phoneNumber,
+        address: employee.address,
+        birthDate: extractDate(employee.birthDate),
+        gender: employee.gender,
+        startDate: extractDate(employee.startDate),
+        isActive: employee.isActive,
+        avatarUrl: employee.avatarUrl || "",
+        baseSalary: employee.baseSalary,
+        departmentId: employee.departmentId,
+        positionId: employee.positionId,
+        permissions: employee.permissions || [1, 2],
+      });
+    } else {
+      // Reset form when adding new
       setFormData({
         firstName: "",
         lastName: "",
@@ -110,32 +109,97 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
         isActive: true,
         avatarUrl: "",
         baseSalary: 0,
-        departmentId: 1,
-        positionId: 1,
+        departmentId: 0,
+        positionId: 0,
         permissions: [1, 2],
-      })
-    } catch (error) {
-      console.error("Error creating employee:", error)
+      });
     }
-  }
+  }, [employee, open]);
 
-  const updateFormData = (field: keyof EmployeeFormData, value: string | number | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+  // Fetch Metadata
+  React.useEffect(() => {
+    if (open) {
+      const fetchData = async () => {
+        try {
+          const [deptRes, posRes] = await Promise.all([
+            companyAPI.getDepartments({ limit: 100 }),
+            companyAPI.getPositions({ limit: 100 }),
+          ]);
+          setDepartments(deptRes.data);
+          setPositions(posRes.data);
+        } catch (error) {
+          toast.error("Không thể tải dữ liệu phòng ban/chức vụ");
+        }
+      };
+      fetchData();
+    }
+  }, [open]);
+
+  const extractDate = (dateString?: string) => {
+    if (!dateString) return "";
+    return new Date(dateString).toISOString().split("T")[0];
+  };
+
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+
+    if (!formData.firstName.trim()) errors.push("Họ là bắt buộc");
+    if (!formData.lastName.trim()) errors.push("Tên là bắt buộc");
+    if (!formData.email.trim()) errors.push("Email là bắt buộc");
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push("Email không hợp lệ");
+    }
+    if (!formData.phoneNumber.trim()) errors.push("Số điện thoại là bắt buộc");
+    if (
+      formData.phoneNumber &&
+      !/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ""))
+    ) {
+      errors.push("Số điện thoại phải có 10-11 chữ số");
+    }
+    if (!formData.address.trim()) errors.push("Địa chỉ là bắt buộc");
+    if (!formData.birthDate) errors.push("Ngày sinh là bắt buộc");
+    if (!formData.startDate) errors.push("Ngày bắt đầu là bắt buộc");
+    if (formData.baseSalary <= 0) errors.push("Lương cơ bản phải lớn hơn 0");
+    if (!formData.departmentId) errors.push("Vui lòng chọn phòng ban");
+    if (!formData.positionId) errors.push("Vui lòng chọn chức vụ");
+
+    return errors;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors = validateForm();
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
+      return;
+    }
+
+    try {
+      await onSubmit(formData);
+    } catch (error) {
+      console.error("Error submitting employee:", error);
+    }
+  };
+
+  const updateFormData = (
+    field: keyof EmployeeFormData,
+    value: string | number | boolean
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm nhân viên
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Thêm nhân viên mới</DialogTitle>
+          <DialogTitle>
+            {employee ? "Cập nhật nhân viên" : "Thêm nhân viên mới"}
+          </DialogTitle>
           <DialogDescription>
-            Điền thông tin để thêm nhân viên mới vào hệ thống
+            {employee
+              ? "Chỉnh sửa thông tin nhân viên"
+              : "Điền thông tin để thêm nhân viên mới vào hệ thống"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,7 +210,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
                 id="firstName"
                 placeholder="Trần"
                 value={formData.firstName}
-                onChange={(e) => updateFormData('firstName', e.target.value)}
+                onChange={(e) => updateFormData("firstName", e.target.value)}
                 required
               />
             </div>
@@ -156,7 +220,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
                 id="lastName"
                 placeholder="Viễn"
                 value={formData.lastName}
-                onChange={(e) => updateFormData('lastName', e.target.value)}
+                onChange={(e) => updateFormData("lastName", e.target.value)}
                 required
               />
             </div>
@@ -169,8 +233,9 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               type="email"
               placeholder="tran.vien@example.com"
               value={formData.email}
-              onChange={(e) => updateFormData('email', e.target.value)}
+              onChange={(e) => updateFormData("email", e.target.value)}
               required
+              disabled={!!employee} // Disable email edit for existing employee
             />
           </div>
 
@@ -181,13 +246,18 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
                 id="phoneNumber"
                 placeholder="093xxxxxxx"
                 value={formData.phoneNumber}
-                onChange={(e) => updateFormData('phoneNumber', e.target.value)}
+                onChange={(e) => updateFormData("phoneNumber", e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="gender">Giới tính</Label>
-              <Select onValueChange={(value) => updateFormData('gender', value === "true")} value={formData.gender ? "true" : "false"}>
+              <Select
+                onValueChange={(value) =>
+                  updateFormData("gender", value === "true")
+                }
+                value={formData.gender ? "true" : "false"}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn giới tính" />
                 </SelectTrigger>
@@ -205,7 +275,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               id="address"
               placeholder="07 Xô Viết Nghệ Tĩnh, Huyện Hòa Vang, TP. Đà Nẵng"
               value={formData.address}
-              onChange={(e) => updateFormData('address', e.target.value)}
+              onChange={(e) => updateFormData("address", e.target.value)}
               required
             />
           </div>
@@ -216,7 +286,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               id="birthDate"
               type="date"
               value={formData.birthDate}
-              onChange={(e) => updateFormData('birthDate', e.target.value)}
+              onChange={(e) => updateFormData("birthDate", e.target.value)}
               required
               className="w-full"
             />
@@ -228,7 +298,7 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               id="startDate"
               type="date"
               value={formData.startDate}
-              onChange={(e) => updateFormData('startDate', e.target.value)}
+              onChange={(e) => updateFormData("startDate", e.target.value)}
               required
               className="w-full"
             />
@@ -242,7 +312,9 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               placeholder="12000000"
               min={0}
               value={formData.baseSalary}
-              onChange={(e) => updateFormData('baseSalary', Number(e.target.value))}
+              onChange={(e) =>
+                updateFormData("baseSalary", Number(e.target.value))
+              }
               required
             />
           </div>
@@ -253,49 +325,99 @@ export function AddEmployeeModal({ onSubmit, isLoading }: AddEmployeeModalProps)
               id="avatarUrl"
               placeholder="https://example.com/avatar.jpg"
               value={formData.avatarUrl}
-              onChange={(e) => updateFormData('avatarUrl', e.target.value)}
+              onChange={(e) => updateFormData("avatarUrl", e.target.value)}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="departmentId">Phòng ban *</Label>
-              <Select onValueChange={(value) => updateFormData('departmentId', Number(value))} value={formData.departmentId.toString()}>
+              <Select
+                onValueChange={(value) =>
+                  updateFormData("departmentId", Number(value))
+                }
+                value={
+                  formData.departmentId ? formData.departmentId.toString() : ""
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn phòng ban" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Phòng Nhân sự</SelectItem>
-                  <SelectItem value="2">Phòng Kỹ thuật</SelectItem>
-                  <SelectItem value="3">Phòng Kế toán</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem
+                      key={dept.departmentId}
+                      value={dept.departmentId.toString()}
+                    >
+                      {dept.departmentName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="positionId">Chức vụ *</Label>
-              <Select onValueChange={(value) => updateFormData('positionId', Number(value))} value={formData.positionId.toString()}>
+              <Select
+                onValueChange={(value) =>
+                  updateFormData("positionId", Number(value))
+                }
+                value={
+                  formData.positionId ? formData.positionId.toString() : ""
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn chức vụ" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Nhân viên</SelectItem>
-                  <SelectItem value="2">Trưởng nhóm</SelectItem>
-                  <SelectItem value="3">Quản lý</SelectItem>
+                  {positions.map((pos) => (
+                    <SelectItem
+                      key={pos.positionId}
+                      value={pos.positionId.toString()}
+                    >
+                      {pos.positionName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="isActive">Trạng thái</Label>
+            <Select
+              onValueChange={(value) =>
+                updateFormData("isActive", value === "true")
+              }
+              value={formData.isActive ? "true" : "false"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Hoạt động</SelectItem>
+                <SelectItem value="false">Không hoạt động</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Hủy
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Đang tạo..." : "Tạo nhân viên"}
+              {isLoading
+                ? "Đang xử lý..."
+                : employee
+                ? "Cập nhật"
+                : "Tạo nhân viên"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

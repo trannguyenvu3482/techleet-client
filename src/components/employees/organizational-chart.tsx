@@ -1,128 +1,122 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Users, ZoomIn, ZoomOut, Download } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  ZoomIn,
+  ZoomOut,
+  Download,
+  Building2,
+  Briefcase,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { companyAPI, Department, Position } from "@/lib/api/company";
+import { employeeAPI } from "@/lib/api/employees";
+import { Employee } from "./employee-table";
+import { toast } from "sonner";
 
-// Mock organizational data
 interface OrgNode {
-  id: number
-  name: string
-  position: string
-  department: string
-  email: string
-  avatarUrl?: string
-  employees?: OrgNode[]
-  isExpanded?: boolean
-}
-
-const mockOrgData: OrgNode = {
-  id: 1,
-  name: "Nguyễn Văn An",
-  position: "Giám đốc điều hành",
-  department: "Ban lãnh đạo",
-  email: "an.nguyen@techleet.com",
-  isExpanded: true,
-  employees: [
-    {
-      id: 2,
-      name: "Trần Thị Bình",
-      position: "Giám đốc Kỹ thuật",
-      department: "Phòng Kỹ thuật",
-      email: "binh.tran@techleet.com",
-      isExpanded: true,
-      employees: [
-        {
-          id: 3,
-          name: "Lê Văn Cường",
-          position: "Team Lead Frontend",
-          department: "Phòng Kỹ thuật",
-          email: "cuong.le@techleet.com",
-          employees: [
-            {
-              id: 4,
-              name: "Phạm Văn Đức",
-              position: "Senior Frontend Developer",
-              department: "Phòng Kỹ thuật",
-              email: "duc.pham@techleet.com"
-            },
-            {
-              id: 5,
-              name: "Hoàng Thị Mai",
-              position: "Frontend Developer",
-              department: "Phòng Kỹ thuật",
-              email: "mai.hoang@techleet.com"
-            }
-          ]
-        },
-        {
-          id: 6,
-          name: "Vũ Minh Tuấn",
-          position: "Team Lead Backend",
-          department: "Phòng Kỹ thuật",
-          email: "tuan.vu@techleet.com",
-          employees: [
-            {
-              id: 7,
-              name: "Đặng Văn Hùng",
-              position: "Senior Backend Developer",
-              department: "Phòng Kỹ thuật",
-              email: "hung.dang@techleet.com"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 8,
-      name: "Bùi Thị Lan",
-      position: "Giám đốc Nhân sự",
-      department: "Phòng Nhân sự",
-      email: "lan.bui@techleet.com",
-      employees: [
-        {
-          id: 9,
-          name: "Lương Văn Nam",
-          position: "HR Specialist",
-          department: "Phòng Nhân sự",
-          email: "nam.luong@techleet.com"
-        },
-        {
-          id: 10,
-          name: "Ngô Thị Hương",
-          position: "Recruiter",
-          department: "Phòng Nhân sự",
-          email: "huong.ngo@techleet.com"
-        }
-      ]
-    },
-    {
-      id: 11,
-      name: "Đỗ Văn Minh",
-      position: "Giám đốc Tài chính",
-      department: "Phòng Tài chính",
-      email: "minh.do@techleet.com",
-      employees: [
-        {
-          id: 12,
-          name: "Cao Thị Phương",
-          position: "Kế toán trưởng",
-          department: "Phòng Tài chính",
-          email: "phuong.cao@techleet.com"
-        }
-      ]
-    }
-  ]
+  id: string;
+  name: string;
+  title: string;
+  type: "company" | "department" | "position" | "employee";
+  avatarUrl?: string;
+  children?: OrgNode[];
+  isExpanded?: boolean;
+  details?: any;
 }
 
 export function OrganizationalChart() {
-  const [zoom, setZoom] = React.useState(1)
+  const [zoom, setZoom] = React.useState(1);
+  const [data, setData] = React.useState<OrgNode | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5))
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5))
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 1.5));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.5));
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [deptRes, posRes, empRes] = await Promise.all([
+          companyAPI.getDepartments({ limit: 100 }),
+          companyAPI.getPositions({ limit: 100 }),
+          employeeAPI.getEmployees({ limit: 1000 }),
+        ]);
+
+        const departments = deptRes.data;
+        const positions = posRes.data;
+        const employees = empRes.data;
+
+        // Build Tree: Company -> Department -> Position -> Employee
+        const tree: OrgNode = {
+          id: "company",
+          name: "TechLeet",
+          title: "Công ty",
+          type: "company",
+          isExpanded: true,
+          children: departments.map((dept): OrgNode => {
+            const deptPositions = positions.filter(
+              (p) => p.departmentId === dept.departmentId
+            );
+
+            return {
+              id: `dept-${dept.departmentId}`,
+              name: dept.departmentName,
+              title: "Phòng ban",
+              type: "department",
+              isExpanded: true,
+              children: deptPositions
+                .map((pos): OrgNode => {
+                  const posEmployees = employees.filter(
+                    (e) => e.positionId === pos.positionId
+                  );
+
+                  return {
+                    id: `pos-${pos.positionId}`,
+                    name: pos.positionName,
+                    title: "Chức vụ",
+                    type: "position",
+                    isExpanded: true,
+                    children: posEmployees.map(
+                      (emp): OrgNode => ({
+                        id: `emp-${emp.employeeId}`,
+                        name: `${emp.firstName} ${emp.lastName}`,
+                        title: pos.positionName,
+                        type: "employee",
+                        avatarUrl: emp.avatarUrl,
+                        details: emp,
+                      })
+                    ),
+                  };
+                })
+                .filter((node) => true),
+            };
+          }),
+        };
+
+        setData(tree);
+      } catch (error) {
+        toast.error("Không thể tải dữ liệu sơ đồ tổ chức");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-[400px] flex items-center justify-center">
+        Đang tải sơ đồ...
+      </div>
+    );
+  }
 
   return (
     <div className="h-[800px] flex flex-col space-y-4">
@@ -130,59 +124,65 @@ export function OrganizationalChart() {
         <div>
           <h2 className="text-xl font-semibold">Cơ cấu tổ chức</h2>
           <p className="text-muted-foreground">
-            Sơ đồ cây trực quan
+            Sơ đồ cây theo Phòng ban & Chức vụ
           </p>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleZoomOut}>
-                <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-sm w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <Button variant="outline" size="sm" onClick={handleZoomIn}>
-                <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Xuất sơ đồ
-            </Button>
+          <Button variant="outline" size="sm" onClick={handleZoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-sm w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button variant="outline" size="sm" onClick={handleZoomIn}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Xuất sơ đồ
+          </Button>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto border rounded-lg bg-slate-50/50 p-8 shadow-inner relative">
-        <div 
+        <div
           className="min-w-max mx-auto origin-top transition-transform duration-200"
           style={{ transform: `scale(${zoom})` }}
         >
-          <Tree node={mockOrgData} />
+          {data && <Tree node={data} />}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const Tree = ({ node }: { node: OrgNode }) => {
   return (
     <div className="flex flex-col items-center">
       <NodeCard node={node} />
-      {node.employees && node.employees.length > 0 && (
+      {node.children && node.children.length > 0 && (
         <>
           <div className="h-8 w-px bg-border"></div>
           <div className="flex gap-8 relative">
-             {/* Connecting line top */}
+            {/* Connecting line top */}
             <div className="absolute top-0 left-1/2 -ml-px w-px h-4 bg-border"></div>
-            
+
             {/* Horizontal line */}
-            {node.employees.length > 1 && (
-                 <div className="absolute top-0 left-0 right-0 h-px bg-border mt-0"
-                    style={{ 
-                        left: `calc(100% / ${node.employees.length * 2})`, 
-                        right: `calc(100% / ${node.employees.length * 2})`
-                    }}
-                 ></div>
+            {node.children.length > 1 && (
+              <div
+                className="absolute top-0 left-0 right-0 h-px bg-border mt-0"
+                style={{
+                  left: `calc(100% / ${node.children.length * 2})`,
+                  right: `calc(100% / ${node.children.length * 2})`,
+                }}
+              ></div>
             )}
-            
-            {node.employees.map((child, index) => (
-              <div key={child.id} className="flex flex-col items-center relative pt-4">
+
+            {node.children.map((child, index) => (
+              <div
+                key={child.id}
+                className="flex flex-col items-center relative pt-4"
+              >
                 {/* Vertical line specifically for this child */}
                 <div className="absolute top-0 left-1/2 -ml-px w-px h-4 bg-border"></div>
                 <Tree node={child} />
@@ -192,37 +192,91 @@ const Tree = ({ node }: { node: OrgNode }) => {
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
 const NodeCard = ({ node }: { node: OrgNode }) => {
-  return (
-    <div className="relative group">
-        <div className="w-64 bg-white rounded-xl border-t-4 border-t-primary shadow-sm hover:shadow-lg transition-all duration-300 p-4 flex flex-col items-center gap-3 z-10 relative">
-            <div className="absolute -top-3">
-                <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
-                    <AvatarImage src={node.avatarUrl} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                        {node.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                </Avatar>
-            </div>
-            
-            <div className="mt-5 text-center w-full">
-                <h3 className="font-semibold text-sm truncate w-full" title={node.name}>{node.name}</h3>
-                <p className="text-xs text-primary font-medium truncate w-full" title={node.position}>{node.position}</p>
-                <div className="mt-2 text-[10px] text-muted-foreground bg-slate-50 py-1 px-2 rounded-full inline-block">
-                    {node.department}
-                </div>
-            </div>
+  const getIcon = () => {
+    switch (node.type) {
+      case "company":
+        return <Building2 className="h-4 w-4 text-white" />;
+      case "department":
+        return <Building2 className="h-4 w-4 text-primary" />;
+      case "position":
+        return <Briefcase className="h-4 w-4 text-orange-500" />;
+      default:
+        return null;
+    }
+  };
 
-            {node.employees && node.employees.length > 0 && (
-                <div className="absolute -bottom-3 bg-white px-2 py-0.5 rounded-full border shadow-sm text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {node.employees.length}
-                </div>
-            )}
+  const getColors = () => {
+    switch (node.type) {
+      case "company":
+        return "bg-slate-800 text-white border-slate-700";
+      case "department":
+        return "bg-white border-primary/50";
+      case "position":
+        return "bg-white border-orange-200";
+      case "employee":
+        return "bg-white border-slate-200";
+    }
+  };
+
+  if (node.type === "employee") {
+    return (
+      <div className="w-48 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 flex items-center gap-3 relative group">
+        <Avatar className="h-8 w-8 border shadow-sm">
+          <AvatarImage src={node.avatarUrl} />
+          <AvatarFallback className="bg-slate-100 text-[10px]">
+            {node.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="font-medium text-xs break-words">{node.name}</div>
+          <div className="text-[10px] text-muted-foreground truncate">
+            {node.details?.email}
+          </div>
         </div>
+        {node.details?.isActive === false && (
+          <div className="absolute top-0 right-0 p-1">
+            <span
+              className="h-2 w-2 rounded-full bg-red-400 block"
+              title="Không hoạt động"
+            ></span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative group w-auto min-w-[180px] rounded-xl border-t-4 shadow-sm p-3 flex flex-col items-center gap-2 z-10 ${getColors()}`}
+    >
+      {node.type === "company" ? (
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-slate-700 rounded-lg">{getIcon()}</div>
+          <div className="font-bold text-sm">{node.name}</div>
+        </div>
+      ) : (
+        <div className="text-center">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+            {getIcon()}
+            {node.title}
+          </div>
+          <div className="font-bold text-sm">{node.name}</div>
+        </div>
+      )}
+
+      {node.children && node.children.length > 0 && (
+        <div className="mt-1 bg-slate-100/50 px-2 py-0.5 rounded-full border border-slate-100 shadow-sm text-[10px] font-medium text-slate-500 flex items-center gap-1">
+          <Users className="h-3 w-3" />
+          {node.children.length}
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};

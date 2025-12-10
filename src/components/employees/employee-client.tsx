@@ -1,156 +1,186 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { EmployeeTable, Employee } from "@/components/employees/employee-table"
-import { AddEmployeeModal, EmployeeFormData } from "@/components/employees/add-employee-modal"
-import { employeeAPI } from "@/lib/api/employees"
-import { toast } from "sonner"
+import * as React from "react";
+import { EmployeeTable, Employee } from "@/components/employees/employee-table";
+import {
+  EmployeeModal,
+  EmployeeFormData,
+} from "@/components/employees/add-employee-modal";
+import { employeeAPI } from "@/lib/api/employees";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export function EmployeeClient() {
-  const [employees, setEmployees] = React.useState<Employee[]>([])
-  const [total, setTotal] = React.useState(0)
-  const [creating, setCreating] = React.useState(false)
-  const [loading, setLoading] = React.useState(true)
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [total, setTotal] = React.useState(0);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [editingEmployee, setEditingEmployee] = React.useState<Employee | null>(
+    null
+  );
+
+  const [creating, setCreating] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   // Pagination state
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const [pageSize] = React.useState(10)
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize] = React.useState(10);
 
   // Search state
-  const [searchTerm, setSearchTerm] = React.useState("")
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState("")
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState("");
 
   // Sort state
-  const [sortBy, setSortBy] = React.useState<string>("")
-  const [sortOrder, setSortOrder] = React.useState<'ASC' | 'DESC'>('ASC')
+  const [sortBy, setSortBy] = React.useState<string>("");
+  const [sortOrder, setSortOrder] = React.useState<"ASC" | "DESC">("ASC");
 
   // Debounce search term
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 500)
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
 
-    return () => clearTimeout(timer)
-  }, [searchTerm])
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const fetchEmployees = React.useCallback(async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const params = {
-        page: currentPage - 1, // API expects 0-based page
+        page: currentPage - 1,
         limit: pageSize,
         ...(debouncedSearchTerm && { keyword: debouncedSearchTerm }),
-        ...(sortBy && { sortBy, sortOrder })
-      }
-      const response = await employeeAPI.getEmployees(params)
-      setEmployees(response.data)
-      setTotal(response.total)
+        ...(sortBy && { sortBy, sortOrder }),
+      };
+      const response = await employeeAPI.getEmployees(params);
+      setEmployees(response.data);
+      setTotal(response.total);
     } catch (error) {
-      toast.error('Không thể tải danh sách nhân viên')
+      toast.error("Không thể tải danh sách nhân viên");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [currentPage, pageSize, debouncedSearchTerm, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearchTerm, sortBy, sortOrder]);
 
   // Fetch employees when page, search, or sort changes
   React.useEffect(() => {
-    fetchEmployees()
-  }, [fetchEmployees])
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const refreshEmployees = () => {
-    fetchEmployees()
-  }
+    fetchEmployees();
+  };
 
-  const handleCreateEmployee = async (data: EmployeeFormData) => {
+  const handleCreateEmployee = () => {
+    setEditingEmployee(null);
+    setModalOpen(true);
+  };
+
+  const handleSubmitEmployee = async (data: EmployeeFormData) => {
     try {
-      setCreating(true)
-      const newEmployee = await employeeAPI.createEmployee(data)
-      setEmployees(prev => [newEmployee, ...prev])
-      setTotal(prev => prev + 1)
-      toast.success('Tạo nhân viên thành công!')
+      setCreating(true);
+      if (editingEmployee) {
+        // Edit existing
+        await employeeAPI.updateEmployee(editingEmployee.employeeId, data);
+        toast.success("Cập nhật nhân viên thành công!");
+      } else {
+        // Create new
+        await employeeAPI.createEmployee(data);
+        toast.success("Tạo nhân viên thành công!");
+      }
+      setModalOpen(false);
+      fetchEmployees(); // Refresh list
     } catch (error) {
-      toast.error('Không thể tạo nhân viên')
-      throw error
+      toast.error(
+        editingEmployee
+          ? "Không thể cập nhật nhân viên"
+          : "Không thể tạo nhân viên"
+      );
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   const handleEditEmployee = (employee: Employee) => {
-    // TODO: Implement edit functionality
-    toast.info('Chức năng chỉnh sửa sẽ được triển khai sau')
-  }
+    setEditingEmployee(employee);
+    setModalOpen(true);
+  };
 
-  const handleDeleteEmployee = (employeeId: number) => {
-    // TODO: Implement delete functionality
-    toast.info('Chức năng xóa sẽ được triển khai sau')
-  }
+  const handleDeleteEmployee = async (employeeId: number) => {
+    if (confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
+      try {
+        await employeeAPI.deleteEmployee(employeeId);
+        toast.success("Đã xóa nhân viên");
+        fetchEmployees();
+      } catch (error) {
+        toast.error("Không thể xóa nhân viên");
+      }
+    }
+  };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   const handleSearchChange = (search: string) => {
-    setSearchTerm(search)
-    setCurrentPage(1) // Reset to first page when searching
-  }
+    setSearchTerm(search);
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
-  const handleSortChange = (newSortBy: string, newSortOrder: 'ASC' | 'DESC') => {
-    setSortBy(newSortBy)
-    setSortOrder(newSortOrder)
-    setCurrentPage(1) // Reset to first page when sorting
-  }
+  const handleSortChange = (
+    newSortBy: string,
+    newSortOrder: "ASC" | "DESC"
+  ) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1); // Reset to first page when sorting
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 min-w-0">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {total} nhân viên
-        </div>
+        <div className="text-sm text-muted-foreground">{total} nhân viên</div>
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={refreshEmployees}
             disabled={loading}
             className="px-3 py-2 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2"
           >
-            {loading && (
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            )}
             {loading ? "Đang tải..." : "Làm mới"}
           </button>
-          <AddEmployeeModal onSubmit={handleCreateEmployee} isLoading={creating} />
+
+          <Button onClick={handleCreateEmployee}>
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm nhân viên
+          </Button>
+
+          <EmployeeModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onSubmit={handleSubmitEmployee}
+            isLoading={creating}
+            employee={editingEmployee}
+          />
         </div>
       </div>
-      
+
       <div className="flex-1 min-w-0">
-        {total === 0 ? (
-          <div className="flex items-center justify-center h-64 border rounded-lg">
-            <div className="text-center">
-              <p className="text-muted-foreground mb-2">Chưa có nhân viên nào</p>
-              <AddEmployeeModal onSubmit={handleCreateEmployee} isLoading={creating} />
-            </div>
-          </div>
-        ) : (
-          <EmployeeTable
-            employees={employees}
-            total={total}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            searchTerm={searchTerm}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onEdit={handleEditEmployee}
-            onDelete={handleDeleteEmployee}
-            onPageChange={handlePageChange}
-            onSearchChange={handleSearchChange}
-            onSortChange={handleSortChange}
-            isLoading={loading}
-          />
-        )}
+        <EmployeeTable
+          employees={employees}
+          total={total}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          searchTerm={searchTerm}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onEdit={handleEditEmployee}
+          onDelete={handleDeleteEmployee}
+          onPageChange={handlePageChange}
+          onSearchChange={handleSearchChange}
+          onSortChange={handleSortChange}
+          isLoading={loading}
+        />
       </div>
     </div>
-  )
+  );
 }
