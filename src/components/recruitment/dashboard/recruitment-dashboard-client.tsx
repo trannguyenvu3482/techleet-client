@@ -121,13 +121,13 @@ export function RecruitmentDashboardClient() {
     <div className="space-y-6">
       {/* Breadcrumbs */}
       <RecruitmentBreadcrumb items={[
-        { label: "Dashboard" }
+        { label: "Bảng điều khiển" }
       ]} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recruitment Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển tuyển dụng</h1>
           <p className="text-muted-foreground">
             Tổng quan về quy trình tuyển dụng và pipeline
           </p>
@@ -220,7 +220,7 @@ export function RecruitmentDashboardClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Pipeline Overview
+            Tổng quan quy trình
           </CardTitle>
           <CardDescription>
             Tổng quan về số lượng ứng viên ở mỗi giai đoạn
@@ -239,11 +239,6 @@ export function RecruitmentDashboardClient() {
                     <p className="text-2xl font-bold">{stage.count}</p>
                   </div>
                 </div>
-                {index < pipelineStages.length - 1 && (
-                  <div className="hidden md:block">
-                    <ArrowRight className="h-4 w-4 text-muted-foreground mx-auto" />
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -258,7 +253,7 @@ export function RecruitmentDashboardClient() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5" />
-                  Top Vị trí Tuyển dụng
+                  Vị trí tuyển dụng nổi bật
                 </CardTitle>
                 <CardDescription>
                   Các vị trí có nhiều ứng tuyển nhất
