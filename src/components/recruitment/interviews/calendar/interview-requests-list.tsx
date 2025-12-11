@@ -5,22 +5,42 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScoreIndicator } from "@/components/ui/score-indicator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { recruitmentAPI, type Application } from "@/lib/api";
 import dayjs from "dayjs";
-import { Calendar, User, Briefcase, Clock, Award, Mail, FileText, CheckCircle2 } from "lucide-react";
+import {
+  Calendar,
+  User,
+  Briefcase,
+  Clock,
+  Award,
+  Mail,
+  FileText,
+  CheckCircle2,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export function InterviewRequestsList({ 
-  onScheduleClick 
-}: { 
-  onScheduleClick: (application: Application) => void 
+export function InterviewRequestsList({
+  onScheduleClick,
+}: {
+  onScheduleClick: (application: Application) => void;
 }) {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [jobs, setJobs] = useState<Array<{jobPostingId: number; title: string}>>([]);
+  const [jobs, setJobs] = useState<
+    Array<{ jobPostingId: number; title: string }>
+  >([]);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-  const [selectedApplicationIds, setSelectedApplicationIds] = useState<Set<number>>(new Set());
+  const [selectedApplicationIds, setSelectedApplicationIds] = useState<
+    Set<number>
+  >(new Set());
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
@@ -29,9 +49,14 @@ export function InterviewRequestsList({
   useEffect(() => {
     const loadJobs = async () => {
       try {
-        const response = await recruitmentAPI.getInterviewRequests({ limit: 1000 });
-        const uniqueJobs = new Map<number, {jobPostingId: number; title: string}>();
-        
+        const response = await recruitmentAPI.getInterviewRequests({
+          limit: 1000,
+        });
+        const uniqueJobs = new Map<
+          number,
+          { jobPostingId: number; title: string }
+        >();
+
         response.data.forEach((app) => {
           if (app.jobPosting) {
             uniqueJobs.set(app.jobPosting.jobPostingId, {
@@ -40,13 +65,13 @@ export function InterviewRequestsList({
             });
           }
         });
-        
+
         setJobs(Array.from(uniqueJobs.values()));
       } catch (error) {
         console.error("Failed to load jobs:", error);
       }
     };
-    
+
     loadJobs();
   }, []);
 
@@ -77,15 +102,18 @@ export function InterviewRequestsList({
     const handleRefresh = () => {
       fetchRequests();
     };
-    window.addEventListener('interview-requests-refresh', handleRefresh);
-    return () => window.removeEventListener('interview-requests-refresh', handleRefresh);
+    window.addEventListener("interview-requests-refresh", handleRefresh);
+    return () =>
+      window.removeEventListener("interview-requests-refresh", handleRefresh);
   }, [fetchRequests]);
 
   const handleSelectAll = () => {
     if (selectedApplicationIds.size === applications.length) {
       setSelectedApplicationIds(new Set());
     } else {
-      setSelectedApplicationIds(new Set(applications.map(app => app.applicationId)));
+      setSelectedApplicationIds(
+        new Set(applications.map((app) => app.applicationId))
+      );
     }
   };
 
@@ -106,12 +134,16 @@ export function InterviewRequestsList({
     }
 
     if (selectedApplicationIds.size === 1) {
-      const application = applications.find(app => app.applicationId === Array.from(selectedApplicationIds)[0]);
+      const application = applications.find(
+        (app) => app.applicationId === Array.from(selectedApplicationIds)[0]
+      );
       if (application) {
         onScheduleClick(application);
       }
     } else {
-      const firstApplication = applications.find(app => app.applicationId === Array.from(selectedApplicationIds)[0]);
+      const firstApplication = applications.find(
+        (app) => app.applicationId === Array.from(selectedApplicationIds)[0]
+      );
       if (firstApplication) {
         onScheduleClick(firstApplication);
       }
@@ -121,7 +153,7 @@ export function InterviewRequestsList({
   const getScreeningScore = (application: Application): number | undefined => {
     const score = application.screeningScore ?? (application as any).score;
     if (score === null || score === undefined) return undefined;
-    const numScore = typeof score === 'string' ? parseFloat(score) : score;
+    const numScore = typeof score === "string" ? parseFloat(score) : score;
     return isNaN(numScore) ? undefined : numScore;
   };
 
@@ -159,7 +191,9 @@ export function InterviewRequestsList({
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1 w-full sm:w-auto">
-              <Label className="text-sm font-medium mb-2 block">Chọn vị trí</Label>
+              <Label className="text-sm font-medium mb-2 block">
+                Chọn vị trí
+              </Label>
               <Select
                 value={selectedJobId ? String(selectedJobId) : "all"}
                 onValueChange={(value) => {
@@ -177,7 +211,10 @@ export function InterviewRequestsList({
                 <SelectContent>
                   <SelectItem value="all">Tất cả vị trí</SelectItem>
                   {jobs.map((job) => (
-                    <SelectItem key={job.jobPostingId} value={String(job.jobPostingId)}>
+                    <SelectItem
+                      key={job.jobPostingId}
+                      value={String(job.jobPostingId)}
+                    >
                       {job.title}
                     </SelectItem>
                   ))}
@@ -201,12 +238,15 @@ export function InterviewRequestsList({
           {applications.length > 0 && (
             <div className="flex items-center gap-3 pt-2 pb-3 border-t">
               <Checkbox
-                checked={selectedApplicationIds.size === applications.length && applications.length > 0}
+                checked={
+                  selectedApplicationIds.size === applications.length &&
+                  applications.length > 0
+                }
                 onCheckedChange={handleSelectAll}
                 id="select-all"
               />
-              <Label 
-                htmlFor="select-all" 
+              <Label
+                htmlFor="select-all"
                 className="cursor-pointer text-sm font-medium text-muted-foreground"
               >
                 Chọn tất cả ({applications.length} ứng viên)
@@ -221,7 +261,9 @@ export function InterviewRequestsList({
           <CardContent className="pt-12 pb-12">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-              <p className="text-muted-foreground">Đang tải danh sách ứng viên...</p>
+              <p className="text-muted-foreground">
+                Đang tải danh sách ứng viên...
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -240,96 +282,98 @@ export function InterviewRequestsList({
           </CardContent>
         </Card>
       ) : (
-      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {applications.map((application) => {
             const screeningScore = getScreeningScore(application);
             return (
               <div
-                key={application.applicationId} 
+                key={application.applicationId}
                 className={`group relative rounded-lg border transition-all hover:bg-muted/50 p-3 ${
-                  selectedApplicationIds.has(application.applicationId) 
-                    ? "border-primary bg-primary/5 hover:bg-primary/10" 
+                  selectedApplicationIds.has(application.applicationId)
+                    ? "border-primary bg-primary/5 hover:bg-primary/10"
                     : "border-border"
                 }`}
               >
-                 <div className="flex items-start gap-3">
-                    <div className="pt-0.5">
-                      <Checkbox
-                        checked={selectedApplicationIds.has(application.applicationId)}
-                        onCheckedChange={() => handleSelectApplication(application.applicationId)}
-                        id={`select-${application.applicationId}`}
-                      />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                       <div className="flex items-center justify-between gap-2 mb-1">
-                          <label 
-                            htmlFor={`select-${application.applicationId}`}
-                            className="font-medium text-sm truncate hover:text-primary cursor-pointer"
-                          >
-                             {application.candidate
-                              ? `${application.candidate.firstName} ${application.candidate.lastName}`
-                              : "Ứng viên"}
-                          </label>
+                <div className="flex items-start gap-3">
+                  <div className="pt-0.5">
+                    <Checkbox
+                      checked={selectedApplicationIds.has(
+                        application.applicationId
+                      )}
+                      onCheckedChange={() =>
+                        handleSelectApplication(application.applicationId)
+                      }
+                      id={`select-${application.applicationId}`}
+                    />
+                  </div>
 
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {screeningScore !== undefined && screeningScore !== null && typeof screeningScore === 'number' && !isNaN(screeningScore) && (
-                              <Badge
-                                className={`${getScreeningScoreColor(screeningScore)} text-white flex items-center gap-1 text-[10px] h-5 px-1.5`}
-                              >
-                                {screeningScore.toFixed(0)}
-                              </Badge>
-                            )}
-                             <Button
-                              onClick={() => onScheduleClick(application)}
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Lên lịch"
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </Button>
-                          </div>
-                       </div>
+                  <div className="flex-1 min-w-0 items-center">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label
+                        htmlFor={`select-${application.applicationId}`}
+                        className="font-medium text-sm truncate hover:text-primary cursor-pointer"
+                      >
+                        {application.candidate
+                          ? `${application.candidate.firstName} ${application.candidate.lastName}`
+                          : "Ứng viên"}
+                      </label>
 
-                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                          <span className="truncate max-w-[150px]">
-                            {application.jobPosting?.title}
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {(application as any).appliedDate || application.appliedAt
-                              ? dayjs((application as any).appliedDate || application.appliedAt).format("DD/MM/YYYY")
-                              : "N/A"}
-                          </span>
-                       </div>
+                      <div className="flex items-center gap-2">
+                        {screeningScore !== undefined &&
+                          screeningScore !== null &&
+                          typeof screeningScore === "number" &&
+                          !isNaN(screeningScore) && (
+                            <ScoreIndicator
+                              variant="circular"
+                              score={screeningScore}
+                              size="sm"
+                              showLabel={false}
+                            />
+                          )}
+                        <Button
+                          onClick={() => onScheduleClick(application)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Lên lịch"
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                 </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <span className="truncate max-w-[300px]">
+                        {application.jobPosting?.title}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}
 
           {total > limit && (
             <div className="flex items-center justify-between pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                  >
-                    Trước
-                  </Button>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Trang {page + 1} / {Math.ceil(total / limit)}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={(page + 1) * limit >= total}
-                  >
-                    Sau
-                  </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Trước
+              </Button>
+              <span className="text-xs text-muted-foreground font-medium">
+                Trang {page + 1} / {Math.ceil(total / limit)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={(page + 1) * limit >= total}
+              >
+                Sau
+              </Button>
             </div>
           )}
         </div>

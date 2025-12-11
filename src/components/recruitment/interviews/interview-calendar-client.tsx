@@ -255,7 +255,7 @@ export default function InterviewCalendarClient() {
                 <SheetHeader>
                   <SheetTitle>Yêu cầu phỏng vấn ({requestsCount})</SheetTitle>
                 </SheetHeader>
-                <div className="mt-4">
+                <div className="m-4">
                   <InterviewRequestsList
                     onScheduleClick={(application) => {
                       setFormDefaults({ application });
@@ -277,7 +277,7 @@ export default function InterviewCalendarClient() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="">
           {/* Status Legend */}
           <div className="flex flex-wrap gap-4 mb-4 pb-4 border-b">
             {STATUS_LEGEND.map((item) => (
@@ -346,7 +346,7 @@ export default function InterviewCalendarClient() {
           setFormDefaults(undefined);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingInterview ? "Cập nhật cuộc phỏng vấn" : "Tạo cuộc phỏng vấn"}</DialogTitle>
           </DialogHeader>
@@ -367,7 +367,7 @@ export default function InterviewCalendarClient() {
 
       {/* Interview Detail Sheet */}
       <Sheet open={!!selectedInterviewId} onOpenChange={(open) => !open && setSelectedInterviewId(null)}>
-        <SheetContent className="w-full sm:max-w-xl">
+        <SheetContent className="w-full sm:max-w-3xl mx-4">
           <SheetHeader>
             <SheetTitle>Chi tiết cuộc phỏng vấn</SheetTitle>
           </SheetHeader>
