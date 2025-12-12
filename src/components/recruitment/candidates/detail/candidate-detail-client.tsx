@@ -828,9 +828,10 @@ export function CandidateDetailClient() {
               Quay lại
             </Button>
           </Link>
-          {candidate.currentApplication?.jobPosting?.isTest && (
-            <Link href={`/recruitment/candidate/exams?applicationId=${searchParams.get("applicationId") || candidate.currentApplication?.applicationId}`}>
+          {(applicationId || candidate.currentApplication?.applicationId) && (
+            <Link href={`/recruitment/candidate/exams?applicationId=${applicationId || candidate.currentApplication?.applicationId}`}>
               <Button size="sm" variant="secondary">
+                <Eye className="mr-2 h-4 w-4" />
                 Xem bài thi
               </Button>
             </Link>
